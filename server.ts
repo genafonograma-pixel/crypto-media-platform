@@ -115,12 +115,12 @@ INSTRUCTIONS:
       seo_title: null,
     };
 
-  let minWords = 600;
-  let targetWords = "700-1,200";
+  let minWords = 200;
+  let targetWords = "250-500";
   const c = (researchData.classification || "").toLowerCase();
   if (c.includes("breaking") || c.includes("brief")) {
-    minWords = 350;
-    targetWords = "400-700";
+    minWords = 150;
+    targetWords = "200-400";
   } else if (
     c.includes("company") ||
     c.includes("earnings") ||
@@ -130,11 +130,11 @@ INSTRUCTIONS:
     c.includes("hack") ||
     c.includes("security")
   ) {
-    minWords = 700;
-    targetWords = "800-1,500";
+    minWords = 250;
+    targetWords = "300-600";
   } else if (c.includes("deep") || c.includes("research")) {
-    minWords = 1000;
-    targetWords = "1,000-2,000+";
+    minWords = 400;
+    targetWords = "500-1000";
   }
 
   // STEP 2: ARTICLE GENERATION
@@ -195,8 +195,8 @@ INSTRUCTIONS:
   - TECHNICAL: Contains "undefined", "null", "AI-generated", "According to research", "Visit the official site", or fake author credits.
 2. LENGTH CHECK: The generated article body has ${wordCount} words. The required minimum for ${researchData.classification} is ${minWords} words.
   - If it meets the minimum without hallucinated padding, set "status" to "ready" and keep the original classification.
-  - If it is under ${minWords} words but contains dense verified facts (no filler) and is at least 350 words, set "status" to "ready", but change "final_classification" to "Breaking News".
-  - If it is under 350 words, or if it is heavily padded with generic filler just to hit the word count, set "status" to "needs_research" and quality_score below 70.
+  - If it is under ${minWords} words but contains dense verified facts (no filler) and is at least 150 words, set "status" to "ready", but change "final_classification" to "Breaking News".
+  - If it is under 150 words, or if it is heavily padded with generic filler just to hit the word count, set "status" to "needs_research" and quality_score below 70.
 3. Score the article (0-100) strictly based on passing these checks.
 4. Return ONLY a JSON object:
 {
