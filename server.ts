@@ -115,12 +115,12 @@ INSTRUCTIONS:
       seo_title: null,
     };
 
-  let minWords = 200;
-  let targetWords = "250-500";
+  let minWords = 600;
+  let targetWords = "700-1,200";
   const c = (researchData.classification || "").toLowerCase();
   if (c.includes("breaking") || c.includes("brief")) {
-    minWords = 150;
-    targetWords = "200-400";
+    minWords = 350;
+    targetWords = "400-700";
   } else if (
     c.includes("company") ||
     c.includes("earnings") ||
@@ -130,18 +130,37 @@ INSTRUCTIONS:
     c.includes("hack") ||
     c.includes("security")
   ) {
-    minWords = 250;
-    targetWords = "300-600";
+    minWords = 700;
+    targetWords = "800-1,500";
   } else if (c.includes("deep") || c.includes("research")) {
-    minWords = 400;
-    targetWords = "500-1000";
+    minWords = 1000;
+    targetWords = "1,000-2,000+";
   }
 
-  // STEP 2: ARTICLE GENERATION
-  const generatePrompt = `You are a senior editor at a crypto intelligence platform. Write a news article based STRICTLY on this Research Object.
+  // STEP 1.5: CONTEXT ENRICHMENT
+  const enrichmentPrompt = `You are a Crypto Historian/Analyst. Analyze the following Research Object regarding a recent news event.
 RESEARCH DATA:
 ${JSON.stringify(researchData)}
 
+INSTRUCTIONS:
+1. Identify the key entities (people, companies, protocols, tokens) and concepts mentioned.
+2. Provide dense, accurate historical context, background information, market history, and broader implications of these entities/events using your training data.
+3. This information will be used to enrich a short news brief into a comprehensive article. Ensure facts are highly accurate and directly relevant.
+4. Return ONLY a JSON object:
+{
+  "historical_context": "Deep background on the protocols, people, or companies involved.",
+  "market_implications": "Broader market context and what this type of event usually means.",
+  "technical_details": "Definitions of any complex crypto concepts mentioned."
+}`;
+  const enrichmentData = await runAIPrompt(enrichmentPrompt);
+  const contextBlock = enrichmentData ? `ENRICHED BACKGROUND CONTEXT:\n${JSON.stringify(enrichmentData)}\n` : "";
+
+  // STEP 2: ARTICLE GENERATION
+  const generatePrompt = `You are a senior editor at a crypto intelligence platform. Write a news article based STRICTLY on this Research Object and the provided Enriched Background Context.
+RESEARCH DATA:
+${JSON.stringify(researchData)}
+
+${contextBlock}
 ABSOLUTE EDITORIAL RULES:
 1. FACT VS ANALYSIS: Distinguish fact from analysis. Do not present subjective editorial judgment as fact. Use precise language (e.g., "suggests" rather than "proves").
 2. NO BROAD GENERALIZATIONS: Do not invent industry-wide narratives. Do not claim an event "marks a broader shift" or "changes the industry" without explicit multi-source evidence.
@@ -195,8 +214,8 @@ INSTRUCTIONS:
   - TECHNICAL: Contains "undefined", "null", "AI-generated", "According to research", "Visit the official site", or fake author credits.
 2. LENGTH CHECK: The generated article body has ${wordCount} words. The required minimum for ${researchData.classification} is ${minWords} words.
   - If it meets the minimum without hallucinated padding, set "status" to "ready" and keep the original classification.
-  - If it is under ${minWords} words but contains dense verified facts (no filler) and is at least 150 words, set "status" to "ready", but change "final_classification" to "Breaking News".
-  - If it is under 150 words, or if it is heavily padded with generic filler just to hit the word count, set "status" to "needs_research" and quality_score below 70.
+  - If it is under ${minWords} words but contains dense verified facts (no filler) and is at least 350 words, set "status" to "ready", but change "final_classification" to "Breaking News".
+  - If it is under 350 words, or if it is heavily padded with generic filler just to hit the word count, set "status" to "needs_research" and quality_score below 70.
 3. Score the article (0-100) strictly based on passing these checks.
 4. Return ONLY a JSON object:
 {
@@ -615,6 +634,10 @@ const RSS_SOURCES = [
   { id: "thedefiant", name: "The Defiant", url: "https://thedefiant.io/api/feed" },
   { id: "blockworks", name: "Blockworks", url: "https://blockworks.com/feed" },
   { id: "cryptonews", name: "CryptoNews", url: "https://cryptonews.com/feed/" },
+  { id: "theblock", name: "The Block", url: "https://www.theblock.co/rss.xml" },
+  { id: "cryptobriefing", name: "CryptoBriefing", url: "https://cryptobriefing.com/feed/" },
+  { id: "cryptoglobe", name: "CryptoGlobe", url: "https://www.cryptoglobe.com/latest/feed/" },
+  { id: "bitcoinmagazine", name: "Bitcoin Magazine", url: "https://bitcoinmagazine.com/.rss/full/" },
 ];
 
 // ─── RSS Fetching (no AI — pure data collection) ─────────────────────────────
