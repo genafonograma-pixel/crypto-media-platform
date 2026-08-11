@@ -839,19 +839,8 @@ async function runAIPipeline(): Promise<{ processed: number; skipped: number; qu
         article.category?.[0]
       );
 
-      // Generate AI thumbnail for quality articles (score ≥ 70) — always replaces RSS image
-      let finalImageUrl = article.image_url;
-      const isQualityArticle =
-        aiResult.quality_score != null && aiResult.quality_score >= 70 && aiResult.rewritten_content;
-      if (isQualityArticle) {
-        const thumbnailUrl = await generateAndStoreThumbnail({
-          article_id: article.article_id,
-          headline: aiResult.headline,
-          title: article.title,
-          classification: aiResult.classification,
-        });
-        if (thumbnailUrl) finalImageUrl = thumbnailUrl;
-      }
+      // Use original image from RSS source — keep real editorial photos from publishers
+      const finalImageUrl = article.image_url;
 
       // Save to DB regardless of quality (so we don't re-process rejected articles)
       await saveArticleToDB({
