@@ -947,22 +947,33 @@ async function startServer() {
     try {
       const now = Date.now();
       if (now - lastPriceFetchTime > PRICE_CACHE_TTL || !cachedPrices) {
-        // Use CoinCap API which does not aggressively block data center IPs
+        // Use KuCoin API which works reliably on Render
         const response = await fetch(
-          'https://api.coincap.io/v2/assets?ids=bitcoin,ethereum,solana,binance-coin,xrp,dogecoin'
+          'https://api.kucoin.com/api/v1/market/allTickers'
         );
-        if (!response.ok) throw new Error(`CoinCap API: ${response.status}`);
+        if (!response.ok) throw new Error(`KuCoin API: ${response.status}`);
         
-        const { data } = await response.json();
+        const json = await response.json();
+        const data = json.data?.ticker || [];
+        
+        const symbolMap: Record<string, string> = {
+          'BTC-USDT': 'bitcoin',
+          'ETH-USDT': 'ethereum',
+          'SOL-USDT': 'solana',
+          'BNB-USDT': 'binancecoin',
+          'XRP-USDT': 'ripple',
+          'DOGE-USDT': 'dogecoin'
+        };
         
         const formatted: Record<string, any> = {};
         for (const item of data) {
-          // coincap uses 'binance-coin', frontend expects 'binancecoin'
-          const id = item.id === 'binance-coin' ? 'binancecoin' : item.id;
-          formatted[id] = {
-            usd: parseFloat(item.priceUsd),
-            usd_24h_change: parseFloat(item.changePercent24Hr)
-          };
+          const id = symbolMap[item.symbol];
+          if (id) {
+            formatted[id] = {
+              usd: parseFloat(item.last),
+              usd_24h_change: parseFloat(item.changeRate || '0') * 100 // KuCoin gives decimal e.g. 0.05 for 5%
+            };
+          }
         }
         
         cachedPrices = formatted;
