@@ -200,16 +200,17 @@ Return ONLY a JSON object:
     .filter((w: string) => w.length > 0).length;
 
   // STEP 3: CLAIM VALIDATION & SCORING
-  const validationPrompt = `You are a strict factual and editorial auditor. Compare the generated article against the allowed research data.
+  const validationPrompt = `You are a strict factual and editorial auditor. Compare the generated article against the allowed research data AND the enriched background context.
 RESEARCH DATA:
 ${JSON.stringify(researchData)}
+${contextBlock}
 GENERATED ARTICLE:
 ${articleData.rewritten_content}
 
 INSTRUCTIONS:
 1. 5-PILLAR VALIDATION. Fail the article (set status to "needs_research" and quality_score below 70) if ANY of the following are violated:
-  - FACTUAL: Contains hallucinations, invented numbers, or fake quotes.
-  - RESEARCH: Contains broad industry generalizations without evidence.
+  - FACTUAL: Contains hallucinations, invented numbers, or fake quotes NOT present in the research data or enriched context.
+  - RESEARCH: Contains broad industry generalizations without evidence in the research or context data.
   - EDITORIAL: Uses generic filler, forced significance ("marks a turning point"), semantic repetition, or generic conclusions ("Investors will watch closely").
   - TECHNICAL: Contains "undefined", "null", "AI-generated", "According to research", "Visit the official site", or fake author credits.
 2. LENGTH CHECK: The generated article body has ${wordCount} words. The required minimum for ${researchData.classification} is ${minWords} words.
