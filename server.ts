@@ -947,11 +947,36 @@ async function startServer() {
     try {
       const now = Date.now();
       if (now - lastPriceFetchTime > PRICE_CACHE_TTL || !cachedPrices) {
+        // Use Binance API which does not block data center IPs like CoinGecko
         const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,dogecoin,solana,binancecoin,ripple&vs_currencies=usd&include_24hr_change=true"
+          'https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT"]'
         );
-        if (!response.ok) throw new Error(`CoinGecko: ${response.status}`);
-        cachedPrices = await response.json();
+        if (!response.ok) throw new Error(`Binance API: ${response.status}`);
+        
+        const data = await response.json();
+        
+        // Map Binance symbols to CoinGecko format for frontend compatibility
+        const symbolMap: Record<string, string> = {
+          'BTCUSDT': 'bitcoin',
+          'ETHUSDT': 'ethereum',
+          'SOLUSDT': 'solana',
+          'BNBUSDT': 'binancecoin',
+          'XRPUSDT': 'ripple',
+          'DOGEUSDT': 'dogecoin'
+        };
+        
+        const formatted: Record<string, any> = {};
+        for (const item of data) {
+          const id = symbolMap[item.symbol];
+          if (id) {
+            formatted[id] = {
+              usd: parseFloat(item.lastPrice),
+              usd_24h_change: parseFloat(item.priceChangePercent)
+            };
+          }
+        }
+        
+        cachedPrices = formatted;
         lastPriceFetchTime = now;
       }
       res.json(cachedPrices);
