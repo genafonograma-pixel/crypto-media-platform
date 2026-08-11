@@ -621,10 +621,14 @@ const RSS_SOURCES = [
 async function fetchRSSArticles(): Promise<any[]> {
   const allArticles: any[] = [];
 
-  const fetchPromises = RSS_SOURCES.map(async (source) => {
+  for (const source of RSS_SOURCES) {
     try {
       const feed = await parser.parseURL(source.url);
-      const itemPromises = feed.items.map(async (item) => {
+      
+      for (const item of feed.items) {
+        // Yield to the event loop between articles so Express can handle requests
+        await new Promise(r => setImmediate(r));
+
         let imageUrl: string | null = null;
         if (item.mediaContent && (item.mediaContent as any)["$"] && (item.mediaContent as any)["$"].url) {
           imageUrl = (item.mediaContent as any)["$"].url;
@@ -672,6 +676,10 @@ async function fetchRSSArticles(): Promise<any[]> {
             clearTimeout(timeoutId);
             if (response.ok) {
               const html = await response.text();
+              
+              // Yield before heavy HTML parsing
+              await new Promise(r => setTimeout(r, 10));
+              
               const doc = new JSDOM(html, { url: item.link });
               const reader = new Readability(doc.window.document);
               const parsed = reader.parse();
@@ -706,9 +714,9 @@ async function fetchRSSArticles(): Promise<any[]> {
           new RegExp(`\\b${kw}\\b`, "i").test(textToCheck)
         );
 
-        if (!isCryptoRelated || isExcluded) return null;
+        if (!isCryptoRelated || isExcluded) continue;
 
-        return {
+        allArticles.push({
           article_id: Buffer.from(
             String(item.guid || item.link || `${source.id}-${item.title || ""}`)
           ).toString("base64"),
@@ -726,20 +734,11 @@ async function fetchRSSArticles(): Promise<any[]> {
                   typeof c === "string" ? c : c._ || c.name || "News"
                 )
               : ["News"],
-        };
-      });
-
-      const resolvedItems = await Promise.all(itemPromises);
-      return resolvedItems.filter(Boolean);
+        });
+      }
     } catch (e) {
       console.error(`Failed to fetch from ${source.name}: ${(e as Error).message}`);
-      return [];
     }
-  });
-
-  const results = await Promise.allSettled(fetchPromises);
-  for (const res of results) {
-    if (res.status === "fulfilled") allArticles.push(...res.value);
   }
 
   allArticles.sort(
