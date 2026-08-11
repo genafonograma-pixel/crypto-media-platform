@@ -1,0 +1,6 @@
+{
+  "name": "Crypto Ledger Media",
+  "description": "Modern crypto news media platform fetching latest articles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
