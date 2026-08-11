@@ -19,7 +19,7 @@ function formatDate(dateStr: string) {
 export default function ArticleCard({ article, compact = false }: Props) {
   const displayTitle = article.headline || article.title;
   return (
-    <Link to={`/article/${article.article_id}/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col h-full">
+    <Link to={`/article/${encodeURIComponent(article.article_id)}/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col h-full">
       {!compact && (
         <div className="relative overflow-hidden aspect-[2/1] bg-[#111] border border-[#222] mb-4">
           {article.image_url ? (

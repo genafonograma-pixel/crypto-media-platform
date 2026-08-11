@@ -29,7 +29,7 @@ function HeroCard({ article }: { article: Article }) {
   const classification = (article as any).classification || article.category?.[0] || 'News';
 
   return (
-    <a href={`/article/${article.article_id}/${slug}`} className="group block relative overflow-hidden rounded-lg bg-[#111] aspect-[16/9] md:aspect-[21/9]">
+    <a href={`/article/${encodeURIComponent(article.article_id)}/${slug}`} className="group block relative overflow-hidden rounded-lg bg-[#111] aspect-[16/9] md:aspect-[21/9]">
       {article.image_url ? (
         <img
           src={article.image_url}
@@ -68,7 +68,7 @@ function NewsCard({ article, size = 'normal' }: { article: Article; size?: 'norm
 
   if (size === 'small') {
     return (
-      <a href={`/article/${article.article_id}/${slug}`} className="group flex gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
+      <a href={`/article/${encodeURIComponent(article.article_id)}/${slug}`} className="group flex gap-3 py-3 border-b border-[#1a1a1a] last:border-0">
         {article.image_url && (
           <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded bg-[#111]">
             <img
@@ -90,7 +90,7 @@ function NewsCard({ article, size = 'normal' }: { article: Article; size?: 'norm
   }
 
   return (
-    <a href={`/article/${article.article_id}/${slug}`} className="group block">
+    <a href={`/article/${encodeURIComponent(article.article_id)}/${slug}`} className="group block">
       <div className="relative overflow-hidden rounded-md bg-[#111] aspect-[16/9] mb-3">
         {article.image_url ? (
           <img
