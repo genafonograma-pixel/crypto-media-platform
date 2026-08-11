@@ -301,6 +301,7 @@ async function generateThumbnailPollinations(prompt: string, seed: number): Prom
       height: "630",
       nologo: "true",
       seed: String(seed),
+      model: "flux"
     });
     const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params}`;
     const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
