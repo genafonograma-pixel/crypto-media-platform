@@ -16,7 +16,7 @@ function formatDate(dateStr: string) {
   }).format(date);
 }
 
-export default function ArticleCard({ article, compact = false }: Props) {
+const ArticleCard: React.FC<Props> = ({ article, compact = false }) => {
   const displayTitle = article.headline || article.title;
   return (
     <Link to={`/article/${encodeURIComponent(article.article_id)}/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col h-full">
@@ -65,3 +65,5 @@ export default function ArticleCard({ article, compact = false }: Props) {
     </Link>
   );
 }
+
+export default ArticleCard;
