@@ -607,7 +607,7 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const DAILY_LIMIT = 40;
+const DAILY_LIMIT = 200;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parser = new Parser({
