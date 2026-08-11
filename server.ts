@@ -115,12 +115,12 @@ INSTRUCTIONS:
       seo_title: null,
     };
 
-  let minWords = 600;
-  let targetWords = "700-1,200";
+  let minWords = 250;
+  let targetWords = "300-500";
   const c = (researchData.classification || "").toLowerCase();
   if (c.includes("breaking") || c.includes("brief")) {
-    minWords = 350;
-    targetWords = "400-700";
+    minWords = 150;
+    targetWords = "200-350";
   } else if (
     c.includes("company") ||
     c.includes("earnings") ||
@@ -130,11 +130,11 @@ INSTRUCTIONS:
     c.includes("hack") ||
     c.includes("security")
   ) {
-    minWords = 700;
-    targetWords = "800-1,500";
+    minWords = 300;
+    targetWords = "350-600";
   } else if (c.includes("deep") || c.includes("research")) {
-    minWords = 1000;
-    targetWords = "1,000-2,000+";
+    minWords = 400;
+    targetWords = "500-800";
   }
 
   // STEP 2: ARTICLE GENERATION
