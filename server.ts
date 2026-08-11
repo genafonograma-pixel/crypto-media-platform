@@ -661,7 +661,7 @@ async function fetchRSSArticles(): Promise<any[]> {
         if (rawContent.length < 1500 && item.link) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
             const response = await fetch(item.link, {
               signal: controller.signal,
               headers: {
@@ -947,33 +947,22 @@ async function startServer() {
     try {
       const now = Date.now();
       if (now - lastPriceFetchTime > PRICE_CACHE_TTL || !cachedPrices) {
-        // Use Binance API which does not block data center IPs like CoinGecko
+        // Use CoinCap API which does not aggressively block data center IPs
         const response = await fetch(
-          'https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT","DOGEUSDT"]'
+          'https://api.coincap.io/v2/assets?ids=bitcoin,ethereum,solana,binance-coin,xrp,dogecoin'
         );
-        if (!response.ok) throw new Error(`Binance API: ${response.status}`);
+        if (!response.ok) throw new Error(`CoinCap API: ${response.status}`);
         
-        const data = await response.json();
-        
-        // Map Binance symbols to CoinGecko format for frontend compatibility
-        const symbolMap: Record<string, string> = {
-          'BTCUSDT': 'bitcoin',
-          'ETHUSDT': 'ethereum',
-          'SOLUSDT': 'solana',
-          'BNBUSDT': 'binancecoin',
-          'XRPUSDT': 'ripple',
-          'DOGEUSDT': 'dogecoin'
-        };
+        const { data } = await response.json();
         
         const formatted: Record<string, any> = {};
         for (const item of data) {
-          const id = symbolMap[item.symbol];
-          if (id) {
-            formatted[id] = {
-              usd: parseFloat(item.lastPrice),
-              usd_24h_change: parseFloat(item.priceChangePercent)
-            };
-          }
+          // coincap uses 'binance-coin', frontend expects 'binancecoin'
+          const id = item.id === 'binance-coin' ? 'binancecoin' : item.id;
+          formatted[id] = {
+            usd: parseFloat(item.priceUsd),
+            usd_24h_change: parseFloat(item.changePercent24Hr)
+          };
         }
         
         cachedPrices = formatted;
