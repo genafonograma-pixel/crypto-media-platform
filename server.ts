@@ -50,7 +50,7 @@ async function runAIPrompt(prompt: string) {
   if (!genAI) return null;
   try {
     const response = await genAI.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: "gemini-1.5-pro",
       contents: prompt,
     });
     let rawText = response.text?.trim() || "{}";
@@ -115,12 +115,12 @@ INSTRUCTIONS:
       seo_title: null,
     };
 
-  let minWords = 250;
-  let targetWords = "300-500";
+  let minWords = 600;
+  let targetWords = "700-1,200";
   const c = (researchData.classification || "").toLowerCase();
   if (c.includes("breaking") || c.includes("brief")) {
-    minWords = 150;
-    targetWords = "200-350";
+    minWords = 350;
+    targetWords = "400-700";
   } else if (
     c.includes("company") ||
     c.includes("earnings") ||
@@ -130,11 +130,11 @@ INSTRUCTIONS:
     c.includes("hack") ||
     c.includes("security")
   ) {
-    minWords = 300;
-    targetWords = "350-600";
+    minWords = 700;
+    targetWords = "800-1,500";
   } else if (c.includes("deep") || c.includes("research")) {
-    minWords = 400;
-    targetWords = "500-800";
+    minWords = 1000;
+    targetWords = "1,000-2,000+";
   }
 
   // STEP 2: ARTICLE GENERATION
