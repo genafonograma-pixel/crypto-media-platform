@@ -882,9 +882,8 @@ async function runAIPipeline(): Promise<{ processed: number; skipped: number; qu
       await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
       processed++;
 
-      // Respect Gemini free tier: 5 RPM = 12-13s between calls (3 calls per article)
-      // Thumbnail generation adds ~10-20s per article — already absorbed into this delay
-      await delay(13000);
+      // gemini-2.5-flash free tier: ~15 RPM, 4s between articles is safe
+      await delay(4000);
     }
 
     // Invalidate in-memory cache so next /api/news request re-reads from DB
