@@ -842,6 +842,21 @@ async function runAIPipeline(): Promise<{ processed: number; skipped: number; qu
     const processedIds = await getProcessedIds();
     let quotaInfo = await getQuotaInfo();
 
+    // Sync quota with actual DB count for today to prevent stale quota drift
+    const today = new Date().toISOString().split("T")[0];
+    if (supabase) {
+      const { count } = await supabase
+        .from("articles")
+        .select("*", { count: "exact", head: true })
+        .gte("pub_date", today);
+      const realCount = count ?? 0;
+      if (realCount < quotaInfo.count) {
+        console.log(`🔄 Syncing quota: DB has ${realCount} articles today, quota said ${quotaInfo.count}. Resetting to ${realCount}.`);
+        quotaInfo.count = realCount;
+        await saveQuotaInfo(today, realCount);
+      }
+    }
+
     console.log(`📰 ${articles.length} events fetched. ${processedIds.size} already in DB. Quota: ${quotaInfo.count}/${DAILY_LIMIT}`);
 
     for (const article of articles) {
