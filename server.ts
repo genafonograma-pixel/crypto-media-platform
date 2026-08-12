@@ -824,49 +824,55 @@ export async function runAIPipeline(): Promise<{
 
       console.log(`🤖 AI processing: "${article.title?.slice(0, 50)}..." (Quota: ${quotaInfo.count + 1}/${DAILY_LIMIT})`);
 
-      const aiResult = await processArticleWithAI(
-        article.title || "",
-        article._combined_content,
-        article.source_id || "multiple sources",
-        article.category?.[0]
-      );
+      try {
+        const aiResult = await processArticleWithAI(
+          article.title || "",
+          article._combined_content,
+          article.source_id || "multiple sources",
+          article.category?.[0]
+        );
 
-      // CRITICAL: Only save if AI actually ran. If quality_score is null it means
-      // the AI failed completely (rate limit, timeout, etc.) — skip saving so
-      // the article can be retried on the next pipeline run.
-      if (aiResult.quality_score === null && aiResult.rewritten_content === null) {
-        console.log(`⚠️ AI failed for "${article.title?.slice(0, 50)}" — skipping save, will retry next run.`);
-        continue;
+        // Only save if AI actually ran. If quality_score is null it means
+        // the AI failed completely (rate limit, timeout, etc.) — skip saving so
+        // the article can be retried on the next pipeline run.
+        if (aiResult.quality_score === null && aiResult.rewritten_content === null) {
+          console.error(`⚠️ AI returned null for "${article.title?.slice(0, 50)}" — skipping, will retry next run.`);
+          continue;
+        }
+
+        // Generate thumbnail via Cloudflare AI
+        const thumbnailUrl = await generateAndStoreThumbnail({
+          article_id: article.article_id,
+          headline: aiResult.headline,
+          title: article.title,
+          classification: aiResult.classification,
+        });
+
+        // Use Cloudflare thumbnail if generated, else fall back to original RSS image
+        const finalImageUrl = thumbnailUrl || article.image_url;
+
+        // Save to DB
+        await saveArticleToDB({
+          ...article,
+          image_url: finalImageUrl,
+          headline: aiResult.headline,
+          seo_title: aiResult.seo_title,
+          ai_meta_description: aiResult.ai_meta_description,
+          rewritten_content: aiResult.rewritten_content,
+          ai_summary: aiResult.summary,
+          classification: aiResult.classification,
+          quality_score: aiResult.quality_score,
+          research_data: aiResult.research_data,
+        });
+
+        quotaInfo.count++;
+        await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
+        processed++;
+        console.log(`✅ Saved: "${article.title?.slice(0, 50)}" (score: ${aiResult.quality_score})`);
+      } catch (articleErr: any) {
+        console.error(`❌ Unexpected error processing "${article.title?.slice(0, 50)}": ${articleErr.message}`);
+        // Continue to next article — don't let one bad article kill the pipeline
       }
-
-      // Generate thumbnail via Cloudflare AI
-      const thumbnailUrl = await generateAndStoreThumbnail({
-        article_id: article.article_id,
-        headline: aiResult.headline,
-        title: article.title,
-        classification: aiResult.classification,
-      });
-
-      // Use Cloudflare thumbnail if generated, else fall back to original RSS image
-      const finalImageUrl = thumbnailUrl || article.image_url;
-
-      // Save to DB — AI rejected articles (score < 70) are saved so we don't re-process them
-      await saveArticleToDB({
-        ...article,
-        image_url: finalImageUrl,
-        headline: aiResult.headline,
-        seo_title: aiResult.seo_title,
-        ai_meta_description: aiResult.ai_meta_description,
-        rewritten_content: aiResult.rewritten_content,
-        ai_summary: aiResult.summary,
-        classification: aiResult.classification,
-        quality_score: aiResult.quality_score,
-        research_data: aiResult.research_data,
-      });
-
-      quotaInfo.count++;
-      await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
-      processed++;
 
       // gemini-flash-latest: 2 calls per article (research + generate).
       // 8 second delay keeps us well under the per-minute rate limit.
