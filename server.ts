@@ -756,7 +756,9 @@ export async function fetchRSSArticles(): Promise<any[]> {
 
         allArticles.push({
           article_id: Buffer.from(
-            String(item.guid || item.link || `${source.id}-${item.title || ""}`)
+            // Always prefer the full article URL as the unique ID - it is guaranteed unique.
+            // item.guid is often a short, truncated query string that collides across articles.
+            String(item.link || item.guid || `${source.id}-${item.title || ""}`)
           ).toString("base64"),
           title: item.title,
           link: item.link,
