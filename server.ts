@@ -273,66 +273,68 @@ INSTRUCTIONS:
 /** Maps article classification to a cinematic visual theme for consistent style. */
 function buildThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): string {
   const classificationThemes: Record<string, string> = {
-    "Breaking News": "urgent breaking news atmosphere, bold dramatic lighting, red and orange energy pulses, dynamic shockwave composition",
-    "Regulation": "imposing government building facade, marble columns, legal documents, scales of justice motif, cool authoritative blue tones",
-    "Security/Hack": "cyberpunk digital breach visualization, cascading red binary code, cracked shield hologram, electric warning glow",
-    "Market Movement": "cinematic financial data visualization, glowing green and red candlestick charts, ascending price graph, Bloomberg terminal aesthetic",
-    "Market/Price": "cinematic financial data visualization, glowing candlestick charts, ascending price graph, dynamic trading floor energy",
-    "Company/Earnings": "sleek corporate skyscraper glass facade at dusk, boardroom silhouette, financial growth chart overlay, navy and gold palette",
-    "DeFi": "decentralized network node web, glowing liquidity pool vortex, interconnected blockchain nodes, electric teal and purple palette",
-    "NFT": "vibrant digital art gallery, holographic NFT frames floating in dark space, prismatic light refractions, vivid chromatic colors",
-    "Mining": "industrial GPU mining farm, rows of server rigs with cooling fans, blue LED light strips, mechanical precision aesthetic",
-    "Blockchain": "interconnected glowing blockchain lattice, crystalline chain links, deep space dark background, electric blue and silver",
+    "Breaking News": "glowing translucent 3D exclamation mark and energetic shockwave",
+    "Regulation": "glowing translucent scales of justice and legal gavel",
+    "Security/Hack": "glowing translucent cracked digital shield and red warning holograms",
+    "Market Movement": "glowing translucent ascending price chart and dynamic arrows",
+    "Market/Price": "glowing translucent candlestick charts and upward trend arrows",
+    "Company/Earnings": "glowing translucent corporate skyscraper and financial growth charts",
+    "DeFi": "glowing translucent decentralized network nodes and liquidity pool vortex",
+    "NFT": "glowing translucent holographic art frame and chromatic refractions",
+    "Mining": "glowing translucent GPU microchip and glowing data streams",
+    "Blockchain": "glowing translucent crystalline blockchain links and neon lattice",
   };
 
   const c = article.classification || "";
   const theme = Object.entries(classificationThemes).find(([key]) =>
     c.toLowerCase().includes(key.toLowerCase())
-  )?.[1] ?? "abstract cryptocurrency visualization, glowing blockchain nodes, digital financial network";
-
-  const subject = (article.headline || article.title || "crypto news").slice(0, 120);
+  )?.[1] ?? "glowing translucent Bitcoin and Ethereum coins and abstract data nodes";
 
   return (
-    `Professional crypto news editorial thumbnail. Subject: ${subject}. ` +
-    `Visual theme: ${theme}. ` +
-    `Style: dark moody background, deep blue-black gradient, gold and electric-cyan accent highlights, ` +
-    `cinematic depth of field, 8K hyperrealistic render, dramatic volumetric lighting. ` +
-    `No text, no watermarks, no logos, no people's faces.`
+    `A vibrant 3D glassmorphism illustration. A ${theme}, hovering in mid-air. ` +
+    `Vivid cyberpunk colors, bright neon magenta, cyan, orange and green lights, sleek glass reflections, ` +
+    `stunning dynamic digital art, 8k resolution, photorealistic rendering. ` +
+    `NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS, NO HUMAN FIGURES, NO PEOPLE.`
   );
 }
 
-/** Deterministic numeric hash for a string — used as Pollinations seed. */
-function hashStringToInt(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32-bit int
+/** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
+async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | null> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  
+  if (!accountId || !token) {
+    console.error("Missing Cloudflare API credentials in environment.");
+    return null;
   }
-  return Math.abs(hash);
-}
 
-/** Fetch a 1200×630 image from Pollinations.ai — free, no API key required. */
-async function generateThumbnailPollinations(prompt: string, seed: number): Promise<Buffer | null> {
   try {
-    const encodedPrompt = encodeURIComponent(prompt);
-    const params = new URLSearchParams({
-      width: "1200",
-      height: "630",
-      nologo: "true",
-      seed: String(seed),
-      model: "flux"
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+      signal: AbortSignal.timeout(45000),
     });
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
+
     if (!response.ok) {
-      console.error(`Pollinations returned ${response.status}`);
+      console.error(`Cloudflare AI returned ${response.status}: ${await response.text()}`);
       return null;
     }
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+
+    const data = await response.json() as any;
+    if (data && data.result && data.result.image) {
+      // Cloudflare returns the image as a base64 string
+      return Buffer.from(data.result.image, "base64");
+    }
+    
+    console.error("Cloudflare AI response had no image data.");
+    return null;
   } catch (err) {
-    console.error(`Pollinations thumbnail generation failed: ${(err as Error).message}`);
+    console.error(`Cloudflare thumbnail generation failed: ${(err as Error).message}`);
     return null;
   }
 }
@@ -432,12 +434,12 @@ async function generateAndStoreThumbnail(
 
   console.log(`🎨 Generating thumbnail for: "${(article.headline || article.title || "").slice(0, 50)}..."`);
 
-  // Primary: Pollinations (free, no key required)
-  let imageBuffer = await generateThumbnailPollinations(prompt, seed);
+  // Primary: Cloudflare FLUX-1-Schnell
+  let imageBuffer = await generateThumbnailCloudflare(prompt);
 
   // Fallback: Gemini image generation
   if (!imageBuffer) {
-    console.log("Pollinations failed — falling back to Gemini image generation.");
+    console.log("Cloudflare AI failed — falling back to Gemini image generation.");
     imageBuffer = await generateThumbnailGemini(prompt);
   }
 
@@ -883,8 +885,10 @@ async function runAIPipeline(): Promise<{ processed: number; skipped: number; qu
       await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
       processed++;
 
-      // gemini-2.5-flash free tier: ~15 RPM, 4s between articles is safe
-      await delay(4000);
+      // gemini-3.5-flash free tier: 15 RPM. We make 4 calls per article.
+      // To stay under 15 RPM, we can process max 3.75 articles per minute.
+      // 60 seconds / 3.75 = 16 seconds minimum delay. Using 18s to be safe.
+      await delay(18000);
     }
 
     // Invalidate in-memory cache so next /api/news request re-reads from DB
