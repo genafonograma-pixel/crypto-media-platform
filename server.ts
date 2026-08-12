@@ -50,6 +50,7 @@ const GEMINI_KEYS: string[] = [
   process.env.GEMINI_API_KEY_3,
   process.env.GEMINI_API_KEY_4,
   process.env.GEMINI_API_KEY_5,
+  process.env.GEMINI_API_KEY_6,
 ].filter(Boolean) as string[];
 
 const exhaustedKeys = new Set<string>(); // keys that hit 429 today
