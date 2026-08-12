@@ -50,7 +50,7 @@ async function runAIPrompt(prompt: string) {
   if (!genAI) return null;
   try {
     const response = await genAI.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: prompt,
     });
     let rawText = response.text?.trim() || "{}";
