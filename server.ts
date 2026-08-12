@@ -817,7 +817,10 @@ export async function runAIPipeline(): Promise<{
         console.log("Daily AI quota reached. Stopping.");
         break;
       }
-      if (!genAI) break;
+      if (!genAI) {
+        console.error("❌ FATAL: genAI is null — GEMINI_API_KEY not set in environment. Pipeline cannot continue.");
+        break;
+      }
 
       console.log(`🤖 AI processing: "${article.title?.slice(0, 50)}..." (Quota: ${quotaInfo.count + 1}/${DAILY_LIMIT})`);
 
