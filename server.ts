@@ -45,14 +45,13 @@ type AIResult = {
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
 async function runAIPrompt(prompt: string) {
   try {
-    const aiPromise = fetch("https://api.aimlapi.com/v1/chat/completions", {
+    const aiPromise = fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${AIMLAPI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemma-3-27b-it",
+        model: "openai",
         messages: [
           { role: "user", content: prompt }
         ]
