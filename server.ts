@@ -64,9 +64,9 @@ async function runAIPrompt(prompt: string) {
       return r.json();
     });
     
-    // Add a 45s timeout to prevent hanging
+    // Add a 120s timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("AI request timed out after 45s")), 45000);
+      setTimeout(() => reject(new Error("AI request timed out after 120s")), 120000);
     });
     
     const response = await Promise.race([aiPromise, timeoutPromise]) as any;
