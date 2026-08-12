@@ -993,6 +993,22 @@ async function startServer() {
     }
   });
 
+  // ── GET /api/debug — diagnose environment variable state ─────────────────
+  app.get("/api/debug", (req, res) => {
+    res.json({
+      has_gemini_key: !!process.env.GEMINI_API_KEY,
+      has_supabase_url: !!process.env.SUPABASE_URL,
+      has_supabase_key: !!process.env.SUPABASE_SERVICE_KEY,
+      has_cloudflare_account: !!process.env.CLOUDFLARE_ACCOUNT_ID,
+      has_cloudflare_token: !!process.env.CLOUDFLARE_API_TOKEN,
+      has_imgbb_key: !!process.env.IMGBB_API_KEY,
+      generate_thumbnails: process.env.GENERATE_THUMBNAILS,
+      process_secret_set: !!process.env.PROCESS_SECRET,
+      node_env: process.env.NODE_ENV,
+      genai_initialized: !!genAI,
+    });
+  });
+
   // ── GET /api/fear-greed ───────────────────────────────────────────────────
   app.get("/api/fear-greed", async (req, res) => {
     try {
