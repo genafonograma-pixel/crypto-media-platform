@@ -2,8 +2,8 @@ name: Trigger AI News Processing
 
 on:
   schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     # Also allow manual trigger from GitHub Actions UI
 
