@@ -49,10 +49,17 @@ type AIResult = {
 async function runAIPrompt(prompt: string) {
   if (!genAI) return null;
   try {
-    const response = await genAI.models.generateContent({
+    const aiPromise = genAI.models.generateContent({
       model: "gemini-flash-latest",
       contents: prompt,
     });
+    
+    // Add a 45s timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Gemini AI request timed out after 45s")), 45000);
+    });
+    
+    const response = await Promise.race([aiPromise, timeoutPromise]) as any;
     let rawText = response.text?.trim() || "{}";
     if (rawText.startsWith("```json"))
       rawText = rawText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
@@ -613,7 +620,7 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
 const DAILY_LIMIT = 200;
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const parser = new Parser({
+const parser = new Parser({ timeout: 15000,
   customFields: {
     item: [
       ["media:content", "mediaContent"],
@@ -644,7 +651,7 @@ const RSS_SOURCES = [
 ];
 
 // ─── RSS Fetching (no AI — pure data collection) ─────────────────────────────
-async function fetchRSSArticles(): Promise<any[]> {
+export async function fetchRSSArticles(): Promise<any[]> {
   const allArticles: any[] = [];
 
   for (const source of RSS_SOURCES) {
@@ -826,7 +833,11 @@ async function fetchRSSArticles(): Promise<any[]> {
 // ─── AI Processing Pipeline (called by POST /api/process) ────────────────────
 let processingInProgress = false;
 
-async function runAIPipeline(): Promise<{ processed: number; skipped: number; quota: number }> {
+export async function runAIPipeline(): Promise<{
+  processed: number;
+  skipped: number;
+  quota: number;
+}> {
   if (processingInProgress) {
     console.log("AI pipeline already running, skipping.");
     return { processed: 0, skipped: 0, quota: 0 };
