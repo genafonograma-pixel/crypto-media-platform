@@ -1018,6 +1018,27 @@ async function startServer() {
     });
   });
 
+  // ── GET /api/test-rss — Check if Render IP is blocked ────────────────────
+  app.get("/api/test-rss", async (req, res) => {
+    try {
+      const start = Date.now();
+      const articles = await fetchRSSArticles();
+      const duration = Date.now() - start;
+      res.json({
+        success: true,
+        count: articles.length,
+        duration_ms: duration,
+        sources: articles.reduce((acc: any, a: any) => {
+          acc[a.source_id] = (acc[a.source_id] || 0) + 1;
+          return acc;
+        }, {}),
+        first_few: articles.slice(0, 3).map((a: any) => ({ title: a.title, source: a.source_id }))
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message, stack: err.stack });
+    }
+  });
+
   // ── GET /api/fear-greed ───────────────────────────────────────────────────
   app.get("/api/fear-greed", async (req, res) => {
     try {
