@@ -658,39 +658,8 @@ export async function fetchRSSArticles(): Promise<any[]> {
           .replace(/<p>The post[\s\S]*?appeared first on[\s\S]*?<\/p>/gi, "")
           .trim();
 
-        if (rawContent.length < 1500 && item.link) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
-            const response = await fetch(item.link, {
-              signal: controller.signal,
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                Accept:
-                  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Cache-Control": "no-cache",
-              },
-            });
-            clearTimeout(timeoutId);
-            if (response.ok) {
-              const html = await response.text();
-              
-              // Yield before heavy HTML parsing
-              await new Promise(r => setTimeout(r, 10));
-              
-              const doc = new JSDOM(html, { url: item.link });
-              const reader = new Readability(doc.window.document);
-              const parsed = reader.parse();
-              if (parsed && parsed.content && parsed.content.length > rawContent.length + 200) {
-                rawContent = parsed.content;
-              }
-            }
-          } catch (err) {
-            console.error(`Failed to fetch full article for ${item.link}: ${(err as Error).message}`);
-          }
-        }
+        // Use RSS content directly — full-page scraping was too slow (up to 180 sequential fetches).
+        // The AI generates well from RSS content alone.
 
         if (rawContent) {
           rawContent = rawContent.replace(/<p><i>Morning Minute is a daily newsletter.*?<\/i><\/p>/gi, "");
