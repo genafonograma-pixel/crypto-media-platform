@@ -277,32 +277,37 @@ INSTRUCTIONS:
 
 // ─── Thumbnail Generation ────────────────────────────────────────────────────
 
-/** Maps article classification to a cinematic visual theme for consistent style. */
-function buildThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): string {
-  const classificationThemes: Record<string, string> = {
-    "Breaking News": "glowing translucent 3D exclamation mark and energetic shockwave",
-    "Regulation": "glowing translucent scales of justice and legal gavel",
-    "Security/Hack": "glowing translucent cracked digital shield and red warning holograms",
-    "Market Movement": "glowing translucent ascending price chart and dynamic arrows",
-    "Market/Price": "glowing translucent candlestick charts and upward trend arrows",
-    "Company/Earnings": "glowing translucent corporate skyscraper and financial growth charts",
-    "DeFi": "glowing translucent decentralized network nodes and liquidity pool vortex",
-    "NFT": "glowing translucent holographic art frame and chromatic refractions",
-    "Mining": "glowing translucent GPU microchip and glowing data streams",
-    "Blockchain": "glowing translucent crystalline blockchain links and neon lattice",
-  };
+/** Uses Gemini to generate a custom, highly specific image prompt including text overlay */
+async function buildDynamicThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): Promise<string> {
+  const title = article.headline || article.title || "";
+  
+  const aiPrompt = `You are an expert art director for a crypto news site. 
+Write a creative image generation prompt for the following headline: "${title}"
+Classification: "${article.classification || 'News'}"
 
-  const c = article.classification || "";
-  const theme = Object.entries(classificationThemes).find(([key]) =>
-    c.toLowerCase().includes(key.toLowerCase())
-  )?.[1] ?? "glowing translucent Bitcoin and Ethereum coins and abstract data nodes";
+INSTRUCTIONS:
+1. Extract a punchy, bold 1 to 3 word phrase that summarizes the headline (e.g., "SEC LAWSUIT", "BITCOIN CRASH").
+2. Describe a visually stunning, premium 3D or realistic scene that matches the news.
+3. Explicitly instruct the renderer to overlay the exact phrase in bold typography. (e.g. "Bold 3D neon text that says 'BITCOIN CRASH' floating over...").
+4. Return ONLY a JSON object:
+{
+  "text_overlay": "string",
+  "image_prompt": "string"
+}`;
 
-  return (
-    `A vibrant 3D glassmorphism illustration. A ${theme}, hovering in mid-air. ` +
-    `Vivid cyberpunk colors, bright neon magenta, cyan, orange and green lights, sleek glass reflections, ` +
-    `stunning dynamic digital art, 8k resolution, photorealistic rendering. ` +
-    `NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS, NO HUMAN FIGURES, NO PEOPLE.`
-  );
+  try {
+    const res = await runAIPrompt(aiPrompt);
+    if (res && res.image_prompt) {
+      // Ensure the generated prompt includes the text phrase since Flux needs strict instructions
+      return res.image_prompt + ". The exact text must be clearly visible and readable.";
+    }
+  } catch (e) {
+    console.error("Failed to generate dynamic thumbnail prompt:", e);
+  }
+
+  // Fallback
+  const c = article.classification || "Crypto News";
+  return `A stunning 3D crypto news thumbnail about ${c}. Bold 3D neon text that says 'CRYPTO NEWS' floating over a sleek futuristic background. Cyberpunk lighting, high quality.`;
 }
 
 /** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
@@ -436,7 +441,7 @@ async function generateAndStoreThumbnail(
 ): Promise<string | null> {
   if (process.env.GENERATE_THUMBNAILS !== "true") return null;
 
-  const prompt = buildThumbnailPrompt(article);
+  const prompt = await buildDynamicThumbnailPrompt(article);
   const seed = hashStringToInt(article.article_id);
 
   console.log(`🎨 Generating thumbnail for: "${(article.headline || article.title || "").slice(0, 50)}..."`);
