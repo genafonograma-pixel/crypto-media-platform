@@ -442,7 +442,6 @@ async function generateAndStoreThumbnail(
   if (process.env.GENERATE_THUMBNAILS !== "true") return null;
 
   const prompt = await buildDynamicThumbnailPrompt(article);
-  const seed = hashStringToInt(article.article_id);
 
   console.log(`🎨 Generating thumbnail for: "${(article.headline || article.title || "").slice(0, 50)}..."`);
 
