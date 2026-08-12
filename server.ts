@@ -430,7 +430,7 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
 async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
   if (!process.env.GEMINI_API_KEY) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
