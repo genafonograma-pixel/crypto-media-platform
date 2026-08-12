@@ -117,7 +117,10 @@ async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
   }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
   const parsed = safeParseJSON(text);
-  if (!parsed) throw new Error("Gemini returned unparseable JSON");
+  if (!parsed) {
+    console.error("Gemini returned unparseable JSON. Raw text:", text);
+    throw new Error("Gemini returned unparseable JSON");
+  }
   return parsed;
 }
 
@@ -139,7 +142,10 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
   const data = await res.json();
   const rawText = data.choices?.[0]?.message?.content?.trim() || "{}";
   const parsed = safeParseJSON(rawText);
-  if (!parsed) throw new Error("OpenRouter returned unparseable JSON");
+  if (!parsed) {
+    console.error("OpenRouter returned unparseable JSON. Raw text:", rawText);
+    throw new Error("OpenRouter returned unparseable JSON");
+  }
   return parsed;
 }
 
