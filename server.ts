@@ -42,46 +42,114 @@ type AIResult = {
   research_data?: any;
 };
 
+// ─── Gemini Key Rotation ─────────────────────────────────────────────────────
+// Load all available Gemini keys from env (GEMINI_API_KEY, GEMINI_API_KEY_2, etc.)
+const GEMINI_KEYS: string[] = [
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_2,
+  process.env.GEMINI_API_KEY_3,
+  process.env.GEMINI_API_KEY_4,
+  process.env.GEMINI_API_KEY_5,
+].filter(Boolean) as string[];
+
+const exhaustedKeys = new Set<string>(); // keys that hit 429 today
+let geminiKeyIndex = 0;
+
+function getNextGeminiKey(): string | null {
+  // Find the next non-exhausted key, cycling through all
+  for (let i = 0; i < GEMINI_KEYS.length; i++) {
+    const idx = (geminiKeyIndex + i) % GEMINI_KEYS.length;
+    if (!exhaustedKeys.has(GEMINI_KEYS[idx])) {
+      geminiKeyIndex = (idx + 1) % GEMINI_KEYS.length;
+      return GEMINI_KEYS[idx];
+    }
+  }
+  return null; // all keys exhausted
+}
+
+async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    })
+  });
+  const data = await res.json();
+  if (data.error) {
+    const code = data.error.code;
+    if (code === 429) {
+      exhaustedKeys.add(apiKey);
+      throw new Error(`QUOTA_EXHAUSTED:${apiKey}`);
+    }
+    throw new Error(`Gemini error ${code}: ${data.error.message}`);
+  }
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
+  return JSON.parse(text);
+}
+
+async function runOpenRouterPrompt(prompt: string): Promise<any> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "HTTP-Referer": "https://crypto-media-platform.onrender.com",
+      "X-Title": "Crypto Media",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "openrouter/free",
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${res.statusText}`);
+  const data = await res.json();
+  let rawText = data.choices?.[0]?.message?.content?.trim() || "{}";
+  if (rawText.startsWith("```json")) rawText = rawText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
+  else if (rawText.startsWith("```")) rawText = rawText.replace(/^```\n?/, "").replace(/\n?```$/, "");
+  return JSON.parse(rawText);
+}
+
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
 async function runAIPrompt(prompt: string) {
-  try {
-    const aiPromise = fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://crypto-media-platform.onrender.com",
-        "X-Title": "Crypto Media",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openrouter/free",
-        messages: [
-          { role: "user", content: prompt }
-        ]
-      })
-    }).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-      return r.json();
-    });
-    
-    // Add a 120s timeout to prevent hanging
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("AI request timed out after 120s")), 120000);
-    });
-    
-    const response = await Promise.race([aiPromise, timeoutPromise]) as any;
-    let rawText = response.choices?.[0]?.message?.content?.trim() || "{}";
-    
-    if (rawText.startsWith("```json"))
-      rawText = rawText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    else if (rawText.startsWith("```"))
-      rawText = rawText.replace(/^```\n?/, "").replace(/\n?```$/, "");
-      
-    return JSON.parse(rawText);
-  } catch (err) {
-    console.error(`AI prompt failed: ${(err as Error).message}`);
-    return null;
+  const timeoutMs = 120000;
+  const withTimeout = (p: Promise<any>) => Promise.race([
+    p,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("AI request timed out after 120s")), timeoutMs)
+    )
+  ]);
+
+  // Try Gemini keys first (rotating through all)
+  while (GEMINI_KEYS.length > 0) {
+    const key = getNextGeminiKey();
+    if (!key) break; // all Gemini keys exhausted
+    try {
+      console.log(`🔑 Using Gemini key ...${key.slice(-6)} (${exhaustedKeys.size}/${GEMINI_KEYS.length} exhausted)`);
+      const result = await withTimeout(runGeminiPrompt(prompt, key));
+      return result;
+    } catch (err: any) {
+      if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
+        console.warn(`⚠️ Gemini key ...${key.slice(-6)} hit quota — trying next key`);
+        continue; // try next key
+      }
+      console.error(`AI prompt failed (Gemini): ${err.message}`);
+      break; // non-quota error, fall through to OpenRouter
+    }
   }
+
+  // Fallback: OpenRouter free tier
+  if (process.env.OPENROUTER_API_KEY) {
+    try {
+      console.log("🔄 Falling back to OpenRouter free tier...");
+      return await withTimeout(runOpenRouterPrompt(prompt));
+    } catch (err: any) {
+      console.error(`AI prompt failed (OpenRouter): ${err.message}`);
+    }
+  }
+
+  return null;
 }
 
 async function processArticleWithAI(
