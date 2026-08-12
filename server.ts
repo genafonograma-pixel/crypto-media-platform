@@ -474,40 +474,56 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
  * Requires IMGBB_API_KEY in .env.
  */
 async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promise<string | null> {
-  const apiKey = process.env.IMGBB_API_KEY;
-  if (!apiKey) {
-    console.error("Missing IMGBB_API_KEY in environment variables. Cannot upload thumbnail.");
-    return null;
-  }
-
   const safeId = articleId.replace(/[^a-zA-Z0-9_-]/g, "_");
   const filename = `${safeId}.jpg`;
 
+  // Try ImgBB if key is present
+  const apiKey = process.env.IMGBB_API_KEY;
+  if (apiKey) {
+    try {
+      const formData = new FormData();
+      formData.append("key", apiKey);
+      formData.append("image", buffer.toString("base64"));
+      formData.append("name", filename);
+
+      const response = await fetch("https://api.imgbb.com/1/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json() as any;
+        if (data && data.data && data.data.url) {
+          return data.data.url;
+        }
+      } else {
+        console.warn(`ImgBB upload failed (${response.status}) — falling back to Catbox.moe`);
+      }
+    } catch (err) {
+      console.warn(`ImgBB upload error — falling back to Catbox.moe: ${(err as Error).message}`);
+    }
+  }
+
+  // Fallback: Catbox.moe (Free, no API key required, datacenter friendly)
   try {
     const formData = new FormData();
-    formData.append("key", apiKey);
-    formData.append("image", buffer.toString("base64"));
-    formData.append("name", filename);
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), filename);
 
-    const response = await fetch("https://api.imgbb.com/1/upload", {
+    const response = await fetch("https://catbox.moe/user/api.php", {
       method: "POST",
       body: formData,
     });
 
-    if (!response.ok) {
-      console.error(`ImgBB upload failed: ${response.status} ${await response.text()}`);
+    if (response.ok) {
+      const url = await response.text();
+      return url.trim();
+    } else {
+      console.error(`Catbox upload failed: ${response.status} ${await response.text()}`);
       return null;
     }
-
-    const data = await response.json() as any;
-    if (data && data.data && data.data.url) {
-      return data.data.url;
-    }
-    
-    console.error("ImgBB upload failed: Missing URL in response", data);
-    return null;
   } catch (err) {
-    console.error(`Failed to upload thumbnail to ImgBB: ${(err as Error).message}`);
+    console.error(`Catbox upload failed: ${(err as Error).message}`);
     return null;
   }
 }
