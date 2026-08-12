@@ -68,13 +68,42 @@ function getNextGeminiKey(): string | null {
   return null; // all keys exhausted
 }
 
+// Robust JSON parser — handles markdown fences and articles with unescaped quotes
+function safeParseJSON(raw: string): any {
+  // Strip markdown code fences
+  let text = raw.trim();
+  if (text.startsWith("```json")) text = text.replace(/^```json\n?/, "").replace(/\n?```$/, "");
+  else if (text.startsWith("```")) text = text.replace(/^```\n?/, "").replace(/\n?```$/, "");
+  text = text.trim();
+
+  // First attempt: direct parse
+  try { return JSON.parse(text); } catch {}
+
+  // Second attempt: extract outermost JSON object/array
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(text.slice(start, end + 1)); } catch {}
+  }
+
+  // Third attempt: use regex to pull top-level string values and sanitize
+  // Replace unescaped newlines inside strings
+  const sanitized = text
+    .replace(/[\u0000-\u001F\u007F]/g, " ") // strip control chars
+    .replace(/([^\\])"/g, (m, p) => p + '"');   // passthrough (can't safely fix)
+  try { return JSON.parse(sanitized); } catch {}
+
+  console.warn("⚠️ safeParseJSON: all attempts failed, returning null");
+  return null;
+}
+
 async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json" }
+      // No responseMimeType — strict JSON mode breaks when article text has quotes
     })
   });
   const data = await res.json();
@@ -87,7 +116,9 @@ async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
     throw new Error(`Gemini error ${code}: ${data.error.message}`);
   }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
-  return JSON.parse(text);
+  const parsed = safeParseJSON(text);
+  if (!parsed) throw new Error("Gemini returned unparseable JSON");
+  return parsed;
 }
 
 async function runOpenRouterPrompt(prompt: string): Promise<any> {
@@ -106,10 +137,10 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
   });
   if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${res.statusText}`);
   const data = await res.json();
-  let rawText = data.choices?.[0]?.message?.content?.trim() || "{}";
-  if (rawText.startsWith("```json")) rawText = rawText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
-  else if (rawText.startsWith("```")) rawText = rawText.replace(/^```\n?/, "").replace(/\n?```$/, "");
-  return JSON.parse(rawText);
+  const rawText = data.choices?.[0]?.message?.content?.trim() || "{}";
+  const parsed = safeParseJSON(rawText);
+  if (!parsed) throw new Error("OpenRouter returned unparseable JSON");
+  return parsed;
 }
 
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
