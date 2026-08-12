@@ -358,7 +358,7 @@ Return ONLY a JSON object:
 
 // ─── Thumbnail Generation ────────────────────────────────────────────────────
 
-/** Uses Gemini to generate a custom, highly specific image prompt including text overlay */
+/** Uses Gemini to generate a custom, highly specific text-free conceptual image prompt */
 async function buildDynamicThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): Promise<string> {
   const title = article.headline || article.title || "";
   
@@ -367,20 +367,19 @@ Write a creative image generation prompt for the following headline: "${title}"
 Classification: "${article.classification || 'News'}"
 
 INSTRUCTIONS:
-1. Extract a punchy, bold 1 to 3 word phrase that summarizes the headline (e.g., "SEC LAWSUIT", "BITCOIN CRASH").
-2. Describe a visually stunning, premium 3D or realistic scene that matches the news.
-3. Explicitly instruct the renderer to overlay the exact phrase in bold typography. (e.g. "Bold 3D neon text that says 'BITCOIN CRASH' floating over...").
+1. Describe a visually stunning, premium 3D or realistic conceptual illustration that matches the news.
+2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
+3. Use keywords like: cinematic lighting, ultra-high quality, 8k resolution, editorial style, photorealistic 3D render.
 4. Return ONLY a JSON object:
 {
-  "text_overlay": "string",
   "image_prompt": "string"
 }`;
 
   try {
     const res = await runAIPrompt(aiPrompt);
     if (res && res.image_prompt) {
-      // Ensure the generated prompt includes the text phrase since Flux needs strict instructions
-      return res.image_prompt + ". The exact text must be clearly visible and readable.";
+      // Ensure the generated prompt includes the strict no-text instruction for Flux
+      return res.image_prompt + ". The image MUST be completely text-free. NO words, NO letters, NO typography.";
     }
   } catch (e) {
     console.error("Failed to generate dynamic thumbnail prompt:", e);
@@ -388,7 +387,7 @@ INSTRUCTIONS:
 
   // Fallback
   const c = article.classification || "Crypto News";
-  return `A stunning 3D crypto news thumbnail about ${c}. Bold 3D neon text that says 'CRYPTO NEWS' floating over a sleek futuristic background. Cyberpunk lighting, high quality.`;
+  return `A stunning 3D conceptual illustration about ${c}. Sleek futuristic background, cyberpunk lighting, high quality, completely text-free, NO words.`;
 }
 
 /** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
