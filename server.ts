@@ -88,7 +88,7 @@ async function processArticleWithAI(
   sourceName: string,
   category?: string
 ): Promise<AIResult> {
-  if (!genAI)
+  if (!AIMLAPI_KEY)
     return {
       summary: null,
       rewritten_content: null,
