@@ -6,7 +6,6 @@ import Parser from "rss-parser";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import sanitizeHtml from "sanitize-html";
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs/promises";
 import ws from "ws";
@@ -30,9 +29,7 @@ if (supabase) {
 }
 
 // ─── Gemini AI Client ────────────────────────────────────────────────────────
-const genAI = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-  : null;
+const AIMLAPI_KEY = "cad8b506d7762174c0413f528d17094e";
 
 type AIResult = {
   summary: { label: string; text: string }[] | null;
@@ -47,24 +44,37 @@ type AIResult = {
 
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
 async function runAIPrompt(prompt: string) {
-  if (!genAI) return null;
   try {
-    const aiPromise = genAI.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
+    const aiPromise = fetch("https://api.aimlapi.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${AIMLAPI_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemma-3-27b-it",
+        messages: [
+          { role: "user", content: prompt }
+        ]
+      })
+    }).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+      return r.json();
     });
     
     // Add a 45s timeout to prevent hanging
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Gemini AI request timed out after 45s")), 45000);
+      setTimeout(() => reject(new Error("AI request timed out after 45s")), 45000);
     });
     
     const response = await Promise.race([aiPromise, timeoutPromise]) as any;
-    let rawText = response.text?.trim() || "{}";
+    let rawText = response.choices?.[0]?.message?.content?.trim() || "{}";
+    
     if (rawText.startsWith("```json"))
       rawText = rawText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
     else if (rawText.startsWith("```"))
       rawText = rawText.replace(/^```\n?/, "").replace(/\n?```$/, "");
+      
     return JSON.parse(rawText);
   } catch (err) {
     console.error(`AI prompt failed: ${(err as Error).message}`);
@@ -817,8 +827,8 @@ export async function runAIPipeline(): Promise<{
         console.log("Daily AI quota reached. Stopping.");
         break;
       }
-      if (!genAI) {
-        console.error("❌ FATAL: genAI is null — GEMINI_API_KEY not set in environment. Pipeline cannot continue.");
+      if (!AIMLAPI_KEY) {
+        console.error("❌ FATAL: AIMLAPI_KEY is null. Pipeline cannot continue.");
         break;
       }
 
@@ -1035,7 +1045,7 @@ app.get("/api/logs", (req, res) => {
       generate_thumbnails: process.env.GENERATE_THUMBNAILS,
       process_secret_set: !!process.env.PROCESS_SECRET,
       node_env: process.env.NODE_ENV,
-      genai_initialized: !!genAI,
+      genai_initialized: !!AIMLAPI_KEY,
     });
   });
 
