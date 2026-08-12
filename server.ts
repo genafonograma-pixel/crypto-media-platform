@@ -864,10 +864,26 @@ async function runAIPipeline(): Promise<{ processed: number; skipped: number; qu
         article.category?.[0]
       );
 
-      // Use original image from RSS source — keep real editorial photos from publishers
-      const finalImageUrl = article.image_url;
+      // CRITICAL: Only save if AI actually ran. If quality_score is null it means
+      // the AI failed completely (rate limit, timeout, etc.) — skip saving so
+      // the article can be retried on the next pipeline run.
+      if (aiResult.quality_score === null && aiResult.rewritten_content === null) {
+        console.log(`⚠️ AI failed for "${article.title?.slice(0, 50)}" — skipping save, will retry next run.`);
+        continue;
+      }
 
-      // Save to DB regardless of quality (so we don't re-process rejected articles)
+      // Generate thumbnail via Cloudflare AI
+      const thumbnailUrl = await generateAndStoreThumbnail({
+        article_id: article.article_id,
+        headline: aiResult.headline,
+        title: article.title,
+        classification: aiResult.classification,
+      });
+
+      // Use Cloudflare thumbnail if generated, else fall back to original RSS image
+      const finalImageUrl = thumbnailUrl || article.image_url;
+
+      // Save to DB — AI rejected articles (score < 70) are saved so we don't re-process them
       await saveArticleToDB({
         ...article,
         image_url: finalImageUrl,
