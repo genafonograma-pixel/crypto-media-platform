@@ -29,7 +29,7 @@ if (supabase) {
 }
 
 // ─── Gemini AI Client ────────────────────────────────────────────────────────
-const AIMLAPI_KEY = "cad8b506d7762174c0413f528d17094e";
+
 
 type AIResult = {
   summary: { label: string; text: string }[] | null;
@@ -90,7 +90,7 @@ async function processArticleWithAI(
   sourceName: string,
   category?: string
 ): Promise<AIResult> {
-  if (!AIMLAPI_KEY)
+  if (!process.env.OPENROUTER_API_KEY)
     return {
       summary: null,
       rewritten_content: null,
@@ -829,8 +829,8 @@ export async function runAIPipeline(): Promise<{
         console.log("Daily AI quota reached. Stopping.");
         break;
       }
-      if (!AIMLAPI_KEY) {
-        console.error("❌ FATAL: AIMLAPI_KEY is null. Pipeline cannot continue.");
+      if (!process.env.OPENROUTER_API_KEY) {
+        console.error("❌ FATAL: OPENROUTER_API_KEY is null. Pipeline cannot continue.");
         break;
       }
 
@@ -1047,7 +1047,7 @@ app.get("/api/logs", (req, res) => {
       generate_thumbnails: process.env.GENERATE_THUMBNAILS,
       process_secret_set: !!process.env.PROCESS_SECRET,
       node_env: process.env.NODE_ENV,
-      genai_initialized: !!AIMLAPI_KEY,
+      genai_initialized: !!process.env.OPENROUTER_API_KEY,
     });
   });
 
