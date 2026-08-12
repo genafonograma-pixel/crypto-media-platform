@@ -50,7 +50,7 @@ async function runAIPrompt(prompt: string) {
   if (!genAI) return null;
   try {
     const aiPromise = genAI.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
     
