@@ -45,13 +45,16 @@ type AIResult = {
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
 async function runAIPrompt(prompt: string) {
   try {
-    const aiPromise = fetch("https://text.pollinations.ai/openai", {
+    const aiPromise = fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://crypto-media-platform.onrender.com",
+        "X-Title": "Crypto Media",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai",
+        model: "openrouter/free",
         messages: [
           { role: "user", content: prompt }
         ]
