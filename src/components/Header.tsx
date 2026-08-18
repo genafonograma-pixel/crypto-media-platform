@@ -7,8 +7,12 @@ export default function Header() {
       <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 flex items-center justify-between h-full">
         
         {/* Logo */}
-        <a href="/" className="text-xl font-black tracking-tighter uppercase italic text-[#F5F5F5] shrink-0">
-          Crypto<span className="text-[#3B82F6]">Standard</span>
+        <a href="/" className="shrink-0 flex items-center">
+          <img
+            src="/crypton_logo.svg"
+            alt="Crypton"
+            className="h-12 w-auto"
+          />
         </a>
 
         {/* Categories (Desktop) */}
