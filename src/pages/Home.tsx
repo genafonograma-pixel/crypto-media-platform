@@ -240,7 +240,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title="CryptoStandard - Latest Cryptocurrency News" />
+      <SEO title="Crypton - Latest Cryptocurrency News" />
       <Header />
       <MarketMovers />
 

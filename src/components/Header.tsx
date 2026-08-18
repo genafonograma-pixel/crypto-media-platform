@@ -43,7 +43,7 @@ export default function Header() {
             RSS
           </a>
           <a
-            href="https://t.me/cryptostandard"
+            href="https://t.me/crypton"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#555] hover:text-[#229ED9] transition-colors"
@@ -51,7 +51,7 @@ export default function Header() {
             Telegram
           </a>
           <a
-            href="https://x.com/cryptostandard"
+            href="https://x.com/crypton"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#555] hover:text-[#F5F5F5] transition-colors"

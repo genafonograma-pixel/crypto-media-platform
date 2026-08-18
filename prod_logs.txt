@@ -1,0 +1,200 @@
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Dinari Opens 724 Tokenized US Stocks to Eligible U" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Mastercard Extends Crypto Credential to Cross-Bord..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Mastercard Extends Crypto Credential to Cross-Bord" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Western Union and Rain Launch Stablecoin Card in 3..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Western Union and Rain Launch Stablecoin Card in 3" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "New Ethereum Proposal Would Burn Validator Rewards..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "New Ethereum Proposal Would Burn Validator Rewards" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Wells Fargo to Launch Tokenized Deposits for Corpo..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Wells Fargo to Launch Tokenized Deposits for Corpo" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "BitGo Names Chainlink CCIP Exclusive Cross-Chain P..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "BitGo Names Chainlink CCIP Exclusive Cross-Chain P" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "BitMine Buys 10,399 More ETH but Reported Holdings..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "BitMine Buys 10,399 More ETH but Reported Holdings" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Bitcoin Bridge Boltz Halts Swaps Indefinitely, Cit..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Bitcoin Bridge Boltz Halts Swaps Indefinitely, Cit" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Tornado Cash Logs 968 Deposits in Busiest Day of 2..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Tornado Cash Logs 968 Deposits in Busiest Day of 2" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Flap Overtakes Pump.fun in Daily Revenue With $1.1..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Flap Overtakes Pump.fun in Daily Revenue With $1.1" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "RWAs Topped Half of Hyperliquid's Volume for Two S..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "RWAs Topped Half of Hyperliquid's Volume for Two S" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Crypto Card Volume Hits $748.7M in July, a Fifth S..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Crypto Card Volume Hits $748.7M in July, a Fifth S" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Strategy Sells 1,638 Bitcoin for $105M, Splits Pro..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Strategy Sells 1,638 Bitcoin for $105M, Splits Pro" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Coldcard Thefts Near $114 Million as Fourth Attack..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Coldcard Thefts Near $114 Million as Fourth Attack" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Metronome Discloses $15.7 Million Synth Shortfall,..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Metronome Discloses $15.7 Million Synth Shortfall," — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Coinbase Says Revenue From Its Base Layer 2 Fell D..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Coinbase Says Revenue From Its Base Layer 2 Fell D" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Polygon Turns Kansai Electric Loyalty Points Into ..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Polygon Turns Kansai Electric Loyalty Points Into " — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Uniswap Protocol Revenue Nearly Triples After v4 F..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Uniswap Protocol Revenue Nearly Triples After v4 F" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Ready Shuts Card Program After Issuer Kulipa's Sud..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Ready Shuts Card Program After Issuer Kulipa's Sud" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Banco Santander Discloses Spot Bitcoin ETF Stake i..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Banco Santander Discloses Spot Bitcoin ETF Stake i" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "US Sanctions Iranian Marine Insurers Taking Bitcoi..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "US Sanctions Iranian Marine Insurers Taking Bitcoi" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Aave Moves to Retire 50 Low-Adoption Assets, Wind ..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Aave Moves to Retire 50 Low-Adoption Assets, Wind " — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Lightning Labs Launches Site for L402 Bitcoin Agen..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Lightning Labs Launches Site for L402 Bitcoin Agen" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Active Crypto VC Firms Fall to 150, Lowest Since 2..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Active Crypto VC Firms Fall to 150, Lowest Since 2" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Morgan Stanley Launches Spot Ether, Solana ETPs on..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Morgan Stanley Launches Spot Ether, Solana ETPs on" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "SoFi Says SoFiUSD Settlement Now Live on Q2 Earnin..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "SoFi Says SoFiUSD Settlement Now Live on Q2 Earnin" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "The Strategy playbook looks different in 2026..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "The Strategy playbook looks different in 2026" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "ETH derivatives reset and the next retail trade..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "ETH derivatives reset and the next retail trade" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "DePIN and crypto gaming led a surprising end-of-ye..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "DePIN and crypto gaming led a surprising end-of-ye" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "The long wait for crypto’s “coffee pot” moment..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "The long wait for crypto’s “coffee pot” moment" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Failure is an option in crypto finance..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Failure is an option in crypto finance" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Yield Basis is making native BTC yield a reality..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Yield Basis is making native BTC yield a reality" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Gold and silver won 2025..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Gold and silver won 2025" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Grinch rally: Crypto indices track lower through t..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Grinch rally: Crypto indices track lower through t" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "A holiday guide to explaining crypto to your relat..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "A holiday guide to explaining crypto to your relat" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Coinbase embeds Solana trading..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Coinbase embeds Solana trading" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "The network is the innovation..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "The network is the innovation" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "A man’s blockchain is his castle..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "A man’s blockchain is his castle" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Links: Trading, valuations, and the end of crypto’..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Links: Trading, valuations, and the end of crypto’" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Fixing crypto’s broken investor relations..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Fixing crypto’s broken investor relations" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Blockworks launches investor relations platform wi..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Blockworks launches investor relations platform wi" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "ETFs flash a bid, HumidiFi tokenizes..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "ETFs flash a bid, HumidiFi tokenizes" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Rangebound markets, resilient onchain lending..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Rangebound markets, resilient onchain lending" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "The productivity bull case for almost everything..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "The productivity bull case for almost everything" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Risk back on the table as crypto ETFs bounce back..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Risk back on the table as crypto ETFs bounce back" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Solana tokens see gains amidst weeklong crypto slu..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Solana tokens see gains amidst weeklong crypto slu" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Too funded to fail: Crypto needs a forest fire..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Too funded to fail: Crypto needs a forest fire" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Ethereum’s Fusaka upgrade lands today..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Ethereum’s Fusaka upgrade lands today" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "The sci-fi future of onchain assets and smart lock..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "The sci-fi future of onchain assets and smart lock" — skipping, will retry next run.
+[LOG] 🤖 AI processing: "Strategy stress, liquidity strain..." (Quota: 29/200)
+[LOG] 🔄 Falling back to OpenRouter free tier...
+[ERR] AI prompt failed (OpenRouter): OpenRouter HTTP 404: Not Found
+[ERR] ⚠️ AI returned null for "Strategy stress, liquidity strain" — skipping, will retry next run.
+[LOG] ✅ Pipeline complete. Processed: 0, Skipped: 6, Quota used: 28/200

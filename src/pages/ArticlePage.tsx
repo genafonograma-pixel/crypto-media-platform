@@ -240,7 +240,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
   }
 
   const displayTitle = article.headline || article.title;
-  const displaySeoTitle = article.seo_title || `${displayTitle} - CryptoStandard`;
+  const displaySeoTitle = article.seo_title || `${displayTitle} - Crypton`;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans pb-[90px]">

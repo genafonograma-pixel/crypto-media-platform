@@ -18,7 +18,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
       <SEO
-        title={`${AUTHOR.name} - Senior Markets Reporter | CryptoStandard`}
+        title={`${AUTHOR.name} - Senior Markets Reporter | Crypton`}
         description={AUTHOR.shortBio}
         image=""
         type="website"
@@ -46,7 +46,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
                 {AUTHOR.name}
               </h1>
               <p className="text-sm text-[#888] mb-5">
-                Member since {AUTHOR.joined} &nbsp;·&nbsp; CryptoStandard
+                Member since {AUTHOR.joined} &nbsp;&middot;&nbsp; Crypton
               </p>
               <div className="flex items-center gap-4">
                 <a

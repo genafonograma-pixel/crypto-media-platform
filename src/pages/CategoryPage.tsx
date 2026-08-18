@@ -74,7 +74,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title={`${activeCategory || 'Category'} News - CryptoStandard`} />
+      <SEO title={`${activeCategory || 'Category'} News - Crypton`} />
       <Header />
       
       <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-12">

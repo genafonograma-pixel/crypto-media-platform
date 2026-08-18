@@ -38,7 +38,7 @@ export default function Footer() {
         </div>
         <div className="mt-16 pt-8 border-t border-[#222] flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-[9px] font-bold text-[#444] uppercase tracking-widest">
-            &copy; {new Date().getFullYear()} CryptoStandard Media Group. All rights reserved.
+            &copy; {new Date().getFullYear()} Crypton Media Group. All rights reserved.
           </div>
           <div className="flex gap-8">
             <a href="#" className="text-[9px] font-bold text-[#444] uppercase hover:text-white transition-colors">Privacy Policy</a>
