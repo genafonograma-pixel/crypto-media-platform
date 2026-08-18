@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" fill="none">
+  <!-- CRYPT text -->
+  <text
+    x="2"
+    y="62"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="62"
+    fill="#FFFFFF"
+    letter-spacing="-1"
+  >CRYPT</text>
+
+  <!-- Hollow 'O' icon -->
+  <circle
+    cx="259"
+    cy="40"
+    r="23"
+    stroke="#3B82F6"
+    stroke-width="8"
+    fill="none"
+  />
+
+  <!-- N text -->
+  <text
+    x="287"
+    y="62"
+    font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="62"
+    fill="#FFFFFF"
+    letter-spacing="-1"
+  >N</text>
+</svg>
+
