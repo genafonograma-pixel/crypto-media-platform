@@ -75,6 +75,141 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     });
   }
 
+  // Transform FAQ sections into interactive accordions
+  function transformFAQ(html: string): string {
+    if (typeof window === 'undefined') return html;
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const headers = Array.from(doc.querySelectorAll('h2, h3, h4')).filter(h => 
+        h.textContent && (
+          h.textContent.toLowerCase().includes('faq') || 
+          h.textContent.toLowerCase().includes('frequently asked')
+        )
+      );
+      
+      headers.forEach(faqHeader => {
+        const headerLevel = parseInt(faqHeader.tagName.substring(1));
+        
+        // Style the FAQ header
+        const wrapper = doc.createElement('div');
+        wrapper.className = 'border-l-4 border-amber-400 pl-4 mb-8 mt-16 not-prose';
+        const newHeader = doc.createElement(faqHeader.tagName);
+        newHeader.className = 'text-2xl font-black uppercase tracking-tight text-[#F5F5F5] m-0';
+        newHeader.innerHTML = faqHeader.innerHTML;
+        wrapper.appendChild(newHeader);
+        
+        faqHeader.parentNode?.insertBefore(wrapper, faqHeader);
+        faqHeader.parentNode?.removeChild(faqHeader);
+        
+        let currentNode = wrapper.nextElementSibling;
+        
+        while (currentNode) {
+          // Stop if we hit a heading of the same or higher level (smaller number)
+          if (currentNode.tagName.match(/^H[1-6]$/)) {
+            const currentLevel = parseInt(currentNode.tagName.substring(1));
+            if (currentLevel <= headerLevel) break;
+          }
+          
+          let isQuestion = false;
+          let questionText = '';
+          
+          if (currentNode.tagName.match(/^H[1-6]$/)) {
+            const currentLevel = parseInt(currentNode.tagName.substring(1));
+            if (currentLevel > headerLevel) {
+              isQuestion = true;
+              questionText = currentNode.textContent || '';
+            }
+          } else if (currentNode.tagName === 'P') {
+            const strong = currentNode.querySelector('strong');
+            if (strong && strong.textContent && strong.textContent.length > (currentNode.textContent?.length || 0) * 0.5) {
+               isQuestion = true;
+               questionText = currentNode.textContent || '';
+            }
+          }
+          
+          if (isQuestion) {
+             let answerNodes: Element[] = [];
+             let nextNode = currentNode.nextElementSibling;
+             
+             while (nextNode) {
+               let isNextQuestion = false;
+               if (nextNode.tagName.match(/^H[1-6]$/)) {
+                  isNextQuestion = true;
+               } else if (nextNode.tagName === 'P' && nextNode.querySelector('strong')) {
+                  const s = nextNode.querySelector('strong');
+                  if (s && s.textContent && s.textContent.length > (nextNode.textContent?.length || 0) * 0.5) {
+                     isNextQuestion = true;
+                  }
+               }
+               
+               // Stop collecting answers if we hit the next question or the end of the section
+               if (isNextQuestion) break;
+               
+               answerNodes.push(nextNode);
+               nextNode = nextNode.nextElementSibling;
+             }
+             
+             if (answerNodes.length > 0) {
+                const details = doc.createElement('details');
+                details.className = 'group mb-4 border border-[#222] bg-[#0A0A0A] rounded-xl overflow-hidden transition-all not-prose';
+                
+                const summary = doc.createElement('summary');
+                summary.className = 'flex items-center justify-between p-5 cursor-pointer list-none font-bold text-[#E5E5E5] text-[13px] uppercase tracking-wide hover:bg-[#111] transition-colors';
+                summary.style.listStyle = 'none';
+                
+                const qSpan = doc.createElement('span');
+                qSpan.textContent = questionText;
+                qSpan.className = 'pr-4 leading-snug';
+                
+                const iconPlus = doc.createElement('span');
+                iconPlus.className = 'text-amber-400 font-bold text-xl group-open:hidden leading-none shrink-0';
+                iconPlus.innerHTML = '&#43;'; // +
+                
+                const iconMinus = doc.createElement('span');
+                iconMinus.className = 'text-amber-400 font-bold text-xl hidden group-open:inline leading-none shrink-0';
+                iconMinus.innerHTML = '&#215;'; // x
+                
+                summary.appendChild(qSpan);
+                summary.appendChild(iconPlus);
+                summary.appendChild(iconMinus);
+                
+                const contentDiv = doc.createElement('div');
+                contentDiv.className = 'px-5 pb-5 pt-2 text-[#aaa] text-sm leading-relaxed border-t border-[#1a1a1a]';
+                
+                answerNodes.forEach(node => {
+                  contentDiv.appendChild(node.cloneNode(true));
+                  node.parentNode?.removeChild(node);
+                });
+                
+                details.appendChild(summary);
+                details.appendChild(contentDiv);
+                
+                currentNode.parentNode?.insertBefore(details, currentNode);
+                const oldCurrent = currentNode;
+                currentNode = details.nextElementSibling;
+                oldCurrent.parentNode?.removeChild(oldCurrent);
+                continue;
+             }
+          }
+          
+          currentNode = currentNode.nextElementSibling;
+        }
+      });
+      
+      const style = doc.createElement('style');
+      style.innerHTML = `details > summary::-webkit-details-marker { display: none; }`;
+      doc.body.appendChild(style);
+      
+      return doc.body.innerHTML;
+    } catch (e) {
+      console.error("Error transforming FAQ", e);
+      return html;
+    }
+  }
+
   if (loading && !article) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
@@ -220,7 +355,8 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                     return <div className="text-lg leading-relaxed text-[#CCC] italic">No content available for this article.</div>;
                   }
 
-                  const finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
+                  let finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
+                  finalHTML = transformFAQ(finalHTML);
 
                   return (
                     <div className={article.rewritten_content ? 'font-light' : ''}>
