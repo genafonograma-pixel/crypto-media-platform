@@ -1011,8 +1011,8 @@ export async function runAIPipeline(): Promise<{
           classification: aiResult.classification,
         });
 
-        // Use Cloudflare thumbnail if generated, else fall back to original RSS image
-        const finalImageUrl = thumbnailUrl || article.image_url;
+        // NEVER use scraped original images. If AI generation completely fails (due to quota/timeout), use a generic pixel art fallback.
+        const finalImageUrl = thumbnailUrl || "https://files.catbox.moe/2k119g.jpg";
 
         // Save to DB
         await saveArticleToDB({
