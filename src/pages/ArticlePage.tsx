@@ -89,13 +89,23 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     });
   }
 
-  // Transform FAQ sections into interactive accordions
-  function transformFAQ(html: string): string {
+  // Transform FAQ sections into interactive accordions and make external links open in a new tab
+  function transformArticleContent(html: string): string {
     if (typeof window === 'undefined') return html;
     
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
+
+      // Make all external links open in a new tab
+      const links = doc.querySelectorAll('a');
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+          link.setAttribute('target', '_blank');
+          link.setAttribute('rel', 'noopener noreferrer');
+        }
+      });
       
       const headers = Array.from(doc.querySelectorAll('h2, h3, h4')).filter(h => 
         h.textContent && (
@@ -235,7 +245,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       
       return doc.body.innerHTML;
     } catch (e) {
-      console.error("Error transforming FAQ", e);
+      console.error("Error transforming HTML content", e);
       return html;
     }
   }
@@ -388,7 +398,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                   }
 
                   let finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
-                  finalHTML = transformFAQ(finalHTML);
+                  finalHTML = transformArticleContent(finalHTML);
 
                   return (
                     <div className={article.rewritten_content ? 'font-light' : ''}>
