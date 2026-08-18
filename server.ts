@@ -168,8 +168,9 @@ async function runAIPrompt(prompt: string) {
       const result = await withTimeout(runGeminiPrompt(prompt, key));
       return result;
     } catch (err: any) {
-      if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
-        console.warn(`⚠️ Gemini key ...${key.slice(-6)} hit quota — trying next key`);
+      if (err.message?.startsWith("QUOTA_EXHAUSTED") || err.message?.includes("503")) {
+        console.warn(`⚠️ Gemini key ...${key.slice(-6)} failed (${err.message}) — waiting 2s and trying next key`);
+        await delay(2000); // give the API a tiny breather
         continue; // try next key
       }
       console.error(`AI prompt failed (Gemini): ${err.message}`);
