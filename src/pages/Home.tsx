@@ -1,8 +1,10 @@
 import React from 'react';
-import { Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, ChevronRight, Flame, TrendingUp } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import MarketMovers from '../components/MarketMovers';
+import MarketWatch from '../components/MarketWatch';
 import SEO from '../components/SEO';
 import type { Article } from '../types';
 import { generateSlug } from '../utils';
@@ -23,123 +25,189 @@ function formatTimeAgo(dateStr: string) {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
 }
 
-interface NewsCardProps {
-  article: Article;
-  variant?: 'hero' | 'wide' | 'tall' | 'normal' | 'list';
+function formatDate(dateStr: string) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(dateStr));
 }
 
-const NewsCard: React.FC<NewsCardProps> = ({ article, variant = 'normal' }) => {
+function getArticleHref(article: Article) {
   const displayTitle = article.headline || article.title;
-  const slug = generateSlug(displayTitle);
-  const classification = (article as any).classification || article.category?.[0] || 'News';
+  return `/article/${encodeURIComponent(article.article_id)}/${generateSlug(displayTitle)}`;
+}
 
-  const baseClasses = "group block relative overflow-hidden rounded-lg bg-[#111] transition-transform duration-300";
-  
-  if (variant === 'list') {
-    return (
-      <a href={`/article/${encodeURIComponent(article.article_id)}/${slug}`} className="group flex gap-3 py-3 border-b border-[#1a1a1a] last:border-0 hover:bg-[#111] -mx-2 px-2 rounded transition-colors">
-        {article.image_url && (
-          <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded bg-[#111]">
-            <img
-              src={article.image_url}
-              alt={displayTitle}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          </div>
-        )}
-        <div className="flex-1 min-w-0 py-1">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] mb-1 block">{classification}</span>
-          <h3 className="text-sm font-semibold text-[#E0E0E0] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-1">
-            {displayTitle}
-          </h3>
-          <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={10} />{formatTimeAgo(article.pubDate)}</span>
-        </div>
-      </a>
-    );
-  }
+function getClassification(article: Article) {
+  return (article as any).classification || article.category?.[0] || 'News';
+}
 
-  // Layout logic for bento box sizes
-  let wrapperClasses = baseClasses;
-  let imgWrapperClasses = "relative w-full overflow-hidden";
-  let contentClasses = "p-4";
-  let titleClasses = "font-bold text-[#F0F0F0] group-hover:text-[#3B82F6] transition-colors leading-snug";
-  let showDescription = false;
-  let isOverlay = false;
-
-  switch (variant) {
-    case 'hero':
-      wrapperClasses += " col-span-1 md:col-span-2 lg:col-span-2 row-span-2 h-full min-h-[300px] md:min-h-[400px]";
-      imgWrapperClasses = "absolute inset-0 w-full h-full";
-      contentClasses = "absolute bottom-0 left-0 right-0 p-6 md:p-8 z-10";
-      titleClasses = "text-xl md:text-3xl font-bold text-white group-hover:text-[#93C5FD] transition-colors leading-tight mb-3 line-clamp-3";
-      showDescription = true;
-      isOverlay = true;
-      break;
-    case 'wide':
-      wrapperClasses += " col-span-1 md:col-span-2 lg:col-span-2 row-span-1 flex flex-col sm:flex-row h-full min-h-[160px]";
-      imgWrapperClasses = "relative w-full sm:w-2/5 h-48 sm:h-full flex-shrink-0";
-      contentClasses = "p-5 sm:p-6 flex flex-col justify-center flex-1";
-      titleClasses = "text-lg md:text-xl font-bold text-[#F0F0F0] group-hover:text-[#3B82F6] transition-colors leading-snug mb-2 line-clamp-2";
-      showDescription = true;
-      break;
-    case 'tall':
-      wrapperClasses += " col-span-1 row-span-2 flex flex-col h-full min-h-[300px]";
-      imgWrapperClasses = "relative w-full flex-1 min-h-[160px]";
-      contentClasses = "p-5 bg-[#0a0a0a]";
-      titleClasses = "text-lg font-bold text-[#F0F0F0] group-hover:text-[#3B82F6] transition-colors leading-snug mb-2 line-clamp-3";
-      showDescription = true;
-      break;
-    case 'normal':
-    default:
-      wrapperClasses += " col-span-1 row-span-1 flex flex-col h-full";
-      imgWrapperClasses = "relative w-full aspect-[16/9]";
-      contentClasses = "p-4 bg-[#0a0a0a] flex-1 flex flex-col";
-      titleClasses = "text-base font-bold text-[#F0F0F0] group-hover:text-[#3B82F6] transition-colors leading-snug mb-2 line-clamp-2";
-      break;
-  }
-
+// ─── Hero (Breaking Story) ────────────────────────────────────────────────────
+function HeroCard({ article }: { article: Article }) {
+  const displayTitle = article.headline || article.title;
+  const classification = getClassification(article);
   return (
-    <a href={`/article/${encodeURIComponent(article.article_id)}/${slug}`} className={wrapperClasses}>
-      <div className={imgWrapperClasses}>
-        {article.image_url ? (
+    <Link
+      to={getArticleHref(article)}
+      state={{ article }}
+      className="group relative flex flex-col justify-end overflow-hidden rounded-xl min-h-[420px] bg-[#0a0a0a] border border-[#1a1a1a]"
+    >
+      {article.image_url && (
+        <img
+          src={article.image_url}
+          alt={displayTitle}
+          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-700"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      )}
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+      <div className="relative z-10 p-6 md:p-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-400">
+            <Flame size={10} /> Top Breaking Story
+          </span>
+        </div>
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-4 line-clamp-3">
+          {displayTitle}
+        </h2>
+        {article.description && (
+          <p className="text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
+        )}
+        <div className="flex items-center gap-3 text-[11px] text-[#777]">
+          <span className="bg-[#3B82F6] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
+          <span className="flex items-center gap-1"><Clock size={10} />{formatTimeAgo(article.pubDate)}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ─── Secondary Story (right column of hero section) ──────────────────────────
+function SecondaryCard({ article }: { article: Article }) {
+  const displayTitle = article.headline || article.title;
+  const classification = getClassification(article);
+  return (
+    <Link
+      to={getArticleHref(article)}
+      state={{ article }}
+      className="group flex gap-4 p-4 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#111] transition-all"
+    >
+      {article.image_url && (
+        <div className="w-24 h-20 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
           <img
             src={article.image_url}
             alt={displayTitle}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#3B82F6]/20" />
-        )}
-        {isOverlay && <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />}
-      </div>
-      
-      <div className={contentClasses}>
-        <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] mb-2">
-          {classification}
-        </span>
-        <h2 className={titleClasses}>
-          {displayTitle}
-        </h2>
-        {showDescription && article.description && (
-          <p className={`text-sm text-[#999] line-clamp-2 mb-3 ${isOverlay ? 'text-[#ccc]' : ''}`}>{article.description}</p>
-        )}
-        <div className={`flex items-center gap-2 text-[11px] ${isOverlay ? 'text-[#aaa]' : 'text-[#666]'} mt-auto`}>
-          <span className={`font-semibold ${isOverlay ? 'text-[#ddd]' : 'text-[#888]'}`}>Jordan Cole</span>
-          <span>·</span>
-          <span className="flex items-center gap-1"><Clock size={11} />{formatTimeAgo(article.pubDate)}</span>
         </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1">{classification}</span>
+        <h3 className="text-sm font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-3 leading-snug mb-2">
+          {displayTitle}
+        </h3>
+        <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
       </div>
-    </a>
+    </Link>
+  );
+}
+
+// ─── Trending Card (horizontal strip) ────────────────────────────────────────
+function TrendingCard({ article, index }: { article: Article; index: number }) {
+  const displayTitle = article.headline || article.title;
+  const classification = getClassification(article);
+  return (
+    <Link
+      to={getArticleHref(article)}
+      state={{ article }}
+      className="group flex gap-3 p-4 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#0f0f0f] transition-all h-full"
+    >
+      {article.image_url ? (
+        <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
+          <img
+            src={article.image_url}
+            alt={displayTitle}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      ) : (
+        <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-[#111] flex items-center justify-center text-[#222]">
+           <span className="font-black text-xl tracking-tighter opacity-50">CS</span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1.5">{classification}</span>
+        <h3 className="text-sm font-bold text-[#E0E0E0] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
+          {displayTitle}
+        </h3>
+        <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
+      </div>
+    </Link>
+  );
+}
+
+// ─── Main Feed Card (left column) ────────────────────────────────────────────
+function FeedCard({ article }: { article: Article }) {
+  const displayTitle = article.headline || article.title;
+  const classification = getClassification(article);
+  return (
+    <Link
+      to={getArticleHref(article)}
+      state={{ article }}
+      className="group flex gap-5 py-5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
+    >
+      {article.image_url && (
+        <div className="w-28 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
+          <img
+            src={article.image_url}
+            alt={displayTitle}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1.5">{classification}</span>
+        <h3 className="text-base font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
+          {displayTitle}
+        </h3>
+        {article.description && (
+          <p className="text-[13px] text-[#666] line-clamp-1 mb-2">{article.description}</p>
+        )}
+        <span className="text-[10px] text-[#555] flex items-center gap-1 mt-auto"><Clock size={9} />{formatDate(article.pubDate)}</span>
+      </div>
+    </Link>
+  );
+}
+
+// ─── Sidebar Mini Card ────────────────────────────────────────────────────────
+function SidebarCard({ article, index }: { article: Article; index: number }) {
+  const displayTitle = article.headline || article.title;
+  const classification = getClassification(article);
+  return (
+    <Link
+      to={getArticleHref(article)}
+      state={{ article }}
+      className="group flex gap-3 py-3.5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
+    >
+      <span className="text-xl font-black text-[#1e1e1e] group-hover:text-[#252525] transition-colors select-none shrink-0 w-6 text-center mt-0.5">
+        {index + 1}
+      </span>
+      <div className="flex-1 min-w-0">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1">{classification}</span>
+        <h3 className="text-[13px] font-semibold text-[#D5D5D5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug">
+          {displayTitle}
+        </h3>
+        <span className="text-[9px] text-[#555] flex items-center gap-1 mt-1"><Clock size={8} />{formatTimeAgo(article.pubDate)}</span>
+      </div>
+    </Link>
   );
 }
 
 export default function Home({ articles, loading, error }: HomeProps) {
-  // Sort articles by newest first
-  const sortedArticles = [...articles].sort((a, b) => {
-    return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
-  });
+  const sortedArticles = [...articles].sort((a, b) =>
+    new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
 
   if (loading) {
     return (
@@ -153,7 +221,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050505] text-[#F5F5F5] px-4">
-        <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center">
+        <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center rounded-xl">
           <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Error Loading Feed</h2>
           <p className="text-[#888] mb-6 text-sm">{error}</p>
           <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#3B82F6] text-white px-6 py-3 hover:bg-blue-600 rounded transition-colors">
@@ -164,18 +232,11 @@ export default function Home({ articles, loading, error }: HomeProps) {
     );
   }
 
-  // Bento layout mapping:
-  // 0: hero (2x2)
-  // 1: tall (1x2)
-  // 2: normal (1x1)
-  // 3: normal (1x1)
-  // 4: wide (2x1)
-  // 5: normal (1x1)
-  // 6: normal (1x1)
-  
-  const topArticles = sortedArticles.slice(0, 7);
-  const bottomArticles = sortedArticles.slice(7, 20);
-  const sidebarArticles = sortedArticles.slice(20, 35);
+  const hero = sortedArticles[0];
+  const secondaryArticles = sortedArticles.slice(1, 4);
+  const trendingArticles = sortedArticles.slice(4, 8);
+  const feedArticles = sortedArticles.slice(8, 20);
+  const sidebarArticles = sortedArticles.slice(1, 10);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
@@ -183,7 +244,8 @@ export default function Home({ articles, loading, error }: HomeProps) {
       <Header />
       <MarketMovers />
 
-      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-4">
+      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6">
+
         {sortedArticles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <p className="text-[#555] text-sm mb-2">No articles available yet.</p>
@@ -191,42 +253,79 @@ export default function Home({ articles, loading, error }: HomeProps) {
           </div>
         ) : (
           <>
-            {/* Bento Box Top Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {topArticles[0] && <NewsCard article={topArticles[0]} variant="hero" />}
-              {topArticles[1] && <NewsCard article={topArticles[1]} variant="tall" />}
-              {topArticles[2] && <NewsCard article={topArticles[2]} variant="normal" />}
-              {topArticles[3] && <NewsCard article={topArticles[3]} variant="normal" />}
-              {topArticles[4] && <NewsCard article={topArticles[4]} variant="wide" />}
-              {topArticles[5] && <NewsCard article={topArticles[5]} variant="normal" />}
-              {topArticles[6] && <NewsCard article={topArticles[6]} variant="normal" />}
+            {/* ── Section 1: Hero + Right Column ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+              {/* Hero */}
+              <div className="lg:col-span-2">
+                {hero && <HeroCard article={hero} />}
+              </div>
+              {/* Right secondary cards */}
+              <div className="flex flex-col gap-3">
+                {secondaryArticles.map(a => (
+                  <React.Fragment key={a.article_id}>
+                    <SecondaryCard article={a} />
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
 
-            <div className="w-full h-px bg-[#1a1a1a] mb-6" />
-
-            {/* Bottom Feed & Sidebar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main feed (List view) */}
-              <div className="lg:col-span-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest text-[#888]">More Stories</h2>
+            {/* ── Section 2: Trending Now ── */}
+            {trendingArticles.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp size={14} className="text-[#3B82F6]" />
+                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]">Trending Now</h2>
+                  <div className="flex-1 h-px bg-[#1a1a1a]" />
                 </div>
-                <div className="flex flex-col">
-                  {bottomArticles.map(a => (
-                    <NewsCard key={a.article_id} article={a} variant="list" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {trendingArticles.map((a, i) => (
+                    <React.Fragment key={a.article_id}>
+                      <TrendingCard article={a} index={i} />
+                    </React.Fragment>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Right Sidebar */}
-              <aside className="lg:col-span-1">
-                <div className="sticky top-4 bg-[#0a0a0a] p-5 rounded-lg border border-[#1a1a1a]">
-                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#222]">
-                    <h2 className="text-xs font-bold uppercase tracking-widest text-[#888]">Trending</h2>
+            {/* ── Section 3: Main Feed + Sidebar ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* Main Feed */}
+              <div className="lg:col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]">Latest News</h2>
+                  <div className="flex-1 h-px bg-[#1a1a1a]" />
+                  <Link to="/news" className="text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] hover:text-[#93C5FD] transition-colors">
+                    View All →
+                  </Link>
+                </div>
+                <div>
+                  {feedArticles.map(a => (
+                    <React.Fragment key={a.article_id}>
+                      <FeedCard article={a} />
+                    </React.Fragment>
+                  ))}
+                </div>
+                {feedArticles.length === 0 && (
+                  <p className="text-[#555] text-sm py-8 text-center">No more articles available.</p>
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <aside className="lg:col-span-1 space-y-4">
+                {/* Market Watch Widget */}
+                <MarketWatch />
+
+                {/* Most Read */}
+                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a]">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#888]">Most Read</span>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    {sidebarArticles.map(a => (
-                      <NewsCard key={a.article_id} article={a} variant="list" />
+                  <div className="px-4 py-2">
+                    {sidebarArticles.map((a, i) => (
+                      <React.Fragment key={a.article_id}>
+                        <SidebarCard article={a} index={i} />
+                      </React.Fragment>
                     ))}
                   </div>
                 </div>

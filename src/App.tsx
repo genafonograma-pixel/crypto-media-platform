@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import ArticlePage from './pages/ArticlePage';
 import AuthorPage from './pages/AuthorPage';
+import CategoryPage from './pages/CategoryPage';
 import type { Article, NewsResponse } from './types';
 
 export default function App() {
@@ -41,6 +42,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home articles={articles} loading={loading} error={error} />} />
+      <Route path="/news" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
+      <Route path="/news/:categoryId" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
       <Route path="/article/:id/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
       <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
     </Routes>

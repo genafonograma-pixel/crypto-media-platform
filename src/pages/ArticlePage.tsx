@@ -7,6 +7,7 @@ import ArticleCard from '../components/ArticleCard';
 import SEO from '../components/SEO';
 import { AUTHOR } from '../data/author';
 import type { Article } from '../types';
+import { generateSlug } from '../utils';
 
 interface ArticlePageProps {
   articles: Article[];
@@ -22,11 +23,57 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
   const relatedArticles = useMemo(() => {
     if (!article || !articles.length) return [];
-    // Filter out current article and return 4 articles (prefer same category if possible, fallback to others)
-    const sameCategory = articles.filter(a => a.article_id !== article.article_id && a.category?.[0] === article.category?.[0]);
-    const others = articles.filter(a => a.article_id !== article.article_id && a.category?.[0] !== article.category?.[0]);
-    return [...sameCategory, ...others].slice(0, 4);
+    // Filter out current article
+    const otherArticles = articles.filter(a => a.article_id !== article.article_id);
+    
+    // Shuffle to get random articles
+    const shuffled = [...otherArticles].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
   }, [article, articles]);
+
+  // Build the HTML string of a single related reading card to inject mid-article
+  function buildSingleRelatedCard(related: Article): string {
+    const title = related.headline || related.title;
+    const slug = generateSlug(title);
+    const href = `/article/${encodeURIComponent(related.article_id)}/${slug}`;
+    const classification = (related as any).classification || related.category?.[0] || 'News';
+    const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(related.pubDate));
+    const description = related.description ? related.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...' : '';
+    
+    return `
+<div class="not-prose" style="margin:2.5rem 0;">
+  <a href="${href}" style="display:flex;gap:0;border-radius:16px;overflow:hidden;background:#0c0c0c;border:1px solid #1f1f1f;text-decoration:none;transition:all 0.25s ease;box-shadow:0 4px 24px rgba(0,0,0,0.4);" onmouseover="this.style.borderColor='#2a2a2a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.5)'" onmouseout="this.style.borderColor='#1f1f1f';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.4)'">
+    ${related.image_url ? `
+    <div style="width:260px;min-width:260px;height:160px;overflow:hidden;flex-shrink:0;position:relative;border-radius:15px 0 0 15px;">
+      <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.6s ease;" onerror="this.parentElement.style.display='none'" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+    </div>` : ''}
+    <div style="padding:20px 24px;display:flex;flex-direction:column;justify-content:center;flex:1;gap:0;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="display:inline-block;font-size:9px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#3B82F6;background:rgba(59,130,246,0.12);padding:3px 8px;border-radius:4px;">${classification}</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#444;">Related Reading</span>
+      </div>
+      <span style="display:block;font-size:16px;font-weight:800;color:#F0F0F0;line-height:1.35;margin-bottom:10px;letter-spacing:-0.01em;">${title}</span>
+      ${description ? `<span style="display:block;font-size:12px;color:#666;line-height:1.6;margin-bottom:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${description}</span>` : ''}
+      <span style="font-size:10px;color:#444;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;">${date}</span>
+    </div>
+  </a>
+</div>
+`;
+  }
+
+  // Inject related reading widgets spaced out in the content
+  function injectRelatedReading(html: string, relatedList: Article[]): string {
+    if (!relatedList || relatedList.length === 0) return html;
+    
+    let count = 0;
+    return html.replace(/<\/p>/gi, (match) => {
+      count++;
+      if (count === 2 && relatedList.length > 0) return `${match}${buildSingleRelatedCard(relatedList[0])}`;
+      if (count === 5 && relatedList.length > 1) return `${match}${buildSingleRelatedCard(relatedList[1])}`;
+      if (count === 8 && relatedList.length > 2) return `${match}${buildSingleRelatedCard(relatedList[2])}`;
+      return match;
+    });
+  }
 
   if (loading && !article) {
     return (
@@ -67,8 +114,8 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
           <AdPlacement format="billboard" className="border-x-0 border-t-0" />
           
           <div className="p-6 md:p-10">
-            <Link to="/" className="inline-flex items-center gap-2 text-[10px] font-bold text-[#888] uppercase tracking-widest hover:text-white transition-colors mb-10">
-              <span className="text-[#3B82F6]">←</span> Back to Feed
+            <Link to="/news" className="inline-flex items-center gap-2 text-[10px] font-bold text-[#888] uppercase tracking-widest hover:text-white transition-colors mb-10">
+              <span className="text-[#3B82F6]">←</span> All News
             </Link>
 
             <article>
@@ -165,39 +212,36 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
               <AdPlacement format="in-article" />
 
               <div className="w-full overflow-hidden break-words">
-                {article.rewritten_content ? (
-                  <div className="font-light">
-                    <div 
-                      className="prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#3B82F6] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto"
-                      dangerouslySetInnerHTML={{ __html: article.rewritten_content }}
-                    />
-                    <div className="flex items-center justify-between mt-12 pt-8 border-t border-[#222]">
-                      <div>
-                        <p className="text-xs text-[#555] uppercase tracking-widest font-bold mb-1">Written by</p>
-                        <Link to="/author/jordan-cole" className="text-sm font-semibold text-[#F5F5F5] hover:text-[#3B82F6] transition-colors">
-                          {AUTHOR.name}
-                        </Link>
-                        <span className="text-[#555] text-sm"> · {AUTHOR.title}</span>
-                      </div>
+                {(() => {
+                  const proseClasses = "prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#3B82F6] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto";
+                  const rawContent = article.rewritten_content || article.content || article.description || null;
+
+                  if (!rawContent) {
+                    return <div className="text-lg leading-relaxed text-[#CCC] italic">No content available for this article.</div>;
+                  }
+
+                  const finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
+
+                  return (
+                    <div className={article.rewritten_content ? 'font-light' : ''}>
+                      <div
+                        className={proseClasses}
+                        dangerouslySetInnerHTML={{ __html: finalHTML }}
+                      />
+                      {article.rewritten_content && (
+                        <div className="flex items-center justify-between mt-12 pt-8 border-t border-[#222]">
+                          <div>
+                            <p className="text-xs text-[#555] uppercase tracking-widest font-bold mb-1">Written by</p>
+                            <Link to="/author/jordan-cole" className="text-sm font-semibold text-[#F5F5F5] hover:text-[#3B82F6] transition-colors">
+                              {AUTHOR.name}
+                            </Link>
+                            <span className="text-[#555] text-sm"> · {AUTHOR.title}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ) : article.content ? (
-                  <div 
-                    className="prose prose-invert prose-lg md:prose-xl max-w-none font-light text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#3B82F6] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto"
-                    dangerouslySetInnerHTML={{ __html: article.content }}
-                  />
-                ) : article.description ? (
-                  <div className="font-light">
-                    <div 
-                      className="prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#3B82F6] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto"
-                      dangerouslySetInnerHTML={{ __html: article.description }} 
-                    />
-                  </div>
-                ) : (
-                  <div className="text-lg leading-relaxed text-[#CCC] italic">
-                    No content available for this article.
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               <AdPlacement format="native" className="mt-12" />
