@@ -98,7 +98,7 @@ function safeParseJSON(raw: string): any {
 }
 
 async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -134,7 +134,7 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openrouter/free",
+      model: "meta-llama/llama-3.1-8b-instruct:free",
       messages: [{ role: "user", content: prompt }]
     })
   });
@@ -159,7 +159,8 @@ async function runAIPrompt(prompt: string) {
     )
   ]);
 
-  // Try Gemini keys first (rotating through all)
+  // Try Gemini keys first (rotating through all), with 503 backoff cap
+  let consecutive503s = 0;
   while (GEMINI_KEYS.length > 0) {
     const key = getNextGeminiKey();
     if (!key) break; // all Gemini keys exhausted
@@ -168,13 +169,24 @@ async function runAIPrompt(prompt: string) {
       const result = await withTimeout(runGeminiPrompt(prompt, key));
       return result;
     } catch (err: any) {
-      if (err.message?.startsWith("QUOTA_EXHAUSTED") || err.message?.includes("503")) {
-        console.warn(`⚠️ Gemini key ...${key.slice(-6)} failed (${err.message}) — waiting 2s and trying next key`);
-        await delay(2000); // give the API a tiny breather
-        continue; // try next key
+      if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
+        console.warn(`⚠️ Gemini key ...${key.slice(-6)} quota exhausted — trying next key`);
+        await delay(2000);
+        continue;
+      }
+      if (err.message?.includes("503")) {
+        consecutive503s++;
+        const backoff = Math.min(5000 * consecutive503s, 20000); // 5s, 10s, 20s cap
+        console.warn(`⚠️ Gemini 503 (attempt ${consecutive503s}/3) — backing off ${backoff / 1000}s`);
+        if (consecutive503s >= 3) {
+          console.warn("⚠️ Gemini 503 limit reached — falling through to fallback.");
+          break;
+        }
+        await delay(backoff);
+        continue;
       }
       console.error(`AI prompt failed (Gemini): ${err.message}`);
-      break; // non-quota error, fall through to OpenRouter
+      break; // non-quota/503 error, fall through
     }
   }
 
@@ -197,7 +209,7 @@ async function processArticleWithAI(
   sourceName: string,
   category?: string
 ): Promise<AIResult> {
-  if (!process.env.OPENROUTER_API_KEY)
+  if (!process.env.OPENROUTER_API_KEY && GEMINI_KEYS.length === 0)
     return {
       summary: null,
       rewritten_content: null,
@@ -296,7 +308,7 @@ ABSOLUTE EDITORIAL RULES:
 2. IMAGES & MEDIA: If the RAW SOURCE CONTENT contains <img> tags, naturally embed those exact <img> tags (with their original src) into the rewritten_content where contextually relevant.
 3. SOURCE LINKING: If the content references external sources like X posts or official announcements, embed those links natively using <a href="..."> tags. However, NEVER link to the domain where the content was scraped from (${sourceName}).
 4. SEO & STRUCTURE: Optimize the article for SEO. Use semantic heading structures (<h2>, <h3>), naturally incorporate relevant LSI keywords, and bold key terms or phrases to improve readability.
-5. FAQ SECTION: At the bottom of the article, append a "Frequently Asked Questions" section using an <h2> tag, containing 2-3 common questions and concise answers based strictly on the article content.
+5. FAQ SECTION: At the bottom of the article, append a "Frequently Asked Questions" section. Use an <h2> tag for the section title, followed by <h3> tags for each question (always ending with a question mark), and <p> tags for the answers. Do not wrap them in custom divs, just output semantic tags.
 6. NO SEMANTIC REPETITION: Every paragraph and section must add NEW information. Do not repeat the same idea multiple ways. Do not blindly follow the source article's narrative flow; independently structure the facts.
 7. BAN LIST (CRITICAL): Never use the following phrases or concepts: "According to our research", "The AI found", "undefined", "[SOURCE]", "Quality score", "Visit the official site for details", "Written by". Do NOT expose any internal template variables in the text.
 8. LENGTH REQUIREMENT: Target ${targetWords} words. Minimum ${minWords} words. Do NOT pad with generic filler. If you cannot reach the minimum length using ONLY verified facts, write as much verified fact-based content as you can; the validator will downgrade the category if needed.
@@ -382,9 +394,9 @@ Write a creative image generation prompt for the following headline: "${title}"
 Classification: "${article.classification || 'News'}"
 
 INSTRUCTIONS:
-1. Describe a visually stunning, beautiful 2D vector illustration or highly detailed 16-bit pixel art scene that matches the news. 
+1. Describe a scene that matches the news. You MUST describe it as authentic, flat 2D retro pixel art.
 2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
-3. Use keywords like: detailed pixel art, 16-bit aesthetic, beautiful 2D vector flat art, vibrant colors, aesthetic, masterpiece, Studio Ghibli style, clean composition.
+3. Use keywords like: AUTHENTIC 8-BIT PIXEL ART, flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette, indie game aesthetic.
 4. Return ONLY a JSON object:
 {
   "image_prompt": "string"
@@ -394,7 +406,7 @@ INSTRUCTIONS:
     const res = await runAIPrompt(aiPrompt);
     if (res && res.image_prompt) {
       // Ensure the generated prompt includes the strict no-text instruction for Flux
-      return res.image_prompt + ". The image MUST be completely text-free. NO words, NO letters, NO typography.";
+      return res.image_prompt + ". AUTHENTIC 8-BIT PIXEL ART, flat 2D, visible square pixels. The image MUST be completely text-free. NO words, NO letters, NO typography.";
     }
   } catch (e) {
     console.error("Failed to generate dynamic thumbnail prompt:", e);
@@ -402,7 +414,7 @@ INSTRUCTIONS:
 
   // Fallback
   const c = article.classification || "Crypto News";
-  return `A stunning beautiful 2D vector illustration or highly detailed pixel art about ${c}. Vibrant colors, aesthetic, completely text-free, NO words.`;
+  return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
 }
 
 /** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
@@ -450,7 +462,7 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
 async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
   if (!process.env.GEMINI_API_KEY) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -968,8 +980,8 @@ export async function runAIPipeline(): Promise<{
         console.log("Daily AI quota reached. Stopping.");
         break;
       }
-      if (!process.env.OPENROUTER_API_KEY) {
-        console.error("❌ FATAL: OPENROUTER_API_KEY is null. Pipeline cannot continue.");
+      if (!process.env.OPENROUTER_API_KEY && GEMINI_KEYS.length === 0) {
+        console.error("❌ FATAL: No AI keys configured (OPENROUTER_API_KEY and all GEMINI_API_KEY_* are missing). Pipeline cannot continue.");
         break;
       }
 

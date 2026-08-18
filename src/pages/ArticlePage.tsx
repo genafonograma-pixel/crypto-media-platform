@@ -91,14 +91,12 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       );
       
       headers.forEach(faqHeader => {
-        const headerLevel = parseInt(faqHeader.tagName.substring(1));
-        
         // Style the FAQ header
         const wrapper = doc.createElement('div');
-        wrapper.className = 'border-l-4 border-amber-400 pl-4 mb-8 mt-16 not-prose';
-        const newHeader = doc.createElement(faqHeader.tagName);
+        wrapper.className = 'border-l-4 border-[#3B82F6] pl-4 mb-8 mt-16 not-prose';
+        const newHeader = doc.createElement('h2');
         newHeader.className = 'text-2xl font-black uppercase tracking-tight text-[#F5F5F5] m-0';
-        newHeader.innerHTML = faqHeader.innerHTML;
+        newHeader.textContent = 'Frequently Asked Questions';
         wrapper.appendChild(newHeader);
         
         faqHeader.parentNode?.insertBefore(wrapper, faqHeader);
@@ -107,45 +105,53 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
         let currentNode = wrapper.nextElementSibling;
         
         while (currentNode) {
-          // Stop if we hit a heading of the same or higher level (smaller number)
+          // Stop if we hit a heading that does NOT look like a question (no question indicator)
           if (currentNode.tagName.match(/^H[1-6]$/)) {
-            const currentLevel = parseInt(currentNode.tagName.substring(1));
-            if (currentLevel <= headerLevel) break;
+            const text = currentNode.textContent?.trim().toLowerCase() || '';
+            const hasQuestionIndicator = text.includes('?') || 
+                                         /^(what|why|how|who|when|where|are|is|can|will|do|does|should|could|would)\b/.test(text);
+            if (!hasQuestionIndicator) break;
           }
           
           let isQuestion = false;
           let questionText = '';
           
           if (currentNode.tagName.match(/^H[1-6]$/)) {
-            const currentLevel = parseInt(currentNode.tagName.substring(1));
-            if (currentLevel > headerLevel) {
-              isQuestion = true;
-              questionText = currentNode.textContent || '';
-            }
+            isQuestion = true;
+            questionText = currentNode.textContent || '';
           } else if (currentNode.tagName === 'P') {
             const strong = currentNode.querySelector('strong');
-            if (strong && strong.textContent && strong.textContent.length > (currentNode.textContent?.length || 0) * 0.5) {
+            const text = currentNode.textContent?.trim().toLowerCase() || '';
+            const hasQuestionIndicator = text.includes('?') || 
+                                         /^(what|why|how|who|when|where|are|is|can|will|do|does|should|could|would)\b/.test(text);
+            if ((strong && strong.textContent && strong.textContent.length > (currentNode.textContent?.length || 0) * 0.5) || hasQuestionIndicator) {
                isQuestion = true;
                questionText = currentNode.textContent || '';
             }
           }
           
-          if (isQuestion) {
+          if (isQuestion && questionText.trim().length > 0) {
              let answerNodes: Element[] = [];
              let nextNode = currentNode.nextElementSibling;
              
              while (nextNode) {
                let isNextQuestion = false;
                if (nextNode.tagName.match(/^H[1-6]$/)) {
-                  isNextQuestion = true;
-               } else if (nextNode.tagName === 'P' && nextNode.querySelector('strong')) {
+                  const text = nextNode.textContent?.trim().toLowerCase() || '';
+                  const hasQuestionIndicator = text.includes('?') || 
+                                               /^(what|why|how|who|when|where|are|is|can|will|do|does|should|could|would)\b/.test(text);
+                  isNextQuestion = hasQuestionIndicator;
+                  if (!hasQuestionIndicator) break;
+               } else if (nextNode.tagName === 'P') {
                   const s = nextNode.querySelector('strong');
-                  if (s && s.textContent && s.textContent.length > (nextNode.textContent?.length || 0) * 0.5) {
+                  const text = nextNode.textContent?.trim().toLowerCase() || '';
+                  const hasQuestionIndicator = text.includes('?') || 
+                                               /^(what|why|how|who|when|where|are|is|can|will|do|does|should|could|would)\b/.test(text);
+                  if ((s && s.textContent && s.textContent.length > (nextNode.textContent?.length || 0) * 0.5) || hasQuestionIndicator) {
                      isNextQuestion = true;
                   }
                }
                
-               // Stop collecting answers if we hit the next question or the end of the section
                if (isNextQuestion) break;
                
                answerNodes.push(nextNode);
@@ -154,27 +160,32 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
              
              if (answerNodes.length > 0) {
                 const details = doc.createElement('details');
-                details.className = 'group mb-4 border border-[#222] bg-[#0A0A0A] rounded-xl overflow-hidden transition-all not-prose';
+                details.className = 'group mb-4 border border-[#1a1a1a] bg-[#080808] rounded-xl overflow-hidden transition-all duration-300 not-prose';
                 
                 const summary = doc.createElement('summary');
-                summary.className = 'flex items-center justify-between p-5 cursor-pointer list-none font-bold text-[#E5E5E5] text-[13px] uppercase tracking-wide hover:bg-[#111] transition-colors';
+                summary.className = 'flex items-center justify-between p-5 cursor-pointer list-none font-bold text-[#E5E5E5] text-[13px] uppercase tracking-wider hover:bg-[#111] transition-colors duration-200 select-none';
                 summary.style.listStyle = 'none';
                 
                 const qSpan = doc.createElement('span');
                 qSpan.textContent = questionText;
-                qSpan.className = 'pr-4 leading-snug';
+                qSpan.className = 'pr-6 leading-snug transition-colors duration-200';
+                
+                const iconWrapper = doc.createElement('div');
+                iconWrapper.className = 'relative w-5 h-5 flex items-center justify-center shrink-0';
                 
                 const iconPlus = doc.createElement('span');
-                iconPlus.className = 'text-amber-400 font-bold text-xl group-open:hidden leading-none shrink-0';
+                iconPlus.className = 'text-[#3B82F6] font-bold text-xl transition-all duration-200 leading-none absolute';
                 iconPlus.innerHTML = '&#43;'; // +
                 
                 const iconMinus = doc.createElement('span');
-                iconMinus.className = 'text-amber-400 font-bold text-xl hidden group-open:inline leading-none shrink-0';
-                iconMinus.innerHTML = '&#215;'; // x
+                iconMinus.className = 'text-[#3B82F6] font-bold text-xl transition-all duration-200 leading-none absolute opacity-0';
+                iconMinus.innerHTML = '&#8722;'; // −
+                
+                iconWrapper.appendChild(iconPlus);
+                iconWrapper.appendChild(iconMinus);
                 
                 summary.appendChild(qSpan);
-                summary.appendChild(iconPlus);
-                summary.appendChild(iconMinus);
+                summary.appendChild(iconWrapper);
                 
                 const contentDiv = doc.createElement('div');
                 contentDiv.className = 'px-5 pb-5 pt-2 text-[#aaa] text-sm leading-relaxed border-t border-[#1a1a1a]';
@@ -189,9 +200,8 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                 
                 currentNode.parentNode?.insertBefore(details, currentNode);
                 const oldCurrent = currentNode;
-                currentNode = details.nextElementSibling;
+                currentNode = details;
                 oldCurrent.parentNode?.removeChild(oldCurrent);
-                continue;
              }
           }
           
@@ -200,7 +210,13 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       });
       
       const style = doc.createElement('style');
-      style.innerHTML = `details > summary::-webkit-details-marker { display: none; }`;
+      style.innerHTML = `
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] { border-color: rgba(59, 130, 246, 0.4) !important; background-color: #0b0e14 !important; }
+        details[open] summary span { color: #3B82F6 !important; }
+        details[open] summary div span:first-child { opacity: 0 !important; }
+        details[open] summary div span:last-child { opacity: 1 !important; }
+      `;
       doc.body.appendChild(style);
       
       return doc.body.innerHTML;
