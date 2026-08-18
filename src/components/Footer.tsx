@@ -6,9 +6,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2">
-            <div className="text-2xl font-black tracking-tighter uppercase italic mb-6">
-              Crypto<span className="text-[#3B82F6]">Standard</span>
-            </div>
+            <a href="/" className="inline-block mb-6">
+              <img
+                src="/crypton_logo.svg"
+                alt="Crypton"
+                className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+              />
+            </a>
             <p className="text-[#888] max-w-sm text-sm leading-relaxed font-light">
               A landmark shift in digital asset reporting. In-depth analysis, market intelligence, and raw perspectives on the decentralized economy.
             </p>
