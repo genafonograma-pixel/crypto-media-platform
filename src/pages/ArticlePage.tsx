@@ -42,10 +42,10 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     
     return `
 <div class="not-prose" style="margin:2.5rem 0;">
-  <a href="${href}" style="display:flex;gap:0;border-radius:16px;overflow:hidden;background:#0c0c0c;border:1px solid #1f1f1f;text-decoration:none;transition:all 0.25s ease;box-shadow:0 4px 24px rgba(0,0,0,0.4);" onmouseover="this.style.borderColor='#2a2a2a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.5)'" onmouseout="this.style.borderColor='#1f1f1f';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.4)'">
+  <a href="${href}" style="display:flex;gap:0;border-radius:16px;background:#0c0c0c;border:1px solid #1f1f1f;text-decoration:none;transition:all 0.25s ease;box-shadow:0 4px 24px rgba(0,0,0,0.4);overflow:hidden;" onmouseover="this.style.borderColor='#2a2a2a';this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.5)'" onmouseout="this.style.borderColor='#1f1f1f';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.4)'">
     ${related.image_url ? `
-    <div style="width:260px;min-width:260px;height:160px;overflow:hidden;flex-shrink:0;position:relative;border-radius:15px 0 0 15px;">
-      <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.6s ease;" onerror="this.parentElement.style.display='none'" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"/>
+    <div style="width:260px;min-width:260px;height:160px;flex-shrink:0;position:relative;">
+      <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.6s ease;display:block;" onerror="this.parentElement.style.display='none'" />
     </div>` : ''}
     <div style="padding:20px 24px;display:flex;flex-direction:column;justify-content:center;flex:1;gap:0;min-width:0;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">

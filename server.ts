@@ -208,10 +208,10 @@ async function processArticleWithAI(
       seo_title: null,
     };
   const textContent = content
-    .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 8000);
+    .slice(0, 15000);
+
 
   // STEP 1: RESEARCH & FACT EXTRACTION
   const researchPrompt = `You are a senior crypto intelligence researcher. Your task is to analyze the source material and build a strict factual Research Object.
@@ -220,7 +220,7 @@ RAW SOURCE CONTENT:
 ${textContent}
 
 INSTRUCTIONS:
-1. Classify the event into one category (e.g. Breaking News, Regulation, Security/Hack, Company/Earnings, Market Movement).
+1. Classify the event into EXACTLY ONE of these categories: "Bitcoin", "Altcoins", "DeFi", "Web3", "Markets", "Tech". Do not use any other category names.
 2. Extract all verifiable facts, numbers, dates, people, and organizations.
 3. If you can calculate a useful metric (e.g., percentage change), do so and log it in calculations. Do NOT invent numbers.
 4. Return ONLY a JSON object:
@@ -282,19 +282,25 @@ INSTRUCTIONS:
   const contextBlock = enrichmentData ? `ENRICHED BACKGROUND CONTEXT:\n${JSON.stringify(enrichmentData)}\n` : "";
 
   // STEP 2: ARTICLE GENERATION
-  const generatePrompt = `You are a senior editor at a crypto intelligence platform. Write a news article based STRICTLY on this Research Object and the provided Enriched Background Context.
+  const generatePrompt = `You are a senior editor at a crypto intelligence platform. Write a news article based STRICTLY on this Research Object, the Enriched Background Context, and the RAW SOURCE CONTENT.
+SOURCE OUTLET: ${sourceName}
+RAW SOURCE CONTENT:
+${textContent}
+
 RESEARCH DATA:
 ${JSON.stringify(researchData)}
 
 ${contextBlock}
 ABSOLUTE EDITORIAL RULES:
 1. FACT VS ANALYSIS: Distinguish fact from analysis. Do not present subjective editorial judgment as fact. Use precise language (e.g., "suggests" rather than "proves").
-2. NO BROAD GENERALIZATIONS: Do not invent industry-wide narratives. Do not claim an event "marks a broader shift" or "changes the industry" without explicit multi-source evidence.
-3. NO FORCED SIGNIFICANCE: Do not manufacture significance. Avoid forced "Why it matters". Never claim something "improves financial flexibility" without hard numbers to back it up.
-4. NO SEMANTIC REPETITION: Every paragraph and section must add NEW information. Do not repeat the same idea multiple ways. Do not blindly follow the source article's narrative flow; independently structure the facts.
-5. NO GENERIC ENDINGS: The final paragraph must state a concrete implication, summarize what changed, identify a next event, or explain an unresolved issue. Never end with "The future remains uncertain" or "Investors will watch closely".
-6. BAN LIST (CRITICAL): Never use the following phrases or concepts: "According to our research", "The AI found", "undefined", "[SOURCE]", "Quality score", "Visit the official site for details", "Written by". Do NOT expose any internal template variables, source attribution, or external URLs in the text.
-7. LENGTH REQUIREMENT: Target ${targetWords} words. Minimum ${minWords} words. Do NOT pad with generic filler. If you cannot reach the minimum length using ONLY verified facts, write as much verified fact-based content as you can; the validator will downgrade the category if needed.
+2. IMAGES & MEDIA: If the RAW SOURCE CONTENT contains <img> tags, naturally embed those exact <img> tags (with their original src) into the rewritten_content where contextually relevant.
+3. SOURCE LINKING: If the content references external sources like X posts or official announcements, embed those links natively using <a href="..."> tags. However, NEVER link to the domain where the content was scraped from (${sourceName}).
+4. SEO & STRUCTURE: Optimize the article for SEO. Use semantic heading structures (<h2>, <h3>), naturally incorporate relevant LSI keywords, and bold key terms or phrases to improve readability.
+5. FAQ SECTION: At the bottom of the article, append a "Frequently Asked Questions" section using an <h2> tag, containing 2-3 common questions and concise answers based strictly on the article content.
+6. NO SEMANTIC REPETITION: Every paragraph and section must add NEW information. Do not repeat the same idea multiple ways. Do not blindly follow the source article's narrative flow; independently structure the facts.
+7. BAN LIST (CRITICAL): Never use the following phrases or concepts: "According to our research", "The AI found", "undefined", "[SOURCE]", "Quality score", "Visit the official site for details", "Written by". Do NOT expose any internal template variables in the text.
+8. LENGTH REQUIREMENT: Target ${targetWords} words. Minimum ${minWords} words. Do NOT pad with generic filler. If you cannot reach the minimum length using ONLY verified facts, write as much verified fact-based content as you can; the validator will downgrade the category if needed.
+
 
 Return ONLY a JSON object:
 {
@@ -329,7 +335,15 @@ Return ONLY a JSON object:
   // STEP 3: SIMPLE WORD-COUNT QUALITY GATE
   // Replaces AI validation which was over-rejecting good articles.
   // The research + generation steps already enforce factual accuracy.
-  const finalClassification = researchData.classification || category || "Crypto News";
+  let rawClassification = researchData.classification || category || "Crypto News";
+  const allowedCategories = ["Bitcoin", "Altcoins", "DeFi", "Web3", "Markets", "Tech"];
+  let finalClassification = "Markets"; // Fallback
+  for (const allowed of allowedCategories) {
+    if (rawClassification.toLowerCase().includes(allowed.toLowerCase())) {
+      finalClassification = allowed;
+      break;
+    }
+  }
   const finalScore = wordCount >= 400 ? 85 : wordCount >= 200 ? 75 : 65;
 
   if (wordCount < 200) {
@@ -368,9 +382,9 @@ Write a creative image generation prompt for the following headline: "${title}"
 Classification: "${article.classification || 'News'}"
 
 INSTRUCTIONS:
-1. Describe a visually stunning, premium 3D or realistic conceptual illustration that matches the news.
+1. Describe a visually stunning, beautiful 2D vector illustration or highly detailed 16-bit pixel art scene that matches the news. 
 2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
-3. Use keywords like: cinematic lighting, ultra-high quality, 8k resolution, editorial style, photorealistic 3D render.
+3. Use keywords like: detailed pixel art, 16-bit aesthetic, beautiful 2D vector flat art, vibrant colors, aesthetic, masterpiece, Studio Ghibli style, clean composition.
 4. Return ONLY a JSON object:
 {
   "image_prompt": "string"
@@ -388,7 +402,7 @@ INSTRUCTIONS:
 
   // Fallback
   const c = article.classification || "Crypto News";
-  return `A stunning 3D conceptual illustration about ${c}. Sleek futuristic background, cyberpunk lighting, high quality, completely text-free, NO words.`;
+  return `A stunning beautiful 2D vector illustration or highly detailed pixel art about ${c}. Vibrant colors, aesthetic, completely text-free, NO words.`;
 }
 
 /** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
@@ -803,8 +817,11 @@ export async function fetchRSSArticles(): Promise<any[]> {
           rawContent = rawContent.replace(/HOT Stories/gi, "");
 
           rawContent = sanitizeHtml(rawContent, {
-            allowedTags: ["p", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "b", "em", "i", "blockquote", "br", "img", "figure", "figcaption", "table", "thead", "tbody", "tr", "th", "td"],
-            allowedAttributes: { img: ["src", "alt", "width", "height", "loading"] },
+            allowedTags: ["p", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "b", "em", "i", "blockquote", "br", "img", "figure", "figcaption", "table", "thead", "tbody", "tr", "th", "td", "a"],
+            allowedAttributes: { 
+              img: ["src", "alt", "width", "height", "loading"],
+              a: ["href", "title", "target"]
+            },
             exclusiveFilter: (frame) => frame.tag === "p" && !frame.text.trim(),
           });
         }
