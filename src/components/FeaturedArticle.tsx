@@ -19,7 +19,7 @@ function formatDate(dateStr: string) {
 export default function FeaturedArticle({ article }: Props) {
   const displayTitle = article.headline || article.title;
   return (
-    <Link to={`/article/${encodeURIComponent(article.article_id)}/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col justify-between border-b border-[#222] pb-12 mb-12">
+    <Link to={`/article/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col justify-between border-b border-[#222] pb-12 mb-12">
         <div className="flex flex-col md:flex-row gap-10">
           <div className="flex-1 order-2 md:order-1 flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-6">

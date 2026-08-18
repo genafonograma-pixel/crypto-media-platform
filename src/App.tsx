@@ -44,7 +44,7 @@ export default function App() {
       <Route path="/" element={<Home articles={articles} loading={loading} error={error} />} />
       <Route path="/news" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
       <Route path="/news/:categoryId" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
-      <Route path="/article/:id/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
+      <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
       <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
     </Routes>
   );

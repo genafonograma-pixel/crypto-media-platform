@@ -417,7 +417,7 @@ INSTRUCTIONS:
   return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
 }
 
-/** Generate a 1024x1024 image from Cloudflare Workers AI FLUX-1-Schnell */
+/** Generate a 1200x630 (16:9) image from Cloudflare Workers AI FLUX-1-Schnell */
 async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | null> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN;
@@ -435,7 +435,12 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({
+        prompt,
+        width: 1024,
+        height: 576,   // 1024x576 = 16:9 ratio (closest to 1200x630 within Cloudflare limits)
+        num_steps: 8,  // Higher quality
+      }),
       signal: AbortSignal.timeout(45000),
     });
 
@@ -1130,6 +1135,61 @@ app.get("/api/logs", (req, res) => {
     );
   });
 
+  // ── GET /api/article/:slug — Fetch a single article by its slug ──────────
+  app.get("/api/article/:slug", async (req, res) => {
+    const { slug } = req.params;
+    const generateSlug = (title: string) => title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    // Search in-memory cache first
+    const fromCache = cachedNews.find(a => {
+      const articleSlug = generateSlug(a.headline || a.title || "");
+      return articleSlug === slug;
+    });
+    if (fromCache) return res.json(fromCache);
+
+    // Fallback: query Supabase directly
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .order("pub_date", { ascending: false })
+        .limit(200);
+      if (!error && data) {
+        const match = data.find((row: any) => {
+          const articleSlug = generateSlug(row.headline || row.title || "");
+          return articleSlug === slug;
+        });
+        if (match) {
+          return res.json({
+            article_id: match.id,
+            title: match.title,
+            link: match.link,
+            description: match.description,
+            pubDate: match.pub_date,
+            image_url: match.image_url,
+            source_id: match.source_id,
+            headline: match.headline,
+            seo_title: match.seo_title,
+            ai_meta_description: match.ai_meta_description,
+            rewritten_content: match.rewritten_content,
+            ai_summary: match.ai_summary,
+            classification: match.classification,
+            quality_score: match.quality_score,
+            related_sources: match.related_sources,
+            research_data: match.research_data,
+            category: match.category || ["News"],
+          });
+        }
+      }
+    }
+
+    return res.status(404).json({ error: "Article not found" });
+  });
+
   // ── GET /api/process/status — Check if pipeline is running ───────────────
   app.get("/api/process/status", async (req, res) => {
     const quotaInfo = await getQuotaInfo();
@@ -1270,7 +1330,7 @@ app.get("/api/logs", (req, res) => {
 
       for (const article of cachedNews) {
         const slug = generateSlug(article.title);
-        const articleUrl = `${baseUrl}/article/${article.article_id}/${slug}`;
+        const articleUrl = `${baseUrl}/article/${slug}`;
         const date = new Date(article.pubDate || Date.now()).toISOString();
         xml += `  <url>\n    <loc>${articleUrl}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
       }

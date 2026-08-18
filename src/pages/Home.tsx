@@ -31,7 +31,7 @@ function formatDate(dateStr: string) {
 
 function getArticleHref(article: Article) {
   const displayTitle = article.headline || article.title;
-  return `/article/${encodeURIComponent(article.article_id)}/${generateSlug(displayTitle)}`;
+  return `/article/${generateSlug(displayTitle)}`;
 }
 
 function getClassification(article: Article) {

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useParams, Link, Navigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -16,26 +16,40 @@ interface ArticlePageProps {
 
 export default function ArticlePage({ articles, loading }: ArticlePageProps) {
   const location = useLocation();
-  const { id } = useParams<{ id: string; slug: string }>();
-  
-  // Try to get from state for fast navigation, fallback to searching the articles array
-  const article = (location.state?.article as Article | undefined) || articles.find(a => a.article_id === id);
+  const { slug } = useParams<{ slug: string }>();
+  const [fetchedArticle, setFetchedArticle] = useState<Article | null>(null);
+  const [fetchLoading, setFetchLoading] = useState(false);
+
+  // Try state first (fast nav), then search in-memory list by slug, then fetch from API
+  const articleFromList = (location.state?.article as Article | undefined) 
+    || articles.find(a => generateSlug(a.headline || a.title) === slug);
+
+  const article = articleFromList || fetchedArticle;
+
+  // If not found in the in-memory list, fetch from the API by slug
+  useEffect(() => {
+    if (!articleFromList && !loading && slug && !fetchedArticle) {
+      setFetchLoading(true);
+      fetch(`/api/article/${slug}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setFetchedArticle(data); })
+        .catch(() => {})
+        .finally(() => setFetchLoading(false));
+    }
+  }, [articleFromList, loading, slug, fetchedArticle]);
 
   const relatedArticles = useMemo(() => {
     if (!article || !articles.length) return [];
-    // Filter out current article
-    const otherArticles = articles.filter(a => a.article_id !== article.article_id);
-    
-    // Shuffle to get random articles
+    const otherArticles = articles.filter(a => generateSlug(a.headline || a.title) !== slug);
     const shuffled = [...otherArticles].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 3);
-  }, [article, articles]);
+  }, [article, articles, slug]);
 
   // Build the HTML string of a single related reading card to inject mid-article
   function buildSingleRelatedCard(related: Article): string {
     const title = related.headline || related.title;
     const slug = generateSlug(title);
-    const href = `/article/${encodeURIComponent(related.article_id)}/${slug}`;
+    const href = `/article/${slug}`;
     const classification = (related as any).classification || related.category?.[0] || 'News';
     const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(related.pubDate));
     const description = related.description ? related.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...' : '';
@@ -226,7 +240,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     }
   }
 
-  if (loading && !article) {
+  if ((loading || fetchLoading) && !article) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
         <div className="w-12 h-12 border-4 border-[#222] border-t-[#3B82F6] rounded-full animate-spin"></div>
@@ -235,9 +249,11 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     );
   }
 
-  if (!article) {
+  if (!article && !loading && !fetchLoading) {
     return <Navigate to="/" replace />;
   }
+
+  if (!article) return null;
 
   const displayTitle = article.headline || article.title;
   const displaySeoTitle = article.seo_title || `${displayTitle} - Crypton`;
