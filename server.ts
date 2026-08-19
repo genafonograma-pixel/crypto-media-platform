@@ -9,6 +9,7 @@ import sanitizeHtml from "sanitize-html";
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs/promises";
 import ws from "ws";
+import sharp from "sharp";
 
 dotenv.config();
 
@@ -417,6 +418,47 @@ INSTRUCTIONS:
   return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
 }
 
+/** Deterministic numeric hash for a string — used as Pollinations seed for reproducibility. */
+function hashStringToInt(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+/** Fetch a 1200×630 image from Pollinations.ai using Flux model — free, no API key, reliable on cloud. */
+async function generateThumbnailPollinations(prompt: string, seed: number): Promise<Buffer | null> {
+  try {
+    const encodedPrompt = encodeURIComponent(prompt);
+    const params = new URLSearchParams({
+      width: "1200",
+      height: "630",
+      nologo: "true",
+      seed: String(seed),
+      model: "flux",
+    });
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params}`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
+    if (!response.ok) {
+      console.error(`Pollinations returned ${response.status}`);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    // Resize to exactly 1200x630 using sharp just in case Pollinations returns a slightly different size
+    const resized = await sharp(Buffer.from(arrayBuffer))
+      .resize(1200, 630, { fit: "cover", position: "centre" })
+      .webp({ quality: 85 })
+      .toBuffer();
+    return resized;
+  } catch (err) {
+    console.error(`Pollinations thumbnail generation failed: ${(err as Error).message}`);
+    return null;
+  }
+}
+
 /** Generate a 1200x630 (16:9) image from Cloudflare Workers AI FLUX-1-Schnell */
 async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | null> {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -435,12 +477,7 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt,
-        width: 1024,
-        height: 576,   // 1024x576 = 16:9 ratio (closest to 1200x630 within Cloudflare limits)
-        num_steps: 8,  // Higher quality
-      }),
+      body: JSON.stringify({ prompt }),
       signal: AbortSignal.timeout(45000),
     });
 
@@ -451,8 +488,14 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
 
     const data = await response.json() as any;
     if (data && data.result && data.result.image) {
-      // Cloudflare returns the image as a base64 string
-      return Buffer.from(data.result.image, "base64");
+      // Cloudflare returns the image as a base64 string (square, ~1024x1024)
+      // Resize to 1200x630 (16:9) and convert to WebP for next-gen format support
+      const rawBuffer = Buffer.from(data.result.image, "base64");
+      const resizedBuffer = await sharp(rawBuffer)
+        .resize(1200, 630, { fit: "cover", position: "centre" })
+        .webp({ quality: 85 })
+        .toBuffer();
+      return resizedBuffer;
     }
     
     console.error("Cloudflare AI response had no image data.");
@@ -488,7 +531,13 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
     const parts = data?.candidates?.[0]?.content?.parts ?? [];
     for (const part of parts) {
       if (part?.inlineData?.data) {
-        return Buffer.from(part.inlineData.data, "base64");
+        const rawBuffer = Buffer.from(part.inlineData.data, "base64");
+        // Resize and convert to WebP for consistency and next-gen format support
+        const webpBuffer = await sharp(rawBuffer)
+          .resize(1200, 630, { fit: "cover", position: "centre" })
+          .webp({ quality: 85 })
+          .toBuffer();
+        return webpBuffer;
       }
     }
     console.error("Gemini image response had no inlineData.");
@@ -506,7 +555,7 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
  */
 async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promise<string | null> {
   const safeId = articleId.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const filename = `${safeId}.jpg`;
+  const filename = `${safeId}.webp`;
 
   // Try ImgBB if key is present
   const apiKey = process.env.IMGBB_API_KEY;
@@ -539,7 +588,7 @@ async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promis
   try {
     const formData = new FormData();
     formData.append('reqtype', 'fileupload');
-    formData.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), filename);
+    formData.append('fileToUpload', new Blob([buffer], { type: 'image/webp' }), filename);
 
     const response = await fetch("https://catbox.moe/user/api.php", {
       method: "POST",
@@ -572,24 +621,31 @@ async function generateAndStoreThumbnail(
   const prompt = await buildDynamicThumbnailPrompt(article);
 
   console.log(`🎨 Generating thumbnail for: "${(article.headline || article.title || "").slice(0, 50)}..."`);
+  console.log(`📝 Prompt: "${prompt.slice(0, 120)}..."`);
 
-  // Primary: Cloudflare FLUX-1-Schnell
-  let imageBuffer = await generateThumbnailCloudflare(prompt);
+  // Primary: Pollinations.ai with Flux model — free, no auth, reliable from cloud servers
+  let imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
 
-  // Fallback: Gemini image generation
+  // Secondary: Cloudflare FLUX-1-Schnell
+  if (!imageBuffer) {
+    console.log("Pollinations failed — trying Cloudflare AI...");
+    imageBuffer = await generateThumbnailCloudflare(prompt);
+  }
+
+  // Last resort: Gemini image generation
   if (!imageBuffer) {
     console.log("Cloudflare AI failed — falling back to Gemini image generation.");
     imageBuffer = await generateThumbnailGemini(prompt);
   }
 
   if (!imageBuffer) {
-    console.error("All thumbnail generation methods failed.");
+    console.error("❌ All thumbnail generation methods failed.");
     return null;
   }
 
   const publicUrl = await uploadThumbnailToImgBB(imageBuffer, article.article_id);
   if (publicUrl) {
-    console.log(`✅ Thumbnail uploaded to ImgBB: ${publicUrl}`);
+    console.log(`✅ Thumbnail uploaded: ${publicUrl}`);
   }
   return publicUrl;
 }
@@ -918,6 +974,13 @@ export async function fetchRSSArticles(): Promise<any[]> {
     if (!foundGroup) groupedEvents.push({ primary: article, related: [] });
   }
 
+  // Sort groupedEvents by number of related sources descending (popularity), then by pubDate descending (freshness)
+  groupedEvents.sort((a, b) => {
+    const coverageDiff = b.related.length - a.related.length;
+    if (coverageDiff !== 0) return coverageDiff;
+    return new Date(b.primary.pubDate).getTime() - new Date(a.primary.pubDate).getTime();
+  });
+
   return groupedEvents.map((group) => {
     const primary = group.primary;
     primary.related_sources = group.related.map((r: any) => ({
@@ -952,9 +1015,13 @@ export async function runAIPipeline(): Promise<{
   processingInProgress = true;
   let processed = 0;
   let skipped = 0;
+  const MAX_ARTICLES_PER_RUN = 1;
 
   try {
     console.log("🔄 Starting AI pipeline...");
+    // Clear dynamic rate limit block at the beginning of each run so keys get a fresh retry
+    exhaustedKeys.clear();
+
     const articles = await fetchRSSArticles();
     const processedIds = await getProcessedIds();
     let quotaInfo = await getQuotaInfo();
@@ -977,6 +1044,10 @@ export async function runAIPipeline(): Promise<{
     console.log(`📰 ${articles.length} events fetched. ${processedIds.size} already in DB. Quota: ${quotaInfo.count}/${DAILY_LIMIT}`);
 
     for (const article of articles) {
+      if (processed >= MAX_ARTICLES_PER_RUN) {
+        console.log(`🛑 Reached limit of ${MAX_ARTICLES_PER_RUN} article per pipeline run. Stopping.`);
+        break;
+      }
       if (processedIds.has(article.article_id)) {
         skipped++;
         continue;
