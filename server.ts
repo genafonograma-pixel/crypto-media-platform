@@ -445,23 +445,39 @@ function hashStringToInt(str: string): number {
 
 /** Fetch a 1200×630 image from Pollinations.ai using Flux model — free, no API key, reliable on cloud. */
 async function generateThumbnailPollinations(prompt: string, seed: number): Promise<Buffer | null> {
+  // Pollinations works best with a shorter, focused prompt at square resolution.
+  // Strip the long style-prefix (first sentence) — Pollinations Flux already has a good
+  // cyberpunk/illustration aesthetic built in. Long prompts produce near-black garbage.
+  const shortPrompt = prompt
+    .replace(/^[^.]+\.\s*/, "")   // drop the style-prefix sentence
+    .replace(/ NO text.*$/i, "")  // drop the no-text suffix
+    .trim()
+    || prompt;                     // fallback to full prompt if stripping went wrong
+
   try {
-    const encodedPrompt = encodeURIComponent(prompt);
+    const encodedPrompt = encodeURIComponent(shortPrompt);
+    // Use 1024x1024 (square) — Pollinations Flux handles square far better than 1200x630
+    // and sharp will crop/fit to 1200x630 after. "flux-pro" gives cleaner outputs than "flux".
     const params = new URLSearchParams({
-      width: "1200",
-      height: "630",
+      width: "1024",
+      height: "1024",
       nologo: "true",
       seed: String(seed),
-      model: "flux",
+      model: "flux-pro",
     });
     const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(45000) });
+    console.log(`📡 Pollinations URL (short prompt): "${shortPrompt.slice(0, 80)}..."`);
+    const response = await fetch(url, { signal: AbortSignal.timeout(55000) });
     if (!response.ok) {
       console.error(`Pollinations returned ${response.status}`);
       return null;
     }
     const arrayBuffer = await response.arrayBuffer();
-    // Resize to exactly 1200x630 using sharp just in case Pollinations returns a slightly different size
+    // Reject suspiciously small images (under 30KB = garbage/near-black output)
+    if (arrayBuffer.byteLength < 30_000) {
+      console.error(`Pollinations returned a suspiciously small image (${arrayBuffer.byteLength} bytes) — rejecting as failed generation.`);
+      return null;
+    }
     const resized = await sharp(Buffer.from(arrayBuffer))
       .resize(1200, 630, { fit: "cover", position: "centre" })
       .webp({ quality: 85 })
@@ -1393,16 +1409,58 @@ app.get("/api/logs", (req, res) => {
   app.get("/api/debug", (req, res) => {
     res.json({
       has_gemini_key: !!process.env.GEMINI_API_KEY,
+      gemini_key_count: [
+        process.env.GEMINI_API_KEY,
+        process.env.GEMINI_API_KEY_1,
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_3,
+        process.env.GEMINI_API_KEY_4,
+        process.env.GEMINI_API_KEY_5,
+      ].filter(Boolean).length,
       has_supabase_url: !!process.env.SUPABASE_URL,
       has_supabase_key: !!process.env.SUPABASE_SERVICE_KEY,
+      cloudflare_accounts: CLOUDFLARE_ACCOUNTS.length,
       has_cloudflare_account: !!process.env.CLOUDFLARE_ACCOUNT_ID,
       has_cloudflare_token: !!process.env.CLOUDFLARE_API_TOKEN,
+      has_cloudflare_account_2: !!process.env.CLOUDFLARE_ACCOUNT_ID_2,
+      has_cloudflare_token_2: !!process.env.CLOUDFLARE_API_TOKEN_2,
+      thumbnail_provider: process.env.THUMBNAIL_PROVIDER || "pollinations",
       has_imgbb_key: !!process.env.IMGBB_API_KEY,
       generate_thumbnails: process.env.GENERATE_THUMBNAILS,
       process_secret_set: !!process.env.PROCESS_SECRET,
       node_env: process.env.NODE_ENV,
-      genai_initialized: !!process.env.OPENROUTER_API_KEY,
+      genai_initialized: GEMINI_KEYS.length > 0,
     });
+  });
+
+  // ── GET /api/test-cloudflare — Live ping both Cloudflare accounts ─────────
+  app.get("/api/test-cloudflare", async (req, res) => {
+    const results: any[] = [];
+    for (let i = 0; i < CLOUDFLARE_ACCOUNTS.length; i++) {
+      const { accountId, token } = CLOUDFLARE_ACCOUNTS[i];
+      const label = i === 0 ? "primary" : `account #${i + 1}`;
+      try {
+        const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: "a single glowing bitcoin coin" }),
+          signal: AbortSignal.timeout(30000),
+        });
+        const status = response.status;
+        let detail = "";
+        if (!response.ok) {
+          detail = await response.text();
+        } else {
+          const data = await response.json() as any;
+          detail = data?.result?.image ? `OK - image ${data.result.image.length} chars` : "OK but no image";
+        }
+        results.push({ account: label, status, detail: detail.slice(0, 200) });
+      } catch (err) {
+        results.push({ account: label, status: "error", detail: (err as Error).message });
+      }
+    }
+    res.json({ cloudflare_accounts: CLOUDFLARE_ACCOUNTS.length, results });
   });
 
   // ── GET /api/test-generate — Force generate a mock article and thumbnail ────
