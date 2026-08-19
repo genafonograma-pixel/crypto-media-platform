@@ -6,6 +6,7 @@ interface SEOProps {
   image?: string;
   type?: string;
   canonical?: string; // Override canonical URL (e.g. point to original article source)
+  schema?: any; // Structured JSON-LD schema
 }
 
 export default function SEO({ 
@@ -13,7 +14,8 @@ export default function SEO({
   description = "Stay updated with the latest cryptocurrency news, insights, and market movements.", 
   image = "", 
   type = "website",
-  canonical
+  canonical,
+  schema
 }: SEOProps) {
   useEffect(() => {
     // Set standard tags
@@ -54,7 +56,27 @@ export default function SEO({
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
 
-  }, [title, description, image, type, canonical]);
+    // Dynamic JSON-LD Schema
+    if (schema) {
+      let schemaScript = document.getElementById('jsonld-schema');
+      if (!schemaScript) {
+        schemaScript = document.createElement('script');
+        schemaScript.id = 'jsonld-schema';
+        schemaScript.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(schemaScript);
+      }
+      schemaScript.textContent = JSON.stringify(schema);
+    }
+
+    return () => {
+      // Clean up schema on unmount or before running effect again
+      const schemaScript = document.getElementById('jsonld-schema');
+      if (schemaScript) {
+        schemaScript.remove();
+      }
+    };
+
+  }, [title, description, image, type, canonical, schema]);
 
   return null;
 }

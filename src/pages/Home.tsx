@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, ChevronRight, Flame, TrendingUp } from 'lucide-react';
 import Header from '../components/Header';
@@ -65,9 +65,9 @@ function HeroCard({ article }: { article: Article }) {
             <Flame size={10} /> Top Breaking Story
           </span>
         </div>
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-4 line-clamp-3">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-4 line-clamp-3">
           {displayTitle}
-        </h2>
+        </h1>
         {article.description && (
           <p className="text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
         )}
@@ -209,6 +209,33 @@ export default function Home({ articles, loading, error }: HomeProps) {
     new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
 
+  const homeSchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${window.location.origin}/#website`,
+        "url": window.location.origin,
+        "name": "Crypton",
+        "description": "Stay updated with the latest cryptocurrency news, bitcoin updates, altcoin markets, blockchain technology, and defi insights on Crypton."
+      },
+      {
+        "@type": "NewsMediaOrganization",
+        "@id": `${window.location.origin}/#organization`,
+        "name": "Crypton",
+        "url": window.location.origin,
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${window.location.origin}/crypton_logo.svg`
+        },
+        "sameAs": [
+          "https://x.com/crypton",
+          "https://t.me/crypton"
+        ]
+      }
+    ]
+  }), []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
@@ -240,7 +267,11 @@ export default function Home({ articles, loading, error }: HomeProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title="Crypton - Latest Cryptocurrency News" />
+      <SEO 
+        title="Latest Cryptocurrency News, Bitcoin & Crypto Markets | Crypton" 
+        description="Stay updated with the latest cryptocurrency news, bitcoin updates, altcoin markets, blockchain technology, and defi insights on Crypton."
+        schema={homeSchema}
+      />
       <Header />
       <MarketMovers />
 
@@ -274,7 +305,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp size={14} className="text-[#3B82F6]" />
-                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]">Trending Now</h2>
+                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Trending Cryptocurrency News &amp; Market Stories">Trending Now</h2>
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -293,7 +324,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
               {/* Main Feed */}
               <div className="lg:col-span-2">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]">Latest News</h2>
+                  <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Latest Cryptocurrency & Bitcoin News">Latest News</h2>
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
                   <Link to="/news" className="text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] hover:text-[#93C5FD] transition-colors">
                     View All →
@@ -319,7 +350,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
                 {/* Most Read */}
                 <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a]">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#888]">Most Read</span>
+                    <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Most Read Cryptocurrency Articles">Most Read</h2>
                   </div>
                   <div className="px-4 py-2">
                     {sidebarArticles.map((a, i) => (

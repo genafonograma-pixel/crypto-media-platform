@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import Header from '../components/Header';
@@ -49,6 +49,49 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
     new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
 
+  const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+    Bitcoin: "The latest Bitcoin news, price analysis, and market updates. Stay informed on BTC developments, mining, ETFs, and institutional adoption.",
+    Altcoins: "Latest altcoin news covering Ethereum, Solana, XRP, Dogecoin, and other cryptocurrencies. Discover emerging crypto projects and market moves.",
+    DeFi: "Decentralized finance news and analysis. Follow the latest DeFi protocols, yield farming, liquidity mining, and on-chain activity.",
+    Web3: "Web3 and NFT news covering blockchain gaming, digital collectibles, metaverse developments, and decentralized applications.",
+    Markets: "Crypto market analysis, price movements, trading signals, and macroeconomic factors affecting Bitcoin and altcoin prices.",
+    Tech: "Blockchain technology updates including protocol upgrades, security audits, developer tools, and infrastructure innovations.",
+  };
+
+  const CATEGORY_SEO_TITLES: Record<string, string> = {
+    Bitcoin: "Bitcoin News: BTC Prices & Crypto Market Updates | Crypton",
+    Altcoins: "Altcoin News: Crypto Prices & Market Analysis | Crypton",
+    DeFi: "DeFi News: Decentralized Finance & Yield Farming | Crypton",
+    Web3: "Web3 News: NFTs, Metaverse & Blockchain Gaming | Crypton",
+    Markets: "Crypto Market News: Price Analysis & Trading Signals | Crypton",
+    Tech: "Blockchain Tech Updates & Crypto Protocol News | Crypton",
+  };
+
+  const categoryLabel = activeCategory || 'All Cryptocurrency News';
+  const categoryDescription = activeCategory
+    ? CATEGORY_DESCRIPTIONS[activeCategory] || `Latest ${activeCategory} cryptocurrency news and market updates on Crypton.`
+    : "Browse all the latest cryptocurrency news, bitcoin updates, altcoin analysis, DeFi, Web3 and blockchain market insights on Crypton.";
+
+  const seoTitle = activeCategory
+    ? CATEGORY_SEO_TITLES[activeCategory] || `${activeCategory} News & Cryptocurrency Market Updates | Crypton`
+    : "Latest Cryptocurrency News & Bitcoin Market Updates | Crypton";
+
+  const categorySchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": `${categoryLabel} - Crypton`,
+    "description": categoryDescription,
+    "url": window.location.href,
+    "publisher": {
+      "@type": "NewsMediaOrganization",
+      "name": "Crypton",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${window.location.origin}/crypton_logo.svg`
+      }
+    }
+  }), [categoryLabel, categoryDescription]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
@@ -74,7 +117,11 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title={`${activeCategory || 'Category'} News - Crypton`} />
+      <SEO 
+        title={seoTitle}
+        description={categoryDescription}
+        schema={categorySchema}
+      />
       <Header />
       
       <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-12">
@@ -92,7 +139,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
             )}
           </div>
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-[#F5F5F5]">
-            {categoryId ? (activeCategory ? activeCategory.toUpperCase() : "Category") : "ALL NEWS"}
+            {activeCategory ? `${activeCategory} Cryptocurrency News` : "All Cryptocurrency News"}
           </h1>
         </div>
 

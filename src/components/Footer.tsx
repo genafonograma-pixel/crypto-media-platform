@@ -9,7 +9,7 @@ export default function Footer() {
             <a href="/" className="inline-block mb-6">
               <img
                 src="/crypton_logo.svg"
-                alt="Crypton"
+                alt="Crypton Cryptocurrency News"
                 className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
               />
             </a>
@@ -18,7 +18,7 @@ export default function Footer() {
             </p>
           </div>
           <div>
-            <h3 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]">Sections</h3>
+            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Cryptocurrency News Sections">Sections</h2>
             <ul className="space-y-4 text-xs font-medium">
               <li><a href="#" className="text-[#AAA] hover:text-white transition-colors">Markets</a></li>
               <li><a href="#" className="text-[#AAA] hover:text-white transition-colors">Technology</a></li>
@@ -27,7 +27,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h3 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]">Company</h3>
+            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Crypton Company Information">Company</h2>
             <ul className="space-y-4 text-xs font-medium">
               <li><a href="#" className="text-[#AAA] hover:text-white transition-colors">About Us</a></li>
               <li><a href="#" className="text-[#AAA] hover:text-white transition-colors">Careers</a></li>

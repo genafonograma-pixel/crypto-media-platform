@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import ArticlePage from './pages/ArticlePage';
 import AuthorPage from './pages/AuthorPage';
 import CategoryPage from './pages/CategoryPage';
+import NotFoundPage from './pages/NotFoundPage';
 import type { Article, NewsResponse } from './types';
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/news/:categoryId" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
       <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
       <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

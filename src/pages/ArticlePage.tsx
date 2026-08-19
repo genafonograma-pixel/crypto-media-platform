@@ -267,14 +267,44 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
   const displayTitle = article.headline || article.title;
   const displaySeoTitle = article.seo_title || `${displayTitle} - Crypton`;
+  const seoDescription = article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const articleSchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": displayTitle,
+    "description": seoDescription,
+    "image": article.image_url ? [article.image_url] : [],
+    "datePublished": article.pubDate,
+    "dateModified": article.pubDate,
+    "author": {
+      "@type": "Person",
+      "name": AUTHOR.name,
+      "url": `${window.location.origin}/author/jordan-cole`
+    },
+    "publisher": {
+      "@type": "NewsMediaOrganization",
+      "name": "Crypton",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${window.location.origin}/crypton_logo.svg`
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": window.location.href
+    }
+  }), [article.article_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans pb-[90px]">
       <SEO 
         title={displaySeoTitle}
-        description={article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`}
+        description={seoDescription}
         image={article.image_url || ''}
         type="article"
+        schema={articleSchema}
       />
       <Header />
       

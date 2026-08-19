@@ -76,7 +76,7 @@ export default function MarketWatch() {
     <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
-        <span className="text-[10px] font-black uppercase tracking-widest text-[#888]">Market Watch</span>
+        <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Cryptocurrency Market Watch Live Prices">Market Watch</h2>
         <span className="text-[9px] text-[#444] font-mono">Live</span>
       </div>
 

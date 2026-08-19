@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -15,13 +15,32 @@ interface AuthorPageProps {
 export default function AuthorPage({ articles, loading }: AuthorPageProps) {
   const recentArticles = articles.slice(0, 8);
 
+  const authorSchema = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "mainEntity": {
+      "@type": "Person",
+      "name": AUTHOR.name,
+      "jobTitle": AUTHOR.title,
+      "description": AUTHOR.shortBio,
+      "url": `${window.location.origin}/author/jordan-cole`,
+      "sameAs": [AUTHOR.twitter],
+      "worksFor": {
+        "@type": "NewsMediaOrganization",
+        "name": "Crypton",
+        "url": window.location.origin
+      }
+    }
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
       <SEO
-        title={`${AUTHOR.name} - Senior Markets Reporter | Crypton`}
-        description={AUTHOR.shortBio}
+        title={`${AUTHOR.name}, ${AUTHOR.title} | Crypto News - Crypton`}
+        description={`${AUTHOR.shortBio} Follow ${AUTHOR.name} for the latest cryptocurrency and blockchain market analysis on Crypton.`}
         image=""
         type="website"
+        schema={authorSchema}
       />
       <Header />
 
@@ -43,7 +62,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
                 </p>
               </div>
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter mb-3">
-                {AUTHOR.name}
+                {AUTHOR.name} - {AUTHOR.title}
               </h1>
               <p className="text-sm text-[#888] mb-5">
                 Member since {AUTHOR.joined} &nbsp;&middot;&nbsp; Crypton
@@ -70,7 +89,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
       {/* Bio */}
       <div className="border-b border-[#1a1a1a]">
         <div className="max-w-4xl mx-auto px-6 py-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#555] mb-4">About</p>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#555] mb-4">About</h2>
           <p className="text-[#AAAAAA] leading-[1.9] text-base max-w-2xl">
             {AUTHOR.bio}
           </p>
@@ -79,9 +98,9 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
 
       {/* Recent Articles */}
       <div className="max-w-4xl mx-auto w-full px-6 py-12">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#555] mb-8">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#555] mb-8">
           Latest from {AUTHOR.name}
-        </p>
+        </h2>
         {loading ? (
           <div className="flex items-center gap-3 text-[#555]">
             <div className="w-5 h-5 border-2 border-[#222] border-t-[#3B82F6] rounded-full animate-spin" />
