@@ -1104,7 +1104,34 @@ export async function runAIPipeline(): Promise<{
         });
 
         // NEVER use scraped original images. If AI generation completely fails (due to quota/timeout), use a generic pixel art fallback.
-        const finalImageUrl = thumbnailUrl || "https://files.catbox.moe/2k119g.jpg";
+        let finalImageUrl = thumbnailUrl;
+        if (!finalImageUrl) {
+          try {
+            const mappingData = await fs.readFile(path.join(process.cwd(), "backup_thumbnails.json"), "utf-8");
+            const backupMap = JSON.parse(mappingData);
+            
+            const matchText = `${article.title || ""} ${aiResult.headline || ""} ${aiResult.classification || ""}`.toLowerCase();
+            let matchedKey = "altcoins"; // default fallback key
+            
+            for (const [key, details] of Object.entries(backupMap)) {
+              const tags = (details as any).tags || [];
+              if (tags.some((tag: string) => matchText.includes(tag.toLowerCase()))) {
+                matchedKey = key;
+                break;
+              }
+            }
+            
+            if (backupMap[matchedKey]) {
+              finalImageUrl = backupMap[matchedKey].url;
+              console.log(`ℹ️ AI thumbnail generation failed. Selected categorized fallback: "${matchedKey}" (${finalImageUrl})`);
+            } else {
+              finalImageUrl = "https://files.catbox.moe/2k119g.jpg";
+            }
+          } catch (e) {
+            console.warn("Failed to load backup thumbnails mapping, using global fallback:", e);
+            finalImageUrl = "https://files.catbox.moe/2k119g.jpg";
+          }
+        }
 
         // Save to DB
         await saveArticleToDB({

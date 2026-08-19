@@ -1,0 +1,401 @@
+{
+  "bitcoin": {
+    "url": "https://i.ibb.co/VYj037ZM/backup-bitcoin-webp.webp",
+    "tags": [
+      "btc",
+      "bitcoin",
+      "satoshi",
+      "halving"
+    ]
+  },
+  "ethereum": {
+    "url": "https://i.ibb.co/SwFQrSM7/backup-ethereum-webp.webp",
+    "tags": [
+      "eth",
+      "ethereum",
+      "vitalik",
+      "staking",
+      "shanghai"
+    ]
+  },
+  "altcoins": {
+    "url": "https://i.ibb.co/HTt0sCjk/backup-altcoins-webp.webp",
+    "tags": [
+      "altcoin",
+      "altcoins",
+      "solana",
+      "sol",
+      "ripple",
+      "xrp",
+      "ada",
+      "cardano",
+      "polkadot",
+      "dot",
+      "avax",
+      "avalanche"
+    ]
+  },
+  "stablecoins": {
+    "url": "https://i.ibb.co/S47k9J7H/backup-stablecoins-webp.webp",
+    "tags": [
+      "stablecoin",
+      "stablecoins",
+      "usdt",
+      "tether",
+      "usdc",
+      "peg",
+      "depeg"
+    ]
+  },
+  "defi": {
+    "url": "https://i.ibb.co/MksrqFNk/backup-defi-webp.webp",
+    "tags": [
+      "defi",
+      "uniswap",
+      "pancakeswap",
+      "liquidity",
+      "yield",
+      "pool",
+      "lending",
+      "borrowing",
+      "farm",
+      "farming"
+    ]
+  },
+  "web3_nfts": {
+    "url": "https://i.ibb.co/KjzL3Jdg/backup-web3-nfts-webp.webp",
+    "tags": [
+      "web3",
+      "nft",
+      "nfts",
+      "metaverse",
+      "opensea",
+      "avatar",
+      "digital art"
+    ]
+  },
+  "security_hacks": {
+    "url": "https://i.ibb.co/NgtxRv5Y/backup-security-hacks-webp.webp",
+    "tags": [
+      "hack",
+      "hacked",
+      "exploit",
+      "scam",
+      "phishing",
+      "stolen",
+      "drain",
+      "drained",
+      "compromise",
+      "attacker",
+      "exploiters",
+      "malware",
+      "vulnerability"
+    ]
+  },
+  "legal_regulation": {
+    "url": "https://i.ibb.co/YBxrgHXH/backup-legal-regulation-webp.webp",
+    "tags": [
+      "sec",
+      "gensler",
+      "court",
+      "judge",
+      "lawsuit",
+      "lawyer",
+      "regulation",
+      "regulatory",
+      "ban",
+      "compliance",
+      "settlement",
+      "fine",
+      "subpoena"
+    ]
+  },
+  "macro_fed": {
+    "url": "https://i.ibb.co/S7BXrKC3/backup-macro-fed-webp.webp",
+    "tags": [
+      "fed",
+      "inflation",
+      "cpi",
+      "rate hike",
+      "interest rate",
+      "macro",
+      "macroeconomics",
+      "powell",
+      "fomc",
+      "treasury"
+    ]
+  },
+  "market_bull": {
+    "url": "https://i.ibb.co/nNh9VxFS/backup-market-bull-webp.webp",
+    "tags": [
+      "bull",
+      "bullish",
+      "green",
+      "rally",
+      "surge",
+      "gain",
+      "gains",
+      "ath",
+      "highs",
+      "pump",
+      "pumping"
+    ]
+  },
+  "market_bear": {
+    "url": "https://i.ibb.co/8D6KW4bg/backup-market-bear-webp.webp",
+    "tags": [
+      "bear",
+      "bearish",
+      "red",
+      "crash",
+      "dump",
+      "fall",
+      "drop",
+      "plunge",
+      "losses",
+      "dip",
+      "liquidated",
+      "liquidation"
+    ]
+  },
+  "mining": {
+    "url": "https://i.ibb.co/R4TZqcFr/backup-mining-webp.webp",
+    "tags": [
+      "mining",
+      "miner",
+      "hashrate",
+      "asic",
+      "gpu",
+      "energy",
+      "electricity"
+    ]
+  },
+  "exchange_cex": {
+    "url": "https://i.ibb.co/p6jT7QBK/backup-exchange-cex-webp.webp",
+    "tags": [
+      "cex",
+      "binance",
+      "coinbase",
+      "kraken",
+      "exchange",
+      "exchanges",
+      "cz",
+      "saylor"
+    ]
+  },
+  "dex": {
+    "url": "https://i.ibb.co/0pVDrRL0/backup-dex-webp.webp",
+    "tags": [
+      "dex",
+      "amm",
+      "uniswap",
+      "sushiswap",
+      "swap",
+      "swapping"
+    ]
+  },
+  "wallets": {
+    "url": "https://i.ibb.co/tpqDyTBR/backup-wallets-webp.webp",
+    "tags": [
+      "wallet",
+      "wallets",
+      "ledger",
+      "trezor",
+      "metamask",
+      "custody",
+      "self-custody",
+      "private key",
+      "seed phrase"
+    ]
+  },
+  "staking": {
+    "url": "https://i.ibb.co/QjKt6dRy/backup-staking-webp.webp",
+    "tags": [
+      "staking",
+      "stake",
+      "validator",
+      "validators",
+      "delegator",
+      "yields"
+    ]
+  },
+  "cbdc": {
+    "url": "https://i.ibb.co/1yJzS2M/backup-cbdc-webp.webp",
+    "tags": [
+      "cbdc",
+      "digital dollar",
+      "digital yuan",
+      "digital euro",
+      "government coin"
+    ]
+  },
+  "airdrops": {
+    "url": "https://i.ibb.co/Z6jDLXL5/backup-airdrops-webp.webp",
+    "tags": [
+      "airdrop",
+      "airdrops",
+      "claim",
+      "free token",
+      "free tokens",
+      "distribution"
+    ]
+  },
+  "funding": {
+    "url": "https://i.ibb.co/V0HhBJZY/backup-funding-webp.webp",
+    "tags": [
+      "funding",
+      "vc",
+      "venture capital",
+      "invest",
+      "investment",
+      "invested",
+      "raise",
+      "raised",
+      "round",
+      "seed round",
+      "series a"
+    ]
+  },
+  "hardware": {
+    "url": "https://i.ibb.co/84cv9F7F/backup-hardware-webp.webp",
+    "tags": [
+      "hardware",
+      "ledger",
+      "trezor",
+      "coldcard",
+      "device",
+      "physical"
+    ]
+  },
+  "layer2": {
+    "url": "https://i.ibb.co/TDcrNT25/backup-layer2-webp.webp",
+    "tags": [
+      "layer 2",
+      "layer2",
+      "l2",
+      "arbitrum",
+      "optimism",
+      "polygon",
+      "matic",
+      "base",
+      "zksync",
+      "scaling",
+      "rollup"
+    ]
+  },
+  "memecoins": {
+    "url": "https://i.ibb.co/JRGjNHZd/backup-memecoins-webp.webp",
+    "tags": [
+      "memecoin",
+      "memecoins",
+      "doge",
+      "shiba",
+      "pepe",
+      "wif",
+      "bonk",
+      "floki"
+    ]
+  },
+  "ai_crypto": {
+    "url": "https://i.ibb.co/hFrV4G9x/backup-ai-crypto-webp.webp",
+    "tags": [
+      "ai",
+      "artificial intelligence",
+      "nvidia",
+      "bot",
+      "bots",
+      "agent",
+      "agents",
+      "machine learning"
+    ]
+  },
+  "nodes": {
+    "url": "https://i.ibb.co/wr3TPSS2/backup-nodes-webp.webp",
+    "tags": [
+      "node",
+      "nodes",
+      "validator",
+      "network",
+      "blockchain",
+      "block",
+      "blocks",
+      "transactions"
+    ]
+  },
+  "privacy": {
+    "url": "https://i.ibb.co/8n0CWPyy/backup-privacy-webp.webp",
+    "tags": [
+      "privacy",
+      "monero",
+      "xmr",
+      "tornado cash",
+      "mixer",
+      "anonymous",
+      "obscure"
+    ]
+  },
+  "institutions": {
+    "url": "https://i.ibb.co/ycZ0xW13/backup-institutions-webp.webp",
+    "tags": [
+      "etf",
+      "etfs",
+      "blackrock",
+      "fidelity",
+      "grayscale",
+      "institutional",
+      "wall street",
+      "sec filing"
+    ]
+  },
+  "tokenomics": {
+    "url": "https://i.ibb.co/3yg7THVS/backup-tokenomics-webp.webp",
+    "tags": [
+      "tokenomics",
+      "supply",
+      "burn",
+      "burning",
+      "burned",
+      "inflationary",
+      "deflationary"
+    ]
+  },
+  "smart_contracts": {
+    "url": "https://i.ibb.co/mFFXyKn7/backup-smart-contracts-webp.webp",
+    "tags": [
+      "smart contract",
+      "smart contracts",
+      "solidity",
+      "audit",
+      "developer",
+      "developers",
+      "code",
+      "github"
+    ]
+  },
+  "gamefi": {
+    "url": "https://i.ibb.co/qM3gZrhg/backup-gamefi-webp.webp",
+    "tags": [
+      "gamefi",
+      "play-to-earn",
+      "p2e",
+      "gaming",
+      "metaverse game",
+      "sandbox",
+      "decentraland"
+    ]
+  },
+  "adoption": {
+    "url": "https://i.ibb.co/whgx4n0X/backup-adoption-webp.webp",
+    "tags": [
+      "adoption",
+      "merchant",
+      "pay",
+      "payment",
+      "visa",
+      "mastercard",
+      "stripe",
+      "retail",
+      "shop"
+    ]
+  }
+}
