@@ -395,24 +395,15 @@ Return ONLY a JSON object:
 async function buildDynamicThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): Promise<string> {
   const title = article.headline || article.title || "";
 
-  // STYLE PREFIX — injected at the very front of every Flux prompt.
-  // Diffusion models (Flux) weight early tokens most heavily, so style must lead.
-  // NOTE: "16-bit pixel art style" caused Pollinations Flux to output blurry low-res blobs.
-  // Tested alternatives: "modern game design, cyberpunk aesthetic" produces clean, detailed
-  // high-quality illustrations on both Cloudflare Flux-1-Schnell AND Pollinations Flux.
-  const STYLE_PREFIX = "Detailed 2D vector flat illustration, modern game design, vibrant colors, clean composition, cyberpunk aesthetic, neon glow accents. ";
-  const STYLE_SUFFIX = " NO text, NO words, NO letters, NO typography, completely text-free.";
-
-  const aiPrompt = `You are an expert art director for a crypto news site.
-Write a SHORT scene description (1-2 sentences, max 40 words) for the following crypto headline: "${title}"
+  const aiPrompt = `You are an expert art director for a crypto news site. 
+Write a creative image generation prompt for the following headline: "${title}"
 Classification: "${article.classification || 'News'}"
 
-RULES:
-- Describe ONLY the scene content (characters, objects, environment). Do NOT add any style words — style is handled separately.
-- The scene must be fully text-free: no signs, no screens showing text, no captions.
-- Be specific and visual: describe concrete objects, actions, colors, and composition.
-
-Return ONLY a JSON object:
+INSTRUCTIONS:
+1. Describe a scene that matches the news. You MUST describe it as authentic, flat 2D retro pixel art.
+2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
+3. Use keywords like: AUTHENTIC 8-BIT PIXEL ART, flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette, indie game aesthetic.
+4. Return ONLY a JSON object:
 {
   "image_prompt": "string"
 }`;
@@ -420,16 +411,15 @@ Return ONLY a JSON object:
   try {
     const res = await runAIPrompt(aiPrompt);
     if (res && res.image_prompt) {
-      // Prepend style prefix so Flux sees it first, append no-text enforcement at end
-      return STYLE_PREFIX + res.image_prompt.trim() + STYLE_SUFFIX;
+      return res.image_prompt + ". AUTHENTIC 8-BIT PIXEL ART, flat 2D, visible square pixels. The image MUST be completely text-free. NO words, NO letters, NO typography.";
     }
   } catch (e) {
     console.error("Failed to generate dynamic thumbnail prompt:", e);
   }
 
-  // Fallback — also front-loaded with style prefix
+  // Fallback
   const c = article.classification || "Crypto News";
-  return `${STYLE_PREFIX}A scene representing ${c} with crypto coins, charts, and digital elements.${STYLE_SUFFIX}`;
+  return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
 }
 
 /** Deterministic numeric hash for a string — used as Pollinations seed for reproducibility. */
