@@ -389,16 +389,22 @@ Return ONLY a JSON object:
 /** Uses Gemini to generate a custom, highly specific text-free conceptual image prompt */
 async function buildDynamicThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): Promise<string> {
   const title = article.headline || article.title || "";
-  
-  const aiPrompt = `You are an expert art director for a crypto news site. 
-Write a creative image generation prompt for the following headline: "${title}"
+
+  // STYLE PREFIX — injected at the very front of every Flux prompt.
+  // Diffusion models (Flux) weight early tokens most heavily, so style must lead.
+  const STYLE_PREFIX = "AUTHENTIC 8-BIT PIXEL ART, flat 2D, retro SNES sprite style, visible chunky square pixels, limited color palette, indie game aesthetic. ";
+  const STYLE_SUFFIX = " NO text, NO words, NO letters, NO typography, completely text-free.";
+
+  const aiPrompt = `You are an expert art director for a crypto news site.
+Write a SHORT scene description (1-2 sentences, max 40 words) for the following crypto headline: "${title}"
 Classification: "${article.classification || 'News'}"
 
-INSTRUCTIONS:
-1. Describe a scene that matches the news. You MUST describe it as authentic, flat 2D retro pixel art.
-2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
-3. Use keywords like: AUTHENTIC 8-BIT PIXEL ART, flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette, indie game aesthetic.
-4. Return ONLY a JSON object:
+RULES:
+- Describe ONLY the scene content (characters, objects, environment). Do NOT add any style words — style is handled separately.
+- The scene must be fully text-free: no signs, no screens showing text, no captions.
+- Be specific and visual: describe concrete objects, actions, colors, and composition.
+
+Return ONLY a JSON object:
 {
   "image_prompt": "string"
 }`;
@@ -406,16 +412,16 @@ INSTRUCTIONS:
   try {
     const res = await runAIPrompt(aiPrompt);
     if (res && res.image_prompt) {
-      // Ensure the generated prompt includes the strict no-text instruction for Flux
-      return res.image_prompt + ". AUTHENTIC 8-BIT PIXEL ART, flat 2D, visible square pixels. The image MUST be completely text-free. NO words, NO letters, NO typography.";
+      // Prepend style prefix so Flux sees it first, append no-text enforcement at end
+      return STYLE_PREFIX + res.image_prompt.trim() + STYLE_SUFFIX;
     }
   } catch (e) {
     console.error("Failed to generate dynamic thumbnail prompt:", e);
   }
 
-  // Fallback
+  // Fallback — also front-loaded with style prefix
   const c = article.classification || "Crypto News";
-  return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
+  return `${STYLE_PREFIX}A scene representing ${c} with crypto coins, charts, and digital elements.${STYLE_SUFFIX}`;
 }
 
 /** Deterministic numeric hash for a string — used as Pollinations seed for reproducibility. */
