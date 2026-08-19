@@ -1107,6 +1107,8 @@ export async function runAIPipeline(): Promise<{
         quotaInfo.count++;
         await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
         processed++;
+        // Invalidate the in-memory news cache so /api/news immediately reflects the new article
+        lastFetchTime = 0;
         console.log(`✅ Saved: "${article.title?.slice(0, 50)}" (score: ${aiResult.quality_score})`);
       } catch (articleErr: any) {
         console.error(`❌ Unexpected error processing "${article.title?.slice(0, 50)}": ${articleErr.message}`);
