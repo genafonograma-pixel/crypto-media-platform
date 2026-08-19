@@ -422,59 +422,7 @@ INSTRUCTIONS:
   return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
 }
 
-/** Deterministic numeric hash for a string — used as Pollinations seed for reproducibility. */
-function hashStringToInt(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
 
-/** Fetch a 1200×630 image from Pollinations.ai using Flux model — free, no API key, reliable on cloud. */
-async function generateThumbnailPollinations(prompt: string, seed: number): Promise<Buffer | null> {
-  // Pollinations works best with a shorter, focused prompt at square resolution.
-  // Strip the long style-prefix (first sentence) — Pollinations Flux already has a good
-  // cyberpunk/illustration aesthetic built in. Long prompts produce near-black garbage.
-  const shortPrompt = prompt
-    .replace(/^[^.]+\.\s*/, "")   // drop the style-prefix sentence
-    .replace(/ NO text.*$/i, "")  // drop the no-text suffix
-    .trim()
-    || prompt;                     // fallback to full prompt if stripping went wrong
-
-  try {
-    const encodedPrompt = encodeURIComponent(shortPrompt);
-    // Use 1024x1024 (square) — Pollinations Flux handles square far better than 1200x630
-    // and sharp will crop/fit to 1200x630 after. "flux-pro" gives cleaner outputs than "flux".
-    const params = new URLSearchParams({
-      width: "1024",
-      height: "1024",
-      nologo: "true",
-      seed: String(seed),
-      model: "flux-pro",
-    });
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${params}`;
-    console.log(`📡 Pollinations URL (short prompt): "${shortPrompt.slice(0, 80)}..."`);
-    const response = await fetch(url, { signal: AbortSignal.timeout(55000) });
-    if (!response.ok) {
-      console.error(`Pollinations returned ${response.status}`);
-      return null;
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    // Reject suspiciously small images (under 30KB = garbage/near-black output)
-    if (arrayBuffer.byteLength < 30_000) {
-      console.error(`Pollinations returned a suspiciously small image (${arrayBuffer.byteLength} bytes) — rejecting as failed generation.`);
-      return null;
-    }
-    // Return the native 1024x1024 buffer. Do NOT resize/crop, which causes blurriness.
-    return Buffer.from(arrayBuffer);
-  } catch (err) {
-    console.error(`Pollinations thumbnail generation failed: ${(err as Error).message}`);
-    return null;
-  }
-}
 
 /** Generate a 1200x630 (16:9) image from Cloudflare Workers AI FLUX-1-Schnell */
 // ─── Cloudflare Account Rotation ─────────────────────────────────────────────
@@ -658,24 +606,9 @@ async function generateAndStoreThumbnail(
   console.log(`📝 Prompt: "${prompt.slice(0, 120)}..."`);
 
   let imageBuffer: Buffer | null = null;
-  // Default to cloudflare to match the original 2-days-ago behavior!
-  const provider = process.env.THUMBNAIL_PROVIDER || "cloudflare";
-
-  if (provider === "cloudflare") {
-    console.log("Using Cloudflare AI as primary provider...");
-    imageBuffer = await generateThumbnailCloudflare(prompt);
-    if (!imageBuffer) {
-      console.log("Cloudflare AI failed — trying Pollinations fallback...");
-      imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
-    }
-  } else {
-    console.log("Using Pollinations as primary provider...");
-    imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
-    if (!imageBuffer) {
-      console.log("Pollinations failed — trying Cloudflare AI fallback...");
-      imageBuffer = await generateThumbnailCloudflare(prompt);
-    }
-  }
+  
+  console.log("Using Cloudflare AI as primary provider...");
+  imageBuffer = await generateThumbnailCloudflare(prompt);
 
   // Last resort: Gemini image generation
   if (!imageBuffer) {
