@@ -468,11 +468,8 @@ async function generateThumbnailPollinations(prompt: string, seed: number): Prom
       console.error(`Pollinations returned a suspiciously small image (${arrayBuffer.byteLength} bytes) — rejecting as failed generation.`);
       return null;
     }
-    const resized = await sharp(Buffer.from(arrayBuffer))
-      .resize(1200, 630, { fit: "cover", position: "centre" })
-      .webp({ quality: 85 })
-      .toBuffer();
-    return resized;
+    // Return the native 1024x1024 buffer. Do NOT resize/crop, which causes blurriness.
+    return Buffer.from(arrayBuffer);
   } catch (err) {
     console.error(`Pollinations thumbnail generation failed: ${(err as Error).message}`);
     return null;
@@ -528,11 +525,9 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
       const data = await response.json() as any;
       if (data && data.result && data.result.image) {
         if (i > 0) console.log(`✅ Cloudflare AI (${label}) succeeded.`);
-        const rawBuffer = Buffer.from(data.result.image, "base64");
-        return await sharp(rawBuffer)
-          .resize(1200, 630, { fit: "cover", position: "centre" })
-          .webp({ quality: 85 })
-          .toBuffer();
+        // Cloudflare natively returns 1024x1024. Do NOT resize/crop it,
+        // which caused the "trashy blurry" look the user hated.
+        return Buffer.from(data.result.image, "base64");
       }
 
       console.error(`Cloudflare AI (${label}) response had no image data.`);
@@ -663,7 +658,8 @@ async function generateAndStoreThumbnail(
   console.log(`📝 Prompt: "${prompt.slice(0, 120)}..."`);
 
   let imageBuffer: Buffer | null = null;
-  const provider = process.env.THUMBNAIL_PROVIDER || "pollinations";
+  // Default to cloudflare to match the original 2-days-ago behavior!
+  const provider = process.env.THUMBNAIL_PROVIDER || "cloudflare";
 
   if (provider === "cloudflare") {
     console.log("Using Cloudflare AI as primary provider...");
