@@ -107,7 +107,9 @@ async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      // No responseMimeType — strict JSON mode breaks when article text has quotes
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
     })
   });
   const data = await res.json();
@@ -1056,7 +1058,7 @@ export async function runAIPipeline(): Promise<{
   processingInProgress = true;
   let processed = 0;
   let skipped = 0;
-  const MAX_ARTICLES_PER_RUN = 1;
+  const MAX_ARTICLES_PER_RUN = 5;
 
   try {
     console.log("🔄 Starting AI pipeline...");
