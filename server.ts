@@ -44,14 +44,17 @@ type AIResult = {
 };
 
 // ─── Gemini Key Rotation ─────────────────────────────────────────────────────
-// Load all available Gemini keys from env (GEMINI_API_KEY, GEMINI_API_KEY_2, etc.)
+// Load all available Gemini keys from env
+// Render uses GEMINI_API_KEY, GEMINI_API_KEY_1 ... GEMINI_API_KEY_5 (6 total)
+// Local .env uses GEMINI_API_KEY_2 ... GEMINI_API_KEY_6 as extras — both are supported.
 const GEMINI_KEYS: string[] = [
   process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_1,  // Render's second key
   process.env.GEMINI_API_KEY_2,
   process.env.GEMINI_API_KEY_3,
   process.env.GEMINI_API_KEY_4,
   process.env.GEMINI_API_KEY_5,
-  process.env.GEMINI_API_KEY_6,
+  process.env.GEMINI_API_KEY_6,  // Local .env extra slot
 ].filter(Boolean) as string[];
 
 const exhaustedKeys = new Set<string>(); // keys that hit 429 today
@@ -392,7 +395,10 @@ async function buildDynamicThumbnailPrompt(article: { headline?: string | null; 
 
   // STYLE PREFIX — injected at the very front of every Flux prompt.
   // Diffusion models (Flux) weight early tokens most heavily, so style must lead.
-  const STYLE_PREFIX = "AUTHENTIC 8-BIT PIXEL ART, flat 2D, retro SNES sprite style, visible chunky square pixels, limited color palette, indie game aesthetic. ";
+  // NOTE: "16-bit pixel art style" caused Pollinations Flux to output blurry low-res blobs.
+  // Tested alternatives: "modern game design, cyberpunk aesthetic" produces clean, detailed
+  // high-quality illustrations on both Cloudflare Flux-1-Schnell AND Pollinations Flux.
+  const STYLE_PREFIX = "Detailed 2D vector flat illustration, modern game design, vibrant colors, clean composition, cyberpunk aesthetic, neon glow accents. ";
   const STYLE_SUFFIX = " NO text, NO words, NO letters, NO typography, completely text-free.";
 
   const aiPrompt = `You are an expert art director for a crypto news site.
@@ -466,51 +472,70 @@ async function generateThumbnailPollinations(prompt: string, seed: number): Prom
 }
 
 /** Generate a 1200x630 (16:9) image from Cloudflare Workers AI FLUX-1-Schnell */
+// ─── Cloudflare Account Rotation ─────────────────────────────────────────────
+// Supports multiple Cloudflare accounts. When one hits the daily quota (429),
+// it automatically falls through to the next account.
+// Add to .env: CLOUDFLARE_ACCOUNT_ID_2 + CLOUDFLARE_API_TOKEN_2 (and _3, _4, etc.)
+const CLOUDFLARE_ACCOUNTS = [
+  { accountId: process.env.CLOUDFLARE_ACCOUNT_ID,   token: process.env.CLOUDFLARE_API_TOKEN   },
+  { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_2, token: process.env.CLOUDFLARE_API_TOKEN_2 },
+  { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_3, token: process.env.CLOUDFLARE_API_TOKEN_3 },
+].filter((a) => a.accountId && a.token) as { accountId: string; token: string }[];
+
 async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | null> {
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const token = process.env.CLOUDFLARE_API_TOKEN;
-  
-  if (!accountId || !token) {
+  if (CLOUDFLARE_ACCOUNTS.length === 0) {
     console.error("Missing Cloudflare API credentials in environment.");
     return null;
   }
 
-  try {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt }),
-      signal: AbortSignal.timeout(45000),
-    });
+  for (let i = 0; i < CLOUDFLARE_ACCOUNTS.length; i++) {
+    const { accountId, token } = CLOUDFLARE_ACCOUNTS[i];
+    const label = i === 0 ? "primary" : `account #${i + 1}`;
+    try {
+      const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+        signal: AbortSignal.timeout(45000),
+      });
 
-    if (!response.ok) {
-      console.error(`Cloudflare AI returned ${response.status}: ${await response.text()}`);
-      return null;
-    }
+      if (response.status === 429) {
+        const body = await response.text();
+        console.error(`Cloudflare AI (${label}) returned 429: ${body}`);
+        if (i + 1 < CLOUDFLARE_ACCOUNTS.length) {
+          console.log(`Switching to Cloudflare account #${i + 2}...`);
+        }
+        continue; // try next account
+      }
 
-    const data = await response.json() as any;
-    if (data && data.result && data.result.image) {
-      // Cloudflare returns the image as a base64 string (square, ~1024x1024)
-      // Resize to 1200x630 (16:9) and convert to WebP for next-gen format support
-      const rawBuffer = Buffer.from(data.result.image, "base64");
-      const resizedBuffer = await sharp(rawBuffer)
-        .resize(1200, 630, { fit: "cover", position: "centre" })
-        .webp({ quality: 85 })
-        .toBuffer();
-      return resizedBuffer;
+      if (!response.ok) {
+        console.error(`Cloudflare AI (${label}) returned ${response.status}: ${await response.text()}`);
+        continue;
+      }
+
+      const data = await response.json() as any;
+      if (data && data.result && data.result.image) {
+        if (i > 0) console.log(`✅ Cloudflare AI (${label}) succeeded.`);
+        const rawBuffer = Buffer.from(data.result.image, "base64");
+        return await sharp(rawBuffer)
+          .resize(1200, 630, { fit: "cover", position: "centre" })
+          .webp({ quality: 85 })
+          .toBuffer();
+      }
+
+      console.error(`Cloudflare AI (${label}) response had no image data.`);
+    } catch (err) {
+      console.error(`Cloudflare AI (${label}) failed: ${(err as Error).message}`);
     }
-    
-    console.error("Cloudflare AI response had no image data.");
-    return null;
-  } catch (err) {
-    console.error(`Cloudflare thumbnail generation failed: ${(err as Error).message}`);
-    return null;
   }
+
+  return null; // all accounts exhausted
 }
+
 
 /** Fetch a 1200×630 image from Gemini image generation — higher quality fallback. */
 async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
@@ -1376,6 +1401,39 @@ app.get("/api/logs", (req, res) => {
       node_env: process.env.NODE_ENV,
       genai_initialized: !!process.env.OPENROUTER_API_KEY,
     });
+  });
+
+  // ── GET /api/test-generate — Force generate a mock article and thumbnail ────
+  app.get("/api/test-generate", async (req, res) => {
+    try {
+      const mockArticle = {
+        title: "Ethereum Whales Accumulate $500M in ETH as Layer 2 Gas Fees Hit All-Time Lows",
+        description: "Large holders are taking advantage of low transaction costs to stack Ethereum.",
+        article_id: "mock_eth_accumulate_" + Date.now(),
+        source_id: "Crypto News",
+      };
+      const aiResult = await processArticleWithAI(
+        mockArticle.title,
+        mockArticle.description,
+        mockArticle.source_id,
+        "Ethereum"
+      );
+      const thumbnailUrl = await generateAndStoreThumbnail({
+        article_id: mockArticle.article_id,
+        headline: aiResult.headline,
+        title: mockArticle.title,
+        classification: aiResult.classification,
+      });
+      res.json({
+        success: true,
+        headline: aiResult.headline,
+        classification: aiResult.classification,
+        quality_score: aiResult.quality_score,
+        image_url: thumbnailUrl,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   });
 
   // ── GET /api/test-rss — Check if Render IP is blocked ────────────────────
