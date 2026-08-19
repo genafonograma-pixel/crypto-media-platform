@@ -629,18 +629,28 @@ async function generateAndStoreThumbnail(
   console.log(`🎨 Generating thumbnail for: "${(article.headline || article.title || "").slice(0, 50)}..."`);
   console.log(`📝 Prompt: "${prompt.slice(0, 120)}..."`);
 
-  // Primary: Pollinations.ai with Flux model — free, no auth, reliable from cloud servers
-  let imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
+  let imageBuffer: Buffer | null = null;
+  const provider = process.env.THUMBNAIL_PROVIDER || "pollinations";
 
-  // Secondary: Cloudflare FLUX-1-Schnell
-  if (!imageBuffer) {
-    console.log("Pollinations failed — trying Cloudflare AI...");
+  if (provider === "cloudflare") {
+    console.log("Using Cloudflare AI as primary provider...");
     imageBuffer = await generateThumbnailCloudflare(prompt);
+    if (!imageBuffer) {
+      console.log("Cloudflare AI failed — trying Pollinations fallback...");
+      imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
+    }
+  } else {
+    console.log("Using Pollinations as primary provider...");
+    imageBuffer = await generateThumbnailPollinations(prompt, hashStringToInt(article.article_id));
+    if (!imageBuffer) {
+      console.log("Pollinations failed — trying Cloudflare AI fallback...");
+      imageBuffer = await generateThumbnailCloudflare(prompt);
+    }
   }
 
   // Last resort: Gemini image generation
   if (!imageBuffer) {
-    console.log("Cloudflare AI failed — falling back to Gemini image generation.");
+    console.log("All main providers failed — falling back to Gemini image generation.");
     imageBuffer = await generateThumbnailGemini(prompt);
   }
 
