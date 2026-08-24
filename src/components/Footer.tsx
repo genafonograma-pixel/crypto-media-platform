@@ -2,9 +2,9 @@ import React from 'react';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] text-[#F5F5F5] py-16 border-t border-[#222]">
+    <footer className="bg-[#0A0A0A] text-[#F5F5F5] py-10 md:py-16 border-t border-[#222]">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-1 md:col-span-2">
             <a href="/" className="inline-block mb-6">
               <img

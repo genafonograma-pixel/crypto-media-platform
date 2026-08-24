@@ -46,7 +46,7 @@ function HeroCard({ article }: { article: Article }) {
     <Link
       to={getArticleHref(article)}
       state={{ article }}
-      className="group relative flex flex-col justify-end overflow-hidden rounded-xl min-h-[420px] bg-[#0a0a0a] border border-[#1a1a1a]"
+      className="group relative flex flex-col justify-end overflow-hidden rounded-xl min-h-[280px] md:min-h-[420px] bg-[#0a0a0a] border border-[#1a1a1a]"
     >
       {article.image_url && (
         <img
@@ -59,17 +59,17 @@ function HeroCard({ article }: { article: Article }) {
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
-      <div className="relative z-10 p-6 md:p-8">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="relative z-10 p-4 md:p-8">
+        <div className="flex items-center gap-2 mb-2 md:mb-3">
           <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-400">
             <Flame size={10} /> Top Breaking Story
           </span>
         </div>
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-4 line-clamp-3">
+        <h1 className="text-xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-3 md:mb-4 line-clamp-3">
           {displayTitle}
         </h1>
         {article.description && (
-          <p className="text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
+          <p className="hidden sm:block text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
         )}
         <div className="flex items-center gap-3 text-[11px] text-[#777]">
           <span className="bg-[#3B82F6] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
@@ -154,10 +154,10 @@ function FeedCard({ article }: { article: Article }) {
     <Link
       to={getArticleHref(article)}
       state={{ article }}
-      className="group flex gap-5 py-5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
+      className="group flex gap-4 sm:gap-5 py-4 sm:py-5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
     >
       {article.image_url && (
-        <div className="w-28 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
+        <div className="w-20 h-16 sm:w-28 sm:h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
           <img
             src={article.image_url}
             alt={displayTitle}
@@ -168,11 +168,11 @@ function FeedCard({ article }: { article: Article }) {
       )}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1.5">{classification}</span>
-        <h3 className="text-base font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
+        <h3 className="text-sm sm:text-base font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
           {displayTitle}
         </h3>
         {article.description && (
-          <p className="text-[13px] text-[#666] line-clamp-1 mb-2">{article.description}</p>
+          <p className="hidden sm:block text-[13px] text-[#666] line-clamp-1 mb-2">{article.description}</p>
         )}
         <span className="text-[10px] text-[#555] flex items-center gap-1 mt-auto"><Clock size={9} />{formatDate(article.pubDate)}</span>
       </div>
@@ -190,7 +190,7 @@ function SidebarCard({ article, index }: { article: Article; index: number }) {
       state={{ article }}
       className="group flex gap-3 py-3.5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
     >
-      <span className="text-xl font-black text-[#1e1e1e] group-hover:text-[#252525] transition-colors select-none shrink-0 w-6 text-center mt-0.5">
+      <span className="text-base font-black text-[#1e1e1e] group-hover:text-[#252525] transition-colors select-none shrink-0 w-5 text-center mt-0.5">
         {index + 1}
       </span>
       <div className="flex-1 min-w-0">

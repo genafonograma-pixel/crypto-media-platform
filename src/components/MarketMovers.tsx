@@ -109,9 +109,13 @@ export default function MarketMovers() {
 
   return (
     <div className="w-full bg-[#080808] border-b border-[#1a1a1a]">
-      <div className="max-w-[1280px] mx-auto flex items-stretch h-10">
+      <div className="max-w-[1280px] mx-auto flex items-stretch h-10 px-2 sm:px-0">
 
-        {fearGreed && <FearGreedWidget data={fearGreed} />}
+        {fearGreed && (
+          <div className="hidden sm:flex">
+            <FearGreedWidget data={fearGreed} />
+          </div>
+        )}
 
         {/* Scrolling ticker */}
         <div className="flex-1 overflow-hidden flex items-center">

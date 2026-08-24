@@ -124,9 +124,9 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
       />
       <Header />
       
-      <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-12">
+      <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6 md:py-12">
         {/* Category Header */}
-        <div className="mb-12 pb-6 border-b border-[#1a1a1a]">
+        <div className="mb-8 md:mb-12 pb-6 border-b border-[#1a1a1a]">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666] mb-4">
             <Link to="/" className="hover:text-[#F5F5F5] transition-colors">Home</Link>
             <span>/</span>
@@ -138,7 +138,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
               </>
             )}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-[#F5F5F5]">
+          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-[#F5F5F5]">
             {activeCategory ? `${activeCategory} Cryptocurrency News` : "All Cryptocurrency News"}
           </h1>
         </div>
