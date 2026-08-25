@@ -57,19 +57,23 @@ const GEMINI_KEYS: string[] = [
   process.env.GEMINI_API_KEY_6,  // Local .env extra slot
 ].filter(Boolean) as string[];
 
-const exhaustedKeys = new Set<string>(); // keys that hit 429 today
+const exhaustedKeys = new Map<string, number>(); // key -> expiry timestamp
 let geminiKeyIndex = 0;
 
 function getNextGeminiKey(): string | null {
-  // Find the next non-exhausted key, cycling through all
   for (let i = 0; i < GEMINI_KEYS.length; i++) {
     const idx = (geminiKeyIndex + i) % GEMINI_KEYS.length;
-    if (!exhaustedKeys.has(GEMINI_KEYS[idx])) {
+    const key = GEMINI_KEYS[idx];
+    const expiry = exhaustedKeys.get(key);
+    
+    // If key is not exhausted OR the 1-minute cooldown has passed
+    if (!expiry || Date.now() > expiry) {
+      if (expiry) exhaustedKeys.delete(key);
       geminiKeyIndex = (idx + 1) % GEMINI_KEYS.length;
-      return GEMINI_KEYS[idx];
+      return key;
     }
   }
-  return null; // all keys exhausted
+  return null; 
 }
 
 // Robust JSON parser — handles markdown fences and articles with unescaped quotes
@@ -116,7 +120,8 @@ async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
   if (data.error) {
     const code = data.error.code;
     if (code === 429) {
-      exhaustedKeys.add(apiKey);
+      // Cooldown for 1 minute (60,000ms) to recover from RPM limits
+      exhaustedKeys.set(apiKey, Date.now() + 60000);
       throw new Error(`QUOTA_EXHAUSTED:${apiKey}`);
     }
     throw new Error(`Gemini error ${code}: ${data.error.message}`);
@@ -140,7 +145,7 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openrouter/free",
+      model: "google/gemma-2-9b-it:free",
       messages: [{ role: "user", content: prompt }]
     })
   });
@@ -1150,6 +1155,360 @@ let lastFearGreedFetchTime = 0;
 const FEAR_GREED_CACHE_TTL = 60 * 60 * 1000;
 
 // ─── Express Server ──────────────────────────────────────────────────────────
+
+// ─── Bitcoin Intelligence Pipeline ───────────────────────────────────────────
+let btcIntelligenceInProgress = false;
+
+async function getBitcoinArticles() {
+  if (!supabase) return [];
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("classification", "Bitcoin")
+    .gte("pub_date", oneDayAgo)
+    .order("pub_date", { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching Bitcoin articles:", error.message);
+    return [];
+  }
+  
+  const rawArticles = data.map((row: any) => ({
+    article_id: row.id,
+    title: row.title,
+    headline: row.headline,
+    link: row.link,
+    source_id: row.source_id,
+    pubDate: row.pub_date,
+    image_url: row.image_url,
+    description: row.description,
+    ai_summary: row.ai_summary,
+    classification: row.classification,
+    related_sources: row.related_sources || [],
+    category: row.category || ["News"]
+  }));
+
+  // Deduplication / Event clustering
+  const getWords = (text: string) => new Set(text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 3));
+  const calculateSimilarity = (t1: string, t2: string) => {
+    const w1 = getWords(t1);
+    const w2 = getWords(t2);
+    const intersection = new Set([...w1].filter((x) => w2.has(x)));
+    const union = new Set([...w1, ...w2]);
+    return union.size === 0 ? 0 : intersection.size / union.size;
+  };
+
+  const clustered: any[] = [];
+  for (const article of rawArticles) {
+    let foundGroup = false;
+    for (const group of clustered) {
+      if (calculateSimilarity(article.headline || article.title, group.headline || group.title) > 0.35) {
+        // Only push unique sources
+        const sourceExists = group.related_sources?.some((rs: any) => rs.source_id === article.source_id);
+        if (!sourceExists && group.source_id !== article.source_id) {
+          if (!group.related_sources) group.related_sources = [];
+          group.related_sources.push({
+            source_id: article.source_id,
+            link: article.link,
+            title: article.title
+          });
+        }
+        foundGroup = true;
+        break;
+      }
+    }
+    if (!foundGroup) clustered.push(article);
+  }
+
+  return clustered;
+}
+
+function rankBitcoinArticleImportance(article: any) {
+  let score = 0;
+  
+  // Recency
+  const hoursOld = (Date.now() - new Date(article.pubDate).getTime()) / (1000 * 60 * 60);
+  if (hoursOld < 4) score += 3;
+  else if (hoursOld < 12) score += 2;
+  else score += 1;
+  
+  // Coverage
+  const sourceCount = (article.related_sources?.length || 0) + 1;
+  score += Math.min(sourceCount * 2, 6);
+  
+  // Keyword signals
+  const text = ((article.headline || article.title) + " " + (article.description || "")).toLowerCase();
+  if (text.includes("etf") || text.includes("sec") || text.includes("approve") || text.includes("reject")) score += 4;
+  if (text.includes("hack") || text.includes("exploit") || text.includes("stolen")) score += 3;
+  if (text.includes("buy") || text.includes("sell") || text.includes("institutional") || text.includes("microstrategy")) score += 3;
+  if (text.includes("halving") || text.includes("hashrate") || text.includes("miner")) score += 2;
+  
+  if (score >= 10) return "High";
+  if (score >= 6) return "Medium";
+  return "Low";
+}
+
+async function generateBitcoinIntelligence(articles: any[], btcPrice: any, btcChange: any) {
+  // ── QA Gate: determine whether a real synthesis is possible ─────────────────
+  const causalKeywords = ["amid", "following", "after", "driven by", "as ", "on news", "due to",
+    "following", "triggered by", "boosted by", "weighed by", "pressured by", "buoyed by",
+    "supported by", "ETF", "inflow", "outflow", "regulation", "approval", "rejected", "hack",
+    "treasury", "institutional", "fed ", "interest rate", "inflation"];
+
+  const hasSignalArticle = articles.some((a: any) =>
+    a.importance === "High" || a.importance === "Medium"
+  );
+  const hasCausalKeyword = articles.some((a: any) => {
+    const text = ((a.headline || a.title) + " " + (a.description || "")).toLowerCase();
+    return causalKeywords.some(kw => text.includes(kw));
+  });
+  const priceAbsChange = Math.abs(parseFloat(btcChange) || 0);
+  const genuinelyQuiet = !hasSignalArticle && !hasCausalKeyword && priceAbsChange < 1.5;
+
+  if (articles.length === 0 || genuinelyQuiet) {
+    const priceDesc = btcPrice
+      ? `Bitcoin is currently trading at $${Number(btcPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}, ${parseFloat(btcChange) >= 0 ? "up" : "down"} ${priceAbsChange.toFixed(2)}% over the past 24 hours.`
+      : "";
+    return {
+      situation_text: `Bitcoin markets are relatively quiet at the moment. No single major catalyst has emerged in the latest verified reporting. ${priceDesc}`,
+      why_moving_text: "There is no single confirmed catalyst currently explaining Bitcoin's move. Price action appears to be driven by broader market conditions rather than a specific news event.",
+      quiet_market: true,
+      etf_text: null,
+      regulation_text: null,
+      institutional_text: null,
+      network_text: null,
+      macro_text: null,
+      key_levels_text: null,
+      etf_flows_text: null,
+      events_today_text: null,
+      events_week_text: null,
+      source_metrics: { reports: articles.length, sources: new Set(articles.map((a: any) => a.source_id)).size }
+    };
+  }
+
+  // ── Build context ────────────────────────────────────────────────────────────
+  const totalReports = articles.reduce((sum: number, a: any) => sum + 1 + (a.related_sources?.length || 0), 0);
+  const uniqueSources = new Set(articles.flatMap((a: any) => [a.source_id, ...(a.related_sources?.map((rs: any) => rs.source_id) || [])]));
+
+  // Sort so High articles appear first in context
+  const sortedArticles = [...articles].sort((a: any, b: any) => {
+    const rank = { High: 0, Medium: 1, Low: 2 };
+    return (rank[a.importance as keyof typeof rank] ?? 2) - (rank[b.importance as keyof typeof rank] ?? 2);
+  });
+
+  const articlesContext = sortedArticles.map((a: any) =>
+    `[${a.importance}] Headline: ${a.headline || a.title}\nSummary: ${a.description || ""}\nSources: ${(a.related_sources?.length || 0) + 1}`
+  ).join("\n\n");
+
+  const changeDir = parseFloat(btcChange) >= 0 ? "up" : "down";
+  const priceStr = `$${Number(btcPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${changeDir} ${priceAbsChange.toFixed(2)}% in 24h)`;
+
+  // ── Prompt 1: Situation + Why + Categories ───────────────────────────────────
+  const call1Prompt = `You are a senior crypto market analyst writing for a professional financial news platform. Analyze the Bitcoin news and market data below.
+
+CURRENT MARKET DATA:
+BTC Price: ${priceStr}
+
+LATEST NEWS (sorted by importance):
+${articlesContext}
+
+GENERATE THE FOLLOWING — respond ONLY with a valid JSON object:
+
+1. "situation_text": 2-4 sentences. State the current price and direction first. Then name the dominant catalyst(s) based on the [High] articles. If multiple catalysts exist, mention the top 1-2. Be factual and present-tense. DO NOT say "no clear catalyst" if any [High] or [Medium] article names a specific driver. Template: "Bitcoin is trading at [price] ([change]), [driven by / following / amid] [catalyst from top source]. [Optional 1 sentence of context.]"
+
+2. "why_moving_text": 1-3 sentences explaining the causal driver of today's price move. Pull from [High]-relevance articles first; use [Medium] if no High exists. Name specific factors (e.g. "spot ETF net inflows of $X," "a weaker Dollar Index," "Treasury buyback activity") rather than vague phrases like "positive sentiment." If sources disagree, say so: "Multiple factors are cited: X and Y." Only use "There is no single confirmed catalyst" if ALL articles are [Low] importance AND price change is under 1.5% — which is NOT the case here.
+
+3. "quiet_market": false (since we have signal articles)
+
+4. Category flags (set to true if strong evidence exists in the articles):
+   "has_etf_news", "has_regulation_news", "has_institutional_news", "has_network_news", "has_macro_news", "has_key_levels", "has_etf_flows", "has_events"
+
+IMPORTANT RULES:
+- Do NOT invent quotes, statistics, prices, or ETF flows not present in the source text
+- Do NOT use filler phrases: "continues to attract attention," "remains dynamic," "future remains uncertain"
+- Do NOT give financial advice or price predictions
+- Cite what sources say, synthesize in your own words
+
+JSON format:
+{
+  "situation_text": "...",
+  "why_moving_text": "...",
+  "quiet_market": false,
+  "has_etf_news": boolean,
+  "has_regulation_news": boolean,
+  "has_institutional_news": boolean,
+  "has_network_news": boolean,
+  "has_macro_news": boolean,
+  "has_key_levels": boolean,
+  "has_etf_flows": boolean,
+  "has_events": boolean
+}`;
+
+  const state1 = await runAIPrompt(call1Prompt);
+
+  // ── QA check: block fallback if we have signal articles ─────────────────────
+  let situationText = state1?.situation_text;
+  let whyMovingText = state1?.why_moving_text;
+
+  if (hasSignalArticle) {
+    // If AI still returned a fallback-style response despite signal articles, regenerate inline
+    const fallbackPhrases = ["no single confirmed catalyst", "relatively quiet", "no major catalyst", "no clear catalyst"];
+    if (whyMovingText && fallbackPhrases.some(p => whyMovingText.toLowerCase().includes(p))) {
+      const topArticle = sortedArticles[0];
+      whyMovingText = `Bitcoin is ${changeDir} ${priceAbsChange.toFixed(2)}% today. According to ${topArticle.source_id}, ${topArticle.description || topArticle.headline || topArticle.title}. Note: this summary is sourced directly from the most prominent available report.`;
+    }
+  }
+
+  let result: any = {
+    situation_text: situationText || `Bitcoin is currently trading at ${priceStr}. See the market snapshot for current levels.`,
+    why_moving_text: whyMovingText || `Bitcoin is ${changeDir} ${priceAbsChange.toFixed(2)}% over 24 hours. Refer to the news section below for the latest reported catalysts.`,
+    quiet_market: false,
+    etf_text: null,
+    regulation_text: null,
+    institutional_text: null,
+    network_text: null,
+    macro_text: null,
+    key_levels_text: null,
+    etf_flows_text: null,
+    events_today_text: null,
+    events_week_text: null,
+    source_metrics: { reports: totalReports, sources: uniqueSources.size }
+  };
+
+  // ── Prompt 2: Category deep-dives ───────────────────────────────────────────
+  const categoriesToGenerate: string[] = [];
+  if (state1?.has_etf_news) categoriesToGenerate.push("ETF");
+  if (state1?.has_regulation_news) categoriesToGenerate.push("Regulation");
+  if (state1?.has_institutional_news) categoriesToGenerate.push("Institutional");
+  if (state1?.has_network_news) categoriesToGenerate.push("Network");
+  if (state1?.has_macro_news) categoriesToGenerate.push("Macro");
+  if (state1?.has_key_levels) categoriesToGenerate.push("KeyLevels");
+  if (state1?.has_etf_flows) categoriesToGenerate.push("ETFFlows");
+  if (state1?.has_events) categoriesToGenerate.push("Events");
+
+  if (categoriesToGenerate.length > 0) {
+    const call2Prompt = `You are a senior crypto market analyst. Based on the following Bitcoin news, write a short factual summary (1-3 sentences each) for only the categories requested.
+
+REQUESTED CATEGORIES: ${categoriesToGenerate.join(", ")}
+
+LATEST NEWS:
+${articlesContext}
+
+RULES:
+- Extract only what is actually stated in the source articles
+- Do NOT invent numbers, quotes, or flow figures
+- For KeyLevels: only include price levels explicitly named in the articles (e.g. "$65,000 resistance")
+- For ETFFlows: only include flow figures explicitly stated (e.g. "$300M net inflow")
+- For Events: split into events_today_text (today) and events_week_text (rest of week) if dates are mentioned
+- Map each category to null if there isn't enough verified information
+
+Respond ONLY with a JSON object:
+{
+  "etf_text": string | null,
+  "regulation_text": string | null,
+  "institutional_text": string | null,
+  "network_text": string | null,
+  "macro_text": string | null,
+  "key_levels_text": string | null,
+  "etf_flows_text": string | null,
+  "events_today_text": string | null,
+  "events_week_text": string | null
+}`;
+
+    const state2 = await runAIPrompt(call2Prompt);
+    if (state2) {
+      result.etf_text = state2.etf_text || null;
+      result.regulation_text = state2.regulation_text || null;
+      result.institutional_text = state2.institutional_text || null;
+      result.network_text = state2.network_text || null;
+      result.macro_text = state2.macro_text || null;
+      result.key_levels_text = state2.key_levels_text || null;
+      result.etf_flows_text = state2.etf_flows_text || null;
+      result.events_today_text = state2.events_today_text || null;
+      result.events_week_text = state2.events_week_text || null;
+    }
+  }
+
+  return result;
+}
+
+async function refreshBitcoinIntelligence() {
+  if (btcIntelligenceInProgress) return;
+  if (!supabase) return;
+  
+  btcIntelligenceInProgress = true;
+  try {
+    console.log("🔄 Starting Bitcoin Intelligence refresh...");
+    
+    // Check if we need to refresh (based on time)
+    const { data: existingData } = await supabase.from("bitcoin_intelligence").select("last_updated").eq("id", "singleton").single();
+    if (existingData && existingData.last_updated) {
+      const msSinceUpdate = Date.now() - new Date(existingData.last_updated).getTime();
+      if (msSinceUpdate < 15 * 60 * 1000) { // 15 min buffer
+        console.log("⏳ Skipping Bitcoin intelligence refresh, updated recently.");
+        return;
+      }
+    }
+
+    const articles = await getBitcoinArticles();
+    const articlesWithImportance = articles.map((a: any) => ({
+      ...a,
+      importance: rankBitcoinArticleImportance(a)
+    }));
+
+    // Fetch BTC price
+    let btcPrice = 0, btcChange = 0;
+    try {
+      const res = await fetch('https://api.kucoin.com/api/v1/market/allTickers');
+      if (res.ok) {
+        const json = await res.json();
+        const btcData = json.data?.ticker?.find((t: any) => t.symbol === 'BTC-USDT');
+        if (btcData) {
+          btcPrice = parseFloat(btcData.last);
+          btcChange = parseFloat(btcData.changeRate || '0') * 100;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch BTC price for intelligence:", e);
+    }
+
+    const aiState = await generateBitcoinIntelligence(articlesWithImportance, btcPrice, btcChange);
+
+    const record = {
+      id: "singleton",
+      ...aiState,
+      btc_price_at_update: btcPrice,
+      btc_change_at_update: btcChange,
+      last_updated: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from("bitcoin_intelligence").upsert(record);
+    if (error) {
+      console.error("Error saving Bitcoin Intelligence:", error.message);
+    } else {
+      // Invalidate memory cache
+      cachedBtcNews = [];
+      cachedBtcIntelligence = null;
+      console.log("✅ Bitcoin Intelligence refreshed successfully.");
+    }
+  } catch (err: any) {
+    console.error("❌ Bitcoin Intelligence refresh failed:", err.message);
+  } finally {
+    btcIntelligenceInProgress = false;
+  }
+}
+
+// ─── Bitcoin API Caches ──────────────────────────────────────────────────────
+let cachedBtcNews: any[] = [];
+let cachedBtcNewsTime = 0;
+let cachedBtcIntelligence: any = null;
+let cachedBtcIntelligenceTime = 0;
+let cachedBtcExtended: any = null;
+let cachedBtcExtendedTime = 0;
+
+
 async function startServer() {
   const app = express();
 
@@ -1157,6 +1516,7 @@ async function startServer() {
 const _logs: string[] = [];
 const origLog = console.log;
 const origError = console.error;
+const origWarn = console.warn;
 console.log = (...args) => {
   _logs.push("[LOG] " + args.join(" "));
   if (_logs.length > 200) _logs.shift();
@@ -1166,6 +1526,11 @@ console.error = (...args) => {
   _logs.push("[ERR] " + args.join(" "));
   if (_logs.length > 200) _logs.shift();
   origError.apply(console, args);
+};
+console.warn = (...args) => {
+  _logs.push("[WARN] " + args.join(" "));
+  if (_logs.length > 200) _logs.shift();
+  origWarn.apply(console, args);
 };
 
 app.get("/api/logs", (req, res) => {
@@ -1178,6 +1543,104 @@ app.get("/api/logs", (req, res) => {
   app.use(express.json());
 
   // ── GET /api/news — Read published articles from DB ──────────────────────
+  
+  // ── GET /api/bitcoin-news ─────────────────────────────────────────────────
+  app.get("/api/bitcoin-news", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (now - cachedBtcNewsTime > CACHE_TTL || cachedBtcNews.length === 0) {
+        const articles = await getBitcoinArticles();
+        cachedBtcNews = articles.map((a: any) => ({
+          ...a,
+          importance: rankBitcoinArticleImportance(a)
+        })).sort((a: any, b: any) => {
+          // Sort by importance, then by date
+          const impScore = { High: 3, Medium: 2, Low: 1 };
+          const aScore = impScore[a.importance as keyof typeof impScore] || 0;
+          const bScore = impScore[b.importance as keyof typeof impScore] || 0;
+          if (aScore !== bScore) return bScore - aScore;
+          return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+        });
+        cachedBtcNewsTime = now;
+      }
+      res.json({ status: "success", results: cachedBtcNews });
+    } catch (error) {
+      console.error("Error fetching bitcoin news:", error);
+      res.status(500).json({ error: "Failed to fetch bitcoin news" });
+    }
+  });
+
+  // ── GET /api/bitcoin-intelligence ─────────────────────────────────────────
+  app.get("/api/bitcoin-intelligence", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (now - cachedBtcIntelligenceTime > CACHE_TTL || !cachedBtcIntelligence) {
+        if (supabase) {
+          const { data } = await supabase.from("bitcoin_intelligence").select("*").eq("id", "singleton").single();
+          if (data) {
+            cachedBtcIntelligence = data;
+            cachedBtcIntelligenceTime = now;
+          }
+        }
+      }
+      res.json(cachedBtcIntelligence || { quiet_market: true, situation_text: "Data temporarily unavailable." });
+    } catch (error) {
+      console.error("Error fetching bitcoin intelligence:", error);
+      res.status(500).json({ error: "Failed to fetch bitcoin intelligence" });
+    }
+  });
+
+  // ── POST /api/bitcoin-intelligence/refresh ────────────────────────────────
+  app.post("/api/bitcoin-intelligence/refresh", async (req, res) => {
+    const secret = process.env.PROCESS_SECRET;
+    const authHeader = req.headers["authorization"];
+    if (secret && authHeader !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    res.json({ status: "started", message: "Bitcoin intelligence refresh triggered." });
+    refreshBitcoinIntelligence().catch(console.error);
+  });
+
+  // ── GET /api/btc-extended ──────────────────────────────────────────────────
+  app.get("/api/btc-extended", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (now - cachedBtcExtendedTime > CACHE_TTL || !cachedBtcExtended) {
+        // Proxy CoinGecko free API (rate limited to ~30/min, we only call every 5 min)
+        const response = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false");
+        if (response.ok) {
+          const data = await response.json();
+          cachedBtcExtended = {
+            market_cap: data.market_data.market_cap.usd,
+            total_volume: data.market_data.total_volume.usd,
+            high_24h: data.market_data.high_24h.usd,
+            low_24h: data.market_data.low_24h.usd,
+            market_cap_dominance: data.market_data.market_cap_change_percentage_24h // fallback for dominance if missing, actual cg global api is better but requires another call
+          };
+          
+          // Better dominance fetch
+          try {
+            const globalRes = await fetch("https://api.coingecko.com/api/v3/global");
+            if (globalRes.ok) {
+              const globalData = await globalRes.json();
+              if (globalData?.data?.market_cap_percentage?.btc) {
+                cachedBtcExtended.dominance = globalData.data.market_cap_percentage.btc;
+              }
+            }
+          } catch(e) {}
+          
+          cachedBtcExtendedTime = now;
+        } else {
+          throw new Error("CoinGecko API error");
+        }
+      }
+      res.json(cachedBtcExtended || {});
+    } catch (error) {
+      console.error("Error fetching extended btc data:", error);
+      res.json(cachedBtcExtended || {}); // return stale if error
+    }
+  });
+
   app.get("/api/news", async (req, res) => {
     try {
       const now = Date.now();
@@ -1481,6 +1944,10 @@ app.get("/api/logs", (req, res) => {
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
       xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>hourly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
 
+      
+      // Add bitcoin-news to sitemap
+      xml += `  <url>\n    <loc>${baseUrl}/bitcoin-news</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+
       for (const article of cachedNews) {
         const slug = generateSlug(article.title);
         const articleUrl = `${baseUrl}/article/${slug}`;
@@ -1511,6 +1978,14 @@ app.get("/api/logs", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  
+  // Start Bitcoin intelligence cron (every 20 mins)
+  setTimeout(() => {
+    refreshBitcoinIntelligence().catch(console.error);
+    setInterval(() => refreshBitcoinIntelligence().catch(console.error), 20 * 60 * 1000);
+  }, 30000); // 30s delay on startup
+
 
   app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);

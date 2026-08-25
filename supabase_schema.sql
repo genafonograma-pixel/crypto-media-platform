@@ -56,3 +56,38 @@ CREATE POLICY "Service role full access articles"
 CREATE POLICY "Service role full access quota"
   ON quota FOR ALL
   USING (auth.role() = 'service_role');
+
+-- ============================================================
+-- Bitcoin Intelligence table: stores the AI-generated page state
+-- for the /bitcoin-news page (singleton row, id='singleton')
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS bitcoin_intelligence (
+  id TEXT PRIMARY KEY DEFAULT 'singleton',
+  situation_text TEXT,
+  why_moving_text TEXT,
+  etf_text TEXT,
+  regulation_text TEXT,
+  institutional_text TEXT,
+  network_text TEXT,
+  macro_text TEXT,
+  key_levels_text TEXT,
+  etf_flows_text TEXT,
+  events_today_text TEXT,
+  events_week_text TEXT,
+  source_metrics JSONB,
+  quiet_market BOOLEAN DEFAULT false,
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  btc_price_at_update NUMERIC,
+  btc_change_at_update NUMERIC
+);
+
+ALTER TABLE bitcoin_intelligence ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read bitcoin_intelligence"
+  ON bitcoin_intelligence FOR SELECT
+  USING (true);
+
+CREATE POLICY "Service role full access bitcoin_intelligence"
+  ON bitcoin_intelligence FOR ALL
+  USING (auth.role() = 'service_role');

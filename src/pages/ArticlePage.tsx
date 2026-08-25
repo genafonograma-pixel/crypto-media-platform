@@ -54,20 +54,20 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(related.pubDate));
     const description = related.description ? related.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...' : '';
     return `
-<div class="not-prose" style="margin:2.5rem 0;">
-  <a href="${href}" style="display:flex;flex-wrap:wrap;align-items:stretch;border-radius:16px;background:#0c0c0c;border:1px solid #1f1f1f;text-decoration:none;transition:all 0.25s ease;box-shadow:0 4px 24px rgba(0,0,0,0.4);overflow:hidden;" onmouseover="this.style.borderColor='#2a2a2a';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.5)'" onmouseout="this.style.borderColor='#1f1f1f';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.4)'">
+<div class="not-prose my-10">
+  <a href="${href}" class="group flex flex-col md:flex-row items-stretch rounded-2xl bg-[#0c0c0c] border border-[#1f1f1f] no-underline transition-all duration-300 ease-out overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:border-[#2a2a2a] hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
     ${related.image_url ? `
-    <div style="width:100%;max-height:180px;overflow:hidden;flex-shrink:0;display:flex;">
-      <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" style="width:100%;height:180px;object-fit:cover;display:block;" onerror="this.parentElement.style.display='none'" />
+    <div class="w-full md:w-[260px] md:min-w-[260px] h-[180px] md:h-auto shrink-0 flex relative">
+      <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" class="w-full h-full object-cover block !m-0 !rounded-none" onerror="this.parentElement.style.display='none'" />
     </div>` : ''}
-    <div style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center;flex:1;gap:0;min-width:0;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span style="display:inline-block;font-size:9px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#3B82F6;background:rgba(59,130,246,0.12);padding:3px 8px;border-radius:4px;">${classification}</span>
-        <span style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#444;">Related Reading</span>
+    <div class="flex flex-col justify-center flex-1 min-w-0 p-4 md:p-6 gap-0">
+      <div class="flex items-center gap-2 mb-2.5">
+        <span class="inline-block text-[9px] font-black tracking-[0.18em] uppercase text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">${classification}</span>
+        <span class="text-[9px] font-bold tracking-[0.12em] uppercase text-[#444]">Related Reading</span>
       </div>
-      <span style="display:block;font-size:15px;font-weight:800;color:#F0F0F0;line-height:1.35;margin-bottom:10px;letter-spacing:-0.01em;">${title}</span>
-      ${description ? `<span style="display:block;font-size:12px;color:#666;line-height:1.6;margin-bottom:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${description}</span>` : ''}
-      <span style="font-size:10px;color:#444;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;">${date}</span>
+      <span class="block text-[15px] md:text-base font-extrabold text-[#F0F0F0] leading-snug mb-2.5 tracking-tight group-hover:text-[#3B82F6] transition-colors">${title}</span>
+      ${description ? `<span class="block text-xs text-[#666] leading-relaxed mb-3.5 overflow-hidden line-clamp-2">${description}</span>` : ''}
+      <span class="text-[10px] text-[#444] tracking-wider uppercase font-semibold">${date}</span>
     </div>
   </a>
 </div>
