@@ -316,15 +316,19 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       <div className="flex-1 max-w-7xl w-full mx-auto flex justify-center gap-4 lg:gap-6 px-2 sm:px-4 py-4 md:py-6 min-w-0">
         {/* Left Skyscraper Ad */}
         <aside className="hidden lg:block w-[160px] xl:w-[200px] shrink-0">
-          <div className="sticky top-4">
+          <div className="sticky top-[72px]">
             <AdPlacement format="skyscraper" />
           </div>
         </aside>
         
         {/* Main Article Content */}
-        <main className="flex-1 min-w-0 max-w-3xl w-full border border-[#222] bg-[#050505] rounded-sm">
-          <AdPlacement format="billboard" />
-          
+        <main className="flex-1 min-w-0 max-w-3xl w-full">
+          {/* Billboard banner OUTSIDE the bordered card so it's never clipped */}
+          <div className="mb-3">
+            <AdPlacement format="billboard" />
+          </div>
+
+          <div className="border border-[#222] bg-[#050505] rounded-sm">
           <div className="p-6 md:p-10">
             <Link to="/news" className="inline-flex items-center gap-2 text-[10px] font-bold text-[#888] uppercase tracking-widest hover:text-white transition-colors mb-6 md:mb-10">
               <span className="text-[#3B82F6]">←</span> All News
@@ -474,11 +478,12 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
               </div>
             )}
           </div>
+          </div>{/* end border wrapper */}
         </main>
         
         {/* Right Skyscraper Ad */}
         <aside className="hidden xl:block w-[160px] xl:w-[200px] shrink-0">
-          <div className="sticky top-4">
+          <div className="sticky top-[72px]">
             <AdPlacement format="skyscraper" />
           </div>
         </aside>
