@@ -80,8 +80,8 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
   }
 
   const sizeStyles = {
-    // Billboard: full width on mobile (like a leaderboard), wider on desktop
-    'billboard': 'w-full h-[60px] sm:h-[90px] md:h-[90px] lg:max-w-[970px] lg:h-[250px] mx-auto',
+    // Billboard: full width, auto height so nothing gets cut
+    'billboard': 'w-full mx-auto block',
     'native': 'w-full min-h-[150px]',
     // Sticky-bottom: always full width
     'sticky-bottom': 'w-full h-[50px] md:h-[90px]',
@@ -96,13 +96,13 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
       href={adData.target_url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`block bg-black/50 overflow-hidden relative group ${sizeStyles[format]} ${className}`}
+      className={`block relative group ${sizeStyles[format]} ${className}`}
     >
       <span className="text-[9px] text-white/50 absolute top-1 right-1 z-10 bg-black/50 px-1 rounded">Ad</span>
       <img 
         src={adData.image_url} 
         alt="Advertisement"
-        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+        className={`w-full h-full ${format === 'billboard' ? 'object-contain' : 'object-cover'} group-hover:scale-[1.02] transition-transform duration-300`}
       />
     </a>
   );
