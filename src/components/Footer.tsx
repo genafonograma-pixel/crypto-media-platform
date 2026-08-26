@@ -23,7 +23,7 @@ export default function Footer() {
             <ul className="space-y-4 text-xs font-medium">
               <li><Link to="/news" className="text-[#AAA] hover:text-white transition-colors">All News</Link></li>
               <li><Link to="/news/bitcoin" className="text-[#AAA] hover:text-white transition-colors">Bitcoin</Link></li>
-              <li><Link to="/news/markets" className="text-[#AAA] hover:text-white transition-colors">Markets</Link></li>
+              <li><Link to="/news/altcoins" className="text-[#AAA] hover:text-white transition-colors">Altcoins</Link></li>
               <li><Link to="/news/defi" className="text-[#AAA] hover:text-white transition-colors">DeFi</Link></li>
             </ul>
           </div>

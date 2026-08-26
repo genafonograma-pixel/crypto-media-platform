@@ -243,7 +243,7 @@ RAW SOURCE CONTENT:
 ${textContent}
 
 INSTRUCTIONS:
-1. Classify the event into EXACTLY ONE of these categories: "Bitcoin", "Altcoins", "DeFi", "Web3", "Markets", "Tech". Do not use any other category names.
+1. Classify the event into EXACTLY ONE of these categories: "Bitcoin", "Altcoins", "DeFi", "Web3", "Irrelevant". If the article is primarily about traditional markets or general tech (not crypto), classify it as "Irrelevant". Do not use any other category names.
 2. Extract all verifiable facts, numbers, dates, people, and organizations.
 3. If you can calculate a useful metric (e.g., percentage change), do so and log it in calculations. Do NOT invent numbers.
 4. Return ONLY a JSON object:
@@ -359,8 +359,22 @@ Return ONLY a JSON object:
   // Replaces AI validation which was over-rejecting good articles.
   // The research + generation steps already enforce factual accuracy.
   let rawClassification = researchData.classification || category || "Crypto News";
-  const allowedCategories = ["Bitcoin", "Altcoins", "DeFi", "Web3", "Markets", "Tech"];
-  let finalClassification = "Markets"; // Fallback
+  
+  if (rawClassification.toLowerCase().includes("irrelevant")) {
+    console.log(`Article classified as irrelevant (${rawClassification}). Skipping.`);
+    return {
+      summary: null,
+      rewritten_content: null,
+      ai_meta_description: null,
+      classification: "Irrelevant",
+      quality_score: 0,
+      headline: null,
+      seo_title: null,
+    };
+  }
+
+  const allowedCategories = ["Bitcoin", "Altcoins", "DeFi", "Web3"];
+  let finalClassification = "Altcoins"; // Fallback
   for (const allowed of allowedCategories) {
     if (rawClassification.toLowerCase().includes(allowed.toLowerCase())) {
       finalClassification = allowed;
@@ -1540,7 +1554,7 @@ app.get("/api/logs", (req, res) => {
 
   const PORT = process.env.PORT || 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
 
   // ── GET /api/news — Read published articles from DB ──────────────────────
   
@@ -1743,6 +1757,100 @@ app.get("/api/logs", (req, res) => {
   });
 
   // ── GET /api/prices ───────────────────────────────────────────────────────
+  
+  // --- AD MANAGEMENT API ---
+  app.get('/api/ads', async (req, res) => {
+    try {
+      const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      res.json({ status: 'success', ads: data });
+    } catch (err) {
+      console.error('Error fetching ads:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+
+  app.post('/api/ads', async (req, res) => {
+    try {
+      const { format, image_url, target_url, cta_text, active, button_color } = req.body;
+      const { data, error } = await supabase.from('ads').insert([
+        { format, image_url, target_url, cta_text, active, button_color }
+      ]).select().single();
+      if (error) throw error;
+      res.json({ status: 'success', ad: data });
+    } catch (err) {
+      console.error('Error creating ad:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+
+  app.put('/api/ads/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { format, image_url, target_url, cta_text, active, button_color } = req.body;
+      const { data, error } = await supabase.from('ads').update(
+        { format, image_url, target_url, cta_text, active, button_color }
+      ).eq('id', id).select().single();
+      if (error) throw error;
+      res.json({ status: 'success', ad: data });
+    } catch (err) {
+      console.error('Error updating ad:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+
+  app.delete('/api/ads/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { error } = await supabase.from('ads').delete().eq('id', id);
+      if (error) throw error;
+      res.json({ status: 'success', message: 'Ad deleted' });
+    } catch (err) {
+      console.error('Error deleting ad:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+
+  // Simple file upload endpoint using Catbox.moe
+  app.post('/api/upload', async (req, res) => {
+    try {
+      const { base64Image } = req.body;
+      if (!base64Image) {
+        return res.status(400).json({ status: 'error', message: 'No image provided' });
+      }
+
+      // Format: data:image/png;base64,iVBORw0KGgo...
+      const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+         return res.status(400).json({ status: 'error', message: 'Invalid base64 format' });
+      }
+
+      const mimeType = matches[1];
+      const imageBuffer = Buffer.from(matches[2], 'base64');
+      const blob = new Blob([imageBuffer], { type: mimeType });
+
+      const formData = new FormData();
+      formData.append('reqtype', 'fileupload');
+      formData.append('fileToUpload', blob, 'upload.png');
+
+      const response = await fetch('https://catbox.moe/user/api.php', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const text = await response.text();
+      if (text.startsWith('https://')) {
+        res.json({ status: 'success', url: text });
+      } else {
+        throw new Error(text);
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
+  // --- END AD MANAGEMENT API ---
+
   app.get("/api/prices", async (req, res) => {
     try {
       const now = Date.now();

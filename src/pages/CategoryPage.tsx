@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import AdPlacement from '../components/AdPlacement';
 import type { Article } from '../types';
 import { generateSlug } from '../utils';
 
@@ -123,6 +124,9 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
         schema={categorySchema}
       />
       <Header />
+      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-4">
+        <AdPlacement format="billboard" />
+      </div>
       
       <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6 md:py-12">
         {/* Category Header */}
@@ -151,12 +155,17 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortedArticles.map((article) => {
+            {sortedArticles.map((article, i) => {
               const displayTitle = article.headline || article.title;
               return (
-                <Link
-                  key={article.article_id}
-                  to={getArticleHref(article)}
+                <React.Fragment key={article.article_id}>
+                  {i > 0 && i % 8 === 0 && (
+                    <div className="md:col-span-2 lg:col-span-4 py-4 flex justify-center w-full">
+                      <AdPlacement format="billboard" />
+                    </div>
+                  )}
+                  <Link
+                    to={getArticleHref(article)}
                   state={{ article }}
                   className="group flex flex-col rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#1a1a1a] hover:border-[#333] transition-colors"
                 >
@@ -189,6 +198,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
                     </div>
                   </div>
                 </Link>
+                </React.Fragment>
               );
             })}
           </div>

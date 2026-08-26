@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import MarketMovers from '../components/MarketMovers';
 import MarketWatch from '../components/MarketWatch';
 import SEO from '../components/SEO';
+import AdPlacement from '../components/AdPlacement';
 import type { Article } from '../types';
 import { generateSlug } from '../utils';
 
@@ -274,6 +275,9 @@ export default function Home({ articles, loading, error }: HomeProps) {
       />
       <Header />
       <MarketMovers />
+      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-4">
+        <AdPlacement format="billboard" className="mx-auto" />
+      </div>
 
       <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6">
 
@@ -331,9 +335,14 @@ export default function Home({ articles, loading, error }: HomeProps) {
                   </Link>
                 </div>
                 <div>
-                  {feedArticles.map(a => (
+                  {feedArticles.map((a, i) => (
                     <React.Fragment key={a.article_id}>
                       <FeedCard article={a} />
+                      {i > 0 && i % 3 === 0 && (
+                        <div className="py-4 border-b border-[#131313]">
+                          <AdPlacement format="in-article" className="mx-auto" />
+                        </div>
+                      )}
                     </React.Fragment>
                   ))}
                 </div>
@@ -359,6 +368,9 @@ export default function Home({ articles, loading, error }: HomeProps) {
                       </React.Fragment>
                     ))}
                   </div>
+                </div>
+                <div className="hidden lg:block mt-6">
+                  <AdPlacement format="skyscraper" className="mx-auto" />
                 </div>
               </aside>
             </div>

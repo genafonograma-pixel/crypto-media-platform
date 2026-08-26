@@ -51,8 +51,7 @@ export default function NotFoundPage() {
               { label: 'Bitcoin', to: '/news/bitcoin' },
               { label: 'Altcoins', to: '/news/altcoins' },
               { label: 'DeFi', to: '/news/defi' },
-              { label: 'Web3 & NFT', to: '/news/web3' },
-              { label: 'Markets', to: '/news/markets' },
+              { label: 'Web3 & NFT', to: '/news/web3' }
             ].map(({ label, to }) => (
               <Link
                 key={to}
