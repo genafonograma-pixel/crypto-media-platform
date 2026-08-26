@@ -80,15 +80,13 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
   }
 
   const sizeStyles = {
-    // Billboard: full width, auto height so nothing gets cut
-    'billboard': 'w-full mx-auto block',
-    'native': 'w-full min-h-[150px]',
-    // Sticky-bottom: always full width
-    'sticky-bottom': 'w-full h-[50px] md:h-[90px]',
-    // In-article: full width on mobile, fixed 300x250 on larger screens
-    'in-article': 'w-full h-[120px] sm:w-[300px] sm:h-[250px] mx-auto',
-    // Skyscraper: hidden on mobile, shown only on large screens
-    'skyscraper': 'hidden lg:block w-[160px] h-[600px] mx-auto'
+    // All formats: full width on mobile, capped at standard IAB max-width on desktop
+    // Auto height so the uploaded image always shows complete — never cut
+    'billboard':     'w-full max-w-[970px] mx-auto block',
+    'native':        'w-full max-w-[970px] mx-auto block',
+    'sticky-bottom': 'w-full max-w-[728px] mx-auto block',
+    'in-article':    'w-full max-w-[300px] mx-auto block',
+    'skyscraper':    'hidden lg:block w-[160px] mx-auto'
   };
 
   return (
@@ -102,7 +100,7 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
       <img 
         src={adData.image_url} 
         alt="Advertisement"
-        className={`w-full h-full ${format === 'billboard' ? 'object-contain' : 'object-cover'} group-hover:scale-[1.02] transition-transform duration-300`}
+        className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-300 block"
       />
     </a>
   );
