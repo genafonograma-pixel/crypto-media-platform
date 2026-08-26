@@ -492,9 +492,12 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
       const data = await response.json() as any;
       if (data && data.result && data.result.image) {
         if (i > 0) console.log(`✅ Cloudflare AI (${label}) succeeded.`);
-        // Cloudflare natively returns 1024x1024. Do NOT resize/crop it,
-        // which caused the "trashy blurry" look the user hated.
-        return Buffer.from(data.result.image, "base64");
+        const rawBuffer = Buffer.from(data.result.image, "base64");
+        // Convert to WebP for massive file size reduction (~500kb -> ~80kb)
+        // keeping the native 1024x1024 dimensions so the pixel art stays perfectly crisp!
+        return await sharp(rawBuffer)
+          .webp({ quality: 80 })
+          .toBuffer();
       }
 
       console.error(`Cloudflare AI (${label}) response had no image data.`);
@@ -533,10 +536,9 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
     for (const part of parts) {
       if (part?.inlineData?.data) {
         const rawBuffer = Buffer.from(part.inlineData.data, "base64");
-        // Resize and convert to WebP for consistency and next-gen format support
+        // Convert to WebP for smaller file size without altering native 1024x1024 size
         const webpBuffer = await sharp(rawBuffer)
-          .resize(1200, 630, { fit: "cover", position: "centre" })
-          .webp({ quality: 85 })
+          .webp({ quality: 80 })
           .toBuffer();
         return webpBuffer;
       }
