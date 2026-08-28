@@ -95,7 +95,7 @@ export default function Header() {
                 href={adData.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-2.5 py-1.5 rounded transition-transform active:scale-95 text-white animate-in fade-in zoom-in duration-300 max-w-[120px] sm:max-w-[160px] truncate"
+                className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-white animate-in fade-in zoom-in duration-300 max-w-[120px] sm:max-w-[160px] truncate shadow-[0_4px_0_rgba(0,0,0,0.6)] active:translate-y-[4px] active:shadow-none transition-all"
                 style={{ backgroundColor: adData.button_color || '#3B82F6' }}
               >
                 {adData.cta_text}
@@ -124,7 +124,7 @@ export default function Header() {
                 href={adData.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden lg:block text-xs font-black uppercase tracking-widest px-4 py-2 rounded transition-transform hover:-translate-y-0.5 active:scale-95 text-white mr-2 animate-in fade-in zoom-in duration-300"
+                className="hidden lg:block text-xs font-black uppercase tracking-widest px-5 py-2 rounded-lg text-white mr-2 animate-in fade-in zoom-in duration-300 shadow-[0_5px_0_rgba(0,0,0,0.6)] hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.6)] active:translate-y-[5px] active:shadow-none transition-all"
                 style={{ backgroundColor: adData.button_color || '#3B82F6' }}
               >
                 {adData.cta_text}
