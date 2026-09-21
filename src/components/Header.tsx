@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Search, Rss, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
   { href: '/news', label: 'All News' },
@@ -158,20 +158,6 @@ export default function Header() {
               Best Bitcoin Casinos
             </a>
 
-            <button
-              className="p-2 text-[#555] hover:text-[#F5F5F5] transition-colors"
-              title="Search"
-            >
-              <Search size={18} />
-            </button>
-            <a
-              href="#"
-              className="hidden sm:flex p-2 text-[#555] hover:text-[#F5F5F5] transition-colors"
-              title="RSS Feed"
-            >
-              <Rss size={18} />
-            </a>
-            
             {/* Mobile Menu Toggle */}
             <button
               className="lg:hidden p-2 text-[#555] hover:text-[#F5F5F5] transition-colors"
@@ -215,15 +201,6 @@ export default function Header() {
                 </NavLink>
               ))}
             </nav>
-            
-            <div className="mt-12 flex items-center gap-4 border-t border-[#1a1a1a] pt-8">
-              <button className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#888] hover:text-[#F5F5F5]">
-                <Search size={16} /> Search
-              </button>
-              <a href="#" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#888] hover:text-[#F5F5F5]">
-                <Rss size={16} /> RSS
-              </a>
-            </div>
           </div>
         </div>
       )}
