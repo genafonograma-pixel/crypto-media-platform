@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import ArticlePage from './pages/ArticlePage';
 import AuthorPage from './pages/AuthorPage';
@@ -80,7 +80,7 @@ export default function App() {
         <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
         <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
         <Route path="/admin" element={<AdminGuard><AdminAds /></AdminGuard>} />
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

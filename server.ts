@@ -29,6 +29,74 @@ if (supabase) {
   console.log("⚠️  Supabase not configured — using local file cache (dev mode).");
 }
 
+// ─── IndexNow & SEO Configuration ───────────────────────────────────────────
+const INDEXNOW_KEY = (process.env.INDEXNOW_KEY || "c748956be9c240979a7853fd9e472691").trim();
+const SITE_URL = (process.env.SITE_URL || "https://wildwestcryptoshow.com").trim().replace(/\/+$/, "");
+
+export function generateSlug(title: string): string {
+  if (!title) return "";
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function submitToIndexNow(urls: string | string[]): Promise<{ success: boolean; status?: number; message?: string }> {
+  try {
+    const rawList = Array.isArray(urls) ? urls : [urls];
+    const urlList = Array.from(
+      new Set(
+        rawList
+          .map((u) => (u || "").trim())
+          .filter((u) => u.length > 0)
+          .map((u) => (u.startsWith("http://") || u.startsWith("https://") ? u : `${SITE_URL}${u.startsWith("/") ? "" : "/"}${u}`))
+      )
+    );
+
+    if (urlList.length === 0) {
+      return { success: true, message: "No URLs to submit" };
+    }
+
+    let host = "wildwestcryptoshow.com";
+    try {
+      const parsed = new URL(SITE_URL);
+      host = parsed.host;
+    } catch {
+      // fallback
+    }
+
+    const payload = {
+      host,
+      key: INDEXNOW_KEY,
+      keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
+      urlList,
+    };
+
+    console.log(`📡 [IndexNow] Submitting ${urlList.length} URL(s) to IndexNow for host "${host}"...`);
+
+    const response = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 200 || response.status === 202) {
+      console.log(`✅ [IndexNow] Submission accepted (${response.status}): ${urlList.length} URL(s) queued for crawl.`);
+      return { success: true, status: response.status };
+    } else {
+      const errorText = await response.text();
+      console.warn(`⚠️ [IndexNow] Response ${response.status}: ${errorText || response.statusText}`);
+      return { success: false, status: response.status, message: errorText };
+    }
+  } catch (error: any) {
+    console.error("❌ [IndexNow] Error submitting to IndexNow:", error.message);
+    return { success: false, message: error.message };
+  }
+}
+
 // ─── Gemini AI Client ────────────────────────────────────────────────────────
 
 
@@ -1142,6 +1210,15 @@ export async function runAIPipeline(): Promise<{
         // Invalidate the in-memory news cache so /api/news immediately reflects the new article
         lastFetchTime = 0;
         console.log(`✅ Saved: "${article.title?.slice(0, 50)}" (score: ${aiResult.quality_score})`);
+
+        // Trigger IndexNow ping for Bing/Yandex immediately (non-blocking)
+        const articleSlug = generateSlug(aiResult.headline || article.title || "");
+        if (articleSlug) {
+          const articleUrl = `${SITE_URL}/article/${articleSlug}`;
+          submitToIndexNow([articleUrl, `${SITE_URL}/`, `${SITE_URL}/bitcoin-news`]).catch((err) => {
+            console.error("IndexNow ping failed:", err.message);
+          });
+        }
       } catch (articleErr: any) {
         console.error(`❌ Unexpected error processing "${article.title?.slice(0, 50)}": ${articleErr.message}`);
         // Continue to next article — don't let one bad article kill the pipeline
@@ -1709,11 +1786,6 @@ app.get("/api/logs", (req, res) => {
   app.get("/api/article/:slug", async (req, res) => {
     const { slug } = req.params;
     const cleanSlug = decodeURIComponent(slug || "").toLowerCase().trim();
-    const generateSlug = (title: string) => (title || "")
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
 
     // Search in-memory cache first
     const fromCache = cachedNews.find(a => {
@@ -2057,25 +2129,16 @@ app.get("/api/logs", (req, res) => {
         lastFetchTime = now;
       }
 
-      const generateSlug = (title: string) => {
-        if (!title) return "";
-        return title
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, "")
-          .replace(/[\s_-]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-      };
-
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
       xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>hourly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
 
-      
       // Add bitcoin-news to sitemap
       xml += `  <url>\n    <loc>${baseUrl}/bitcoin-news</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
 
       for (const article of cachedNews) {
-        const slug = generateSlug(article.title);
+        const slug = generateSlug(article.headline || article.title);
+        if (!slug) continue;
         const articleUrl = `${baseUrl}/article/${slug}`;
         const date = new Date(article.pubDate || Date.now()).toISOString();
         xml += `  <url>\n    <loc>${articleUrl}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
@@ -2090,18 +2153,228 @@ app.get("/api/logs", (req, res) => {
     }
   });
 
+  // ── GET /robots.txt ───────────────────────────────────────────────────────
+  app.get("/robots.txt", (req, res) => {
+    res.type("text/plain");
+    res.send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  });
+
+  // ── IndexNow Key Verification Route ────────────────────────────────────────
+  // Bing / IndexNow crawlers check https://<host>/<key>.txt to verify domain ownership
+  app.get(`/${INDEXNOW_KEY}.txt`, (req, res) => {
+    res.type("text/plain");
+    res.send(INDEXNOW_KEY);
+  });
+  app.get("/:key([a-f0-9]{32}).txt", (req, res, next) => {
+    if (req.params.key === INDEXNOW_KEY) {
+      res.type("text/plain");
+      return res.send(INDEXNOW_KEY);
+    }
+    next();
+  });
+
+  // ── POST /api/seo/indexnow ─────────────────────────────────────────────────
+  // Allows manual or bulk submission of URLs to IndexNow
+  app.post("/api/seo/indexnow", async (req, res) => {
+    try {
+      const secret = req.headers["x-process-secret"] || req.query.secret;
+      const configuredSecret = process.env.PROCESS_SECRET;
+      if (configuredSecret && secret !== configuredSecret) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { urls, bulkAll } = req.body || {};
+      let targetUrls: string[] = [];
+
+      if (bulkAll) {
+        const articles = await getPublishedArticles();
+        targetUrls = [
+          `${SITE_URL}/`,
+          `${SITE_URL}/bitcoin-news`,
+          ...articles.slice(0, 100).map((a) => `${SITE_URL}/article/${generateSlug(a.headline || a.title || "")}`)
+        ];
+      } else if (Array.isArray(urls) && urls.length > 0) {
+        targetUrls = urls;
+      } else {
+        targetUrls = [`${SITE_URL}/`, `${SITE_URL}/bitcoin-news`];
+      }
+
+      const result = await submitToIndexNow(targetUrls);
+      return res.json({
+        ...result,
+        submittedCount: targetUrls.length,
+        urls: targetUrls.slice(0, 10),
+      });
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ── Known Valid Frontend Routes ──────────────────────────────────────────
+  const VALID_STATIC_PATHS = new Set([
+    "",
+    "/",
+    "/about",
+    "/contact",
+    "/privacy",
+    "/terms",
+    "/methodology",
+    "/news",
+    "/bitcoin-news",
+    "/author/jordan-cole",
+    "/admin",
+  ]);
+
+  const VALID_CATEGORIES = new Set([
+    "bitcoin",
+    "altcoins",
+    "defi",
+    "web3",
+    "markets",
+    "tech",
+  ]);
+
+  const generateSlugForRedirect = (title: string) =>
+    (title || "")
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  async function isValidArticleSlug(slug: string): Promise<boolean> {
+    const cleanSlug = decodeURIComponent(slug || "").toLowerCase().trim();
+    if (!cleanSlug) return false;
+
+    // 1. Check in-memory cache
+    if (cachedNews && cachedNews.length > 0) {
+      const match = cachedNews.some((a) => {
+        const headlineSlug = generateSlugForRedirect(a.headline || "");
+        const titleSlug = generateSlugForRedirect(a.title || "");
+        return headlineSlug === cleanSlug || titleSlug === cleanSlug;
+      });
+      if (match) return true;
+    } else {
+      try {
+        cachedNews = await getPublishedArticles();
+        const match = cachedNews.some((a) => {
+          const headlineSlug = generateSlugForRedirect(a.headline || "");
+          const titleSlug = generateSlugForRedirect(a.title || "");
+          return headlineSlug === cleanSlug || titleSlug === cleanSlug;
+        });
+        if (match) return true;
+      } catch (err) {
+        console.error("Error populating cached news for slug validation:", err);
+      }
+    }
+
+    // 2. Check Supabase directly
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("title, headline")
+          .order("pub_date", { ascending: false })
+          .limit(500);
+
+        if (!error && Array.isArray(data)) {
+          const match = data.some((row: any) => {
+            const headlineSlug = generateSlugForRedirect(row.headline || "");
+            const titleSlug = generateSlugForRedirect(row.title || "");
+            return headlineSlug === cleanSlug || titleSlug === cleanSlug;
+          });
+          if (match) return true;
+        }
+      } catch (err) {
+        console.error("Error querying Supabase for article validation:", err);
+      }
+    }
+
+    return false;
+  }
+
   // ── Vite middleware (dev) / Static files (prod) ───────────────────────────
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
+
+    // Dev redirect middleware for unmatched paths
+    app.use(async (req, res, next) => {
+      if (
+        req.path.startsWith("/api/") ||
+        req.path.startsWith("/@") ||
+        req.path.startsWith("/src/") ||
+        req.path.startsWith("/node_modules/") ||
+        req.path.includes(".")
+      ) {
+        return next();
+      }
+
+      const normalizedPath = req.path.replace(/\/+$/, "") || "/";
+      const lowerPath = normalizedPath.toLowerCase();
+
+      if (VALID_STATIC_PATHS.has(lowerPath)) {
+        return next();
+      }
+
+      const categoryMatch = lowerPath.match(/^\/news\/([a-z0-9_-]+)$/);
+      if (categoryMatch && VALID_CATEGORIES.has(categoryMatch[1])) {
+        return next();
+      }
+
+      const articleMatch = req.path.match(/^\/article\/([^/?#]+)$/i);
+      if (articleMatch) {
+        const slug = articleMatch[1];
+        const exists = await isValidArticleSlug(slug);
+        if (exists) {
+          return next();
+        }
+      }
+
+      // Non-existent page -> 301 Redirect to homepage to transfer backlink authority
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.redirect(301, "/");
+    });
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+
+    app.get("*", async (req, res) => {
+      // 1. API routes should return 404 JSON if not matched
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint not found" });
+      }
+
+      const normalizedPath = req.path.replace(/\/+$/, "") || "/";
+      const lowerPath = normalizedPath.toLowerCase();
+
+      // 2. Valid static pages
+      if (VALID_STATIC_PATHS.has(lowerPath)) {
+        return res.sendFile(path.join(distPath, "index.html"));
+      }
+
+      // 3. Valid category routes
+      const categoryMatch = lowerPath.match(/^\/news\/([a-z0-9_-]+)$/);
+      if (categoryMatch && VALID_CATEGORIES.has(categoryMatch[1])) {
+        return res.sendFile(path.join(distPath, "index.html"));
+      }
+
+      // 4. Valid article routes
+      const articleMatch = req.path.match(/^\/article\/([^/?#]+)$/i);
+      if (articleMatch) {
+        const slug = articleMatch[1];
+        const exists = await isValidArticleSlug(slug);
+        if (exists) {
+          return res.sendFile(path.join(distPath, "index.html"));
+        }
+      }
+
+      // 5. Non-existent page / old backlink URL -> 301 Permanent Redirect to homepage
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.redirect(301, "/");
     });
   }
 
