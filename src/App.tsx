@@ -12,6 +12,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import PopupAd from './components/PopupAd';
 import AdminAds from './pages/AdminAds';
+import AdminGuard from './components/AdminGuard';
 
 import type { Article, NewsResponse } from './types';
 
@@ -78,7 +79,7 @@ export default function App() {
         <Route path="/bitcoin-news" element={<CategoryPage articles={articles} loading={loading} error={error} defaultCategory="Bitcoin" />} />
         <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
         <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
-        <Route path="/admin" element={<AdminAds />} />
+        <Route path="/admin" element={<AdminGuard><AdminAds /></AdminGuard>} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>

@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 
 export default function AdminAds() {
+  // Prevent search engines from ever indexing this page
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, nofollow';
+    document.head.appendChild(meta);
+    document.title = 'Admin | Wild West Crypto Show';
+    return () => { meta.remove(); };
+  }, []);
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [format, setFormat] = useState('popup');
