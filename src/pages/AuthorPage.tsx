@@ -27,7 +27,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
       "sameAs": [AUTHOR.twitter],
       "worksFor": {
         "@type": "NewsMediaOrganization",
-        "name": "Crypton",
+        "name": "Wild West Crypto Show",
         "url": window.location.origin
       }
     }
@@ -36,8 +36,8 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
       <SEO
-        title={`${AUTHOR.name}, ${AUTHOR.title} | Crypto News - Crypton`}
-        description={`${AUTHOR.shortBio} Follow ${AUTHOR.name} for the latest cryptocurrency and blockchain market analysis on Crypton.`}
+        title="Jordan Cole, Crypto Reporter | Wild West Crypto Show"
+        description={`${AUTHOR.shortBio} Follow ${AUTHOR.name} for the latest cryptocurrency and blockchain market analysis on Wild West Crypto Show.`}
         image=""
         type="website"
         schema={authorSchema}
@@ -65,7 +65,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
                 {AUTHOR.name} - {AUTHOR.title}
               </h1>
               <p className="text-sm text-[#888] mb-5">
-                Member since {AUTHOR.joined} &nbsp;&middot;&nbsp; Crypton
+                Member since {AUTHOR.joined} &nbsp;&middot;&nbsp; Wild West Crypto Show
               </p>
               <div className="flex items-center gap-4">
                 <a

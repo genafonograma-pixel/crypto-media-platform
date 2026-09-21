@@ -9,54 +9,72 @@ interface SEOProps {
   schema?: any; // Structured JSON-LD schema
 }
 
+const SITE_NAME = 'Wild West Crypto Show';
+const SITE_URL = 'https://wildwestcryptoshow.com';
+const DEFAULT_IMAGE = `${SITE_URL}/wildwest_logo.svg`;
+
+function setMeta(selector: string, attribute: string, value: string) {
+  let el = document.querySelector(selector);
+  if (!el) {
+    const tag = selector.startsWith('meta') ? 'meta' : 'link';
+    el = document.createElement(tag);
+    const parts = selector.match(/\[([^\]]+)="([^"]+)"\]/g);
+    if (parts) {
+      parts.forEach(part => {
+        const m = part.match(/\[([^\]]+)="([^"]+)"\]/);
+        if (m) el!.setAttribute(m[1], m[2]);
+      });
+    }
+    document.head.appendChild(el);
+  }
+  el.setAttribute(attribute, value);
+}
+
 export default function SEO({ 
   title, 
-  description = "Stay updated with the latest cryptocurrency news, insights, and market movements.", 
-  image = "", 
+  description = "Stay updated with the latest cryptocurrency news, insights, and market movements on Wild West Crypto Show.", 
+  image = DEFAULT_IMAGE, 
   type = "website",
   canonical,
   schema
 }: SEOProps) {
   useEffect(() => {
-    // Set standard tags
-    document.title = title;
-    
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', description);
-    }
+    // Canonical URL
+    const canonicalUrl = canonical || (window.location.origin + window.location.pathname);
 
-    // Set Open Graph tags
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute('content', title);
+    // Clamp title to ≤ 60 characters (Google SERP limit)
+    const clampTitle = (t: string) => t.length > 60 ? t.slice(0, 57).trimEnd() + '…' : t;
+    const safeTitle = clampTitle(title);
 
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogDescription) ogDescription.setAttribute('content', description);
+    // Standard tags
+    document.title = safeTitle;
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[name="robots"]', 'content', 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1');
 
-    const ogType = document.querySelector('meta[property="og:type"]');
-    if (ogType) ogType.setAttribute('content', type);
+    // Open Graph
+    setMeta('meta[property="og:title"]', 'content', safeTitle);
+    setMeta('meta[property="og:description"]', 'content', description);
+    setMeta('meta[property="og:type"]', 'content', type);
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+    setMeta('meta[property="og:image"]', 'content', image || DEFAULT_IMAGE);
+    setMeta('meta[property="og:site_name"]', 'content', SITE_NAME);
 
-    if (image) {
-      const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage) ogImage.setAttribute('content', image);
-    }
+    // Twitter Card
+    setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image');
+    setMeta('meta[name="twitter:title"]', 'content', safeTitle);
+    setMeta('meta[name="twitter:description"]', 'content', description);
+    setMeta('meta[name="twitter:image"]', 'content', image || DEFAULT_IMAGE);
 
-    // Dynamic Canonical URL
+    // Canonical link
     let canonicalEl = document.querySelector('link[rel="canonical"]');
     if (!canonicalEl) {
       canonicalEl = document.createElement('link');
       canonicalEl.setAttribute('rel', 'canonical');
       document.head.appendChild(canonicalEl);
     }
-    // If a canonical override is provided (e.g. original article URL), use it.
-    // Otherwise fall back to the current page URL (removes query params).
-    const canonicalUrl = canonical || (window.location.origin + window.location.pathname);
     canonicalEl.setAttribute('href', canonicalUrl);
-    
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
 
-    // Dynamic JSON-LD Schema
+    // JSON-LD Schema
     if (schema) {
       let schemaScript = document.getElementById('jsonld-schema');
       if (!schemaScript) {
@@ -69,11 +87,8 @@ export default function SEO({
     }
 
     return () => {
-      // Clean up schema on unmount or before running effect again
       const schemaScript = document.getElementById('jsonld-schema');
-      if (schemaScript) {
-        schemaScript.remove();
-      }
+      if (schemaScript) schemaScript.remove();
     };
 
   }, [title, description, image, type, canonical, schema]);

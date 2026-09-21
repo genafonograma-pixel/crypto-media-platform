@@ -75,6 +75,7 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/news" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
         <Route path="/news/:categoryId" element={<CategoryPage articles={articles} loading={loading} error={error} />} />
+        <Route path="/bitcoin-news" element={<CategoryPage articles={articles} loading={loading} error={error} defaultCategory="Bitcoin" />} />
         <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
         <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
         <Route path="/admin" element={<AdminAds />} />

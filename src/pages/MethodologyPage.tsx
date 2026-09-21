@@ -6,12 +6,12 @@ import SEO from '../components/SEO';
 export default function MethodologyPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title="AI Methodology | Crypton" description="How Crypton produces AI-powered crypto news and market analysis." />
+      <SEO title="AI Methodology | Wild West Crypto Show" description="How Wild West Crypto Show produces AI-powered crypto news and market analysis." />
       <Header />
       <main className="flex-1 max-w-[800px] w-full mx-auto px-4 py-12">
-        <h1 className="text-4xl font-black mb-8 text-white">How Crypton AI News Works</h1>
+        <h1 className="text-4xl font-black mb-8 text-white">How Wild West Crypto Show AI News Works</h1>
         <div className="prose prose-invert max-w-none">
-          <p>Crypton uses a hybrid intelligence system to track, normalize, and analyze the cryptocurrency market. Our platform combines real-time data ingestion with advanced AI models to synthesize events without human editorial bottlenecks.</p>
+          <p>Wild West Crypto Show uses a hybrid intelligence system to track, normalize, and analyze the cryptocurrency market. Our platform combines real-time data ingestion with advanced AI models to synthesize events without human editorial bottlenecks.</p>
           
           <h3>1. Source Ingestion & Aggregation</h3>
           <p>We monitor top cryptocurrency news outlets, regulatory announcements, and financial publications via RSS and API feeds. Articles are fetched every 5 minutes to ensure up-to-date coverage.</p>

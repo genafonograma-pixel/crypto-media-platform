@@ -28,7 +28,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Crypton Company Information">Company</h2>
+            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Wild West Crypto Show Company Information">Company</h2>
             <ul className="space-y-4 text-xs font-medium">
               <li><Link to="/about" className="text-[#AAA] hover:text-white transition-colors">About Us</Link></li>
               <li><Link to="/methodology" className="text-[#AAA] hover:text-white transition-colors">AI Methodology</Link></li>
@@ -39,7 +39,7 @@ export default function Footer() {
         </div>
         <div className="mt-16 pt-8 border-t border-[#222] flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-[9px] font-bold text-[#444] uppercase tracking-widest">
-            &copy; {new Date().getFullYear()} Crypton Media Group. All rights reserved.
+            &copy; {new Date().getFullYear()} Wild West Crypto Show. All rights reserved.
           </div>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[9px] font-bold text-[#444] uppercase hover:text-white transition-colors">Privacy Policy</Link>

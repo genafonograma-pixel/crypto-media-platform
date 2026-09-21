@@ -8,16 +8,16 @@ export default function NotFoundPage() {
   const schema = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "name": "404 - Page Not Found | Crypton",
-    "description": "The page you're looking for doesn't exist. Browse the latest cryptocurrency and Bitcoin news on Crypton.",
+    "name": "404 - Page Not Found | Wild West Crypto Show",
+    "description": "The page you're looking for doesn't exist. Browse the latest cryptocurrency and Bitcoin news on Wild West Crypto Show.",
     "url": window.location.href
   }), []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
       <SEO
-        title="404 - Page Not Found | Crypton"
-        description="The page you're looking for doesn't exist. Browse the latest cryptocurrency and Bitcoin news on Crypton."
+        title="404 - Page Not Found | Wild West Crypto Show"
+        description="The page you're looking for doesn't exist. Browse the latest cryptocurrency and Bitcoin news on Wild West Crypto Show."
         schema={schema}
       />
       <Header />

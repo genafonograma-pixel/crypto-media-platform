@@ -291,34 +291,112 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     if (!article) return null;
     const displayTitle = article.headline || article.title;
     const seoDescription = article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`;
-    
-    return {
-      "@context": "https://schema.org",
-      "@type": "NewsArticle",
-      "headline": displayTitle,
-      "description": seoDescription,
-      "image": article.image_url ? [article.image_url] : [],
-      "datePublished": article.pubDate,
-      "dateModified": article.pubDate,
-      "author": {
-        "@type": "Person",
-        "name": AUTHOR.name,
-        "url": `${window.location.origin}/author/jordan-cole`
-      },
-      "publisher": {
-        "@type": "NewsMediaOrganization",
-        "name": "Crypton",
-        "logo": {
-          "@type": "ImageObject",
-          "url": `${window.location.origin}/crypton_logo.svg`
+    const classification = (article as any).classification || article.category?.[0] || 'News';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://wildwestcryptoshow.com';
+    const categoryUrl = `${origin}/news/${classification.toLowerCase()}`;
+    const articleUrl = `${origin}${location.pathname}`;
+
+    // Extract FAQs from content if present
+    const extractedFaqs: { q: string; a: string }[] = [];
+    const content = article.rewritten_content || article.content || '';
+    if (content && typeof window !== 'undefined') {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'text/html');
+        const headings = doc.querySelectorAll('h2, h3, h4');
+        headings.forEach(h => {
+          const text = h.textContent?.trim() || '';
+          if (text.includes('?') || /^(what|why|how|who|when|where|are|is|can|will)\b/i.test(text)) {
+            let next = h.nextElementSibling;
+            const answerParts: string[] = [];
+            while (next && !next.tagName.match(/^H[1-6]$/i)) {
+              if (next.textContent) answerParts.push(next.textContent.trim());
+              next = next.nextElementSibling;
+            }
+            if (answerParts.length > 0) {
+              extractedFaqs.push({ q: text, a: answerParts.join(' ').substring(0, 500) });
+            }
+          }
+        });
+      } catch (e) {}
+    }
+
+    const graph: any[] = [
+      {
+        "@type": "NewsArticle",
+        "@id": `${articleUrl}#article`,
+        "headline": displayTitle,
+        "description": seoDescription,
+        "image": article.image_url ? [article.image_url] : [],
+        "datePublished": article.pubDate,
+        "dateModified": article.pubDate,
+        "author": {
+          "@type": "Person",
+          "name": AUTHOR.name,
+          "url": `${origin}/author/jordan-cole`
+        },
+        "publisher": {
+          "@type": "NewsMediaOrganization",
+          "name": "Wild West Crypto Show",
+          "url": origin,
+          "logo": {
+            "@type": "ImageObject",
+            "url": `${origin}/wildwest_logo.svg`,
+            "width": 240,
+            "height": 60
+          }
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": articleUrl
         }
       },
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": window.location.href
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${articleUrl}#breadcrumbs`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": `${origin}/`
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": classification,
+            "item": categoryUrl
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": displayTitle,
+            "item": articleUrl
+          }
+        ]
       }
+    ];
+
+    if (extractedFaqs.length > 0) {
+      graph.push({
+        "@type": "FAQPage",
+        "@id": `${articleUrl}#faq`,
+        "mainEntity": extractedFaqs.map(faq => ({
+          "@type": "Question",
+          "name": faq.q,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": faq.a
+          }
+        }))
+      });
+    }
+
+    return {
+      "@context": "https://schema.org",
+      "@graph": graph
     };
-  }, [article]);
+  }, [article, location.pathname]);
 
   if (!article && (loading || fetchLoading || !fetchAttempted)) {
     return (
@@ -336,7 +414,20 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
   if (!article) return null;
 
   const displayTitle = article.headline || article.title;
-  const displaySeoTitle = article.seo_title || `${displayTitle} - Crypton`;
+  const BRAND = ' | Wild West Crypto Show';
+  const MAX = 60;
+  const rawSeoTitle = article.seo_title || `${displayTitle}${BRAND}`;
+  // Clamp: if already short enough use it; otherwise truncate displayTitle to leave room for brand
+  const displaySeoTitle = rawSeoTitle.length <= MAX
+    ? rawSeoTitle
+    : (() => {
+        const maxSlug = MAX - BRAND.length; // chars left for the article slug
+        let slug = displayTitle.slice(0, maxSlug);
+        // trim to last full word
+        const lastSpace = slug.lastIndexOf(' ');
+        if (lastSpace > 0) slug = slug.slice(0, lastSpace);
+        return slug + BRAND;
+      })();
   const seoDescription = article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`;
 
 
@@ -367,10 +458,24 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
           </div>
 
           <div className="border border-[#222] bg-[#050505] rounded-sm">
-          <div className="p-6 md:p-10">
-            <Link to="/news" className="inline-flex items-center gap-2 text-[10px] font-bold text-[#888] uppercase tracking-widest hover:text-white transition-colors mb-6 md:mb-10">
-              <span className="text-[#F4A917]">←</span> All News
-            </Link>
+            <div className="p-6 md:p-10">
+              <nav aria-label="Breadcrumb" className="mb-6 md:mb-8">
+              <ol className="flex items-center flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666]">
+                <li>
+                  <Link to="/" className="hover:text-[#F5F5F5] transition-colors">Home</Link>
+                </li>
+                <li className="select-none">/</li>
+                <li>
+                  <Link to={`/news/${((article as any).classification || article.category?.[0] || 'news').toLowerCase()}`} className="hover:text-[#F5F5F5] transition-colors text-[#888]">
+                    {(article as any).classification || article.category?.[0] || 'News'}
+                  </Link>
+                </li>
+                <li className="select-none">/</li>
+                <li className="text-[#F4A917] truncate max-w-[200px] sm:max-w-[360px]" aria-current="page">
+                  {displayTitle}
+                </li>
+              </ol>
+            </nav>
 
             <article>
               <div className="flex items-center gap-2 mb-6">
