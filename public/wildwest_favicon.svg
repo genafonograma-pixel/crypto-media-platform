@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  
+    <defs>
+      <!-- Gold Facet Gradients -->
+      <linearGradient id="goldFacetLit" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFF3B0" />
+        <stop offset="35%" stop-color="#FBBF24" />
+        <stop offset="70%" stop-color="#D97706" />
+        <stop offset="100%" stop-color="#B45309" />
+      </linearGradient>
+      
+      <linearGradient id="goldFacetDark" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#78350F" />
+        <stop offset="45%" stop-color="#92400E" />
+        <stop offset="85%" stop-color="#B45309" />
+        <stop offset="100%" stop-color="#D97706" />
+      </linearGradient>
+
+      <!-- Spherical Ball Finials -->
+      <radialGradient id="goldSphere" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#FFFBEB" />
+        <stop offset="25%" stop-color="#FDE68A" />
+        <stop offset="60%" stop-color="#F59E0B" />
+        <stop offset="85%" stop-color="#B45309" />
+        <stop offset="100%" stop-color="#78350F" />
+      </radialGradient>
+      
+      <!-- Cowboy Hat Gradients -->
+      <linearGradient id="goldCrownGradient" x1="15%" y1="0%" x2="85%" y2="100%">
+        <stop offset="0%" stop-color="#FFF0A0" />
+        <stop offset="25%" stop-color="#F59E0B" />
+        <stop offset="70%" stop-color="#B45309" />
+        <stop offset="100%" stop-color="#78350F" />
+      </linearGradient>
+
+      <linearGradient id="goldBrimGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+        <stop offset="0%" stop-color="#B45309" />
+        <stop offset="15%" stop-color="#FDE68A" />
+        <stop offset="50%" stop-color="#F59E0B" />
+        <stop offset="85%" stop-color="#FDE68A" />
+        <stop offset="100%" stop-color="#92400E" />
+      </linearGradient>
+
+      <linearGradient id="goldBorderStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFF0A0" />
+        <stop offset="50%" stop-color="#F59E0B" />
+        <stop offset="100%" stop-color="#78350F" />
+      </linearGradient>
+
+      <linearGradient id="crownCreaseShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#451A03" />
+        <stop offset="100%" stop-color="#78350F" />
+      </linearGradient>
+
+      <radialGradient id="discGradient" cx="40%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#222631" />
+        <stop offset="65%" stop-color="#111318" />
+        <stop offset="100%" stop-color="#08090C" />
+      </radialGradient>
+
+      <linearGradient id="goldTextGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFF5C0" />
+        <stop offset="35%" stop-color="#FBBF24" />
+        <stop offset="75%" stop-color="#D97706" />
+        <stop offset="100%" stop-color="#92400E" />
+      </linearGradient>
+
+      <!-- Card Backgrounds -->
+      <radialGradient id="cardGlow" cx="50%" cy="30%" r="75%">
+        <stop offset="0%" stop-color="#222735" stop-opacity="0.95" />
+        <stop offset="55%" stop-color="#12141A" stop-opacity="0.98" />
+        <stop offset="100%" stop-color="#08090C" stop-opacity="1" />
+      </radialGradient>
+
+      <linearGradient id="cardRimStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.75" />
+        <stop offset="50%" stop-color="#78350F" stop-opacity="0.25" />
+        <stop offset="100%" stop-color="#F59E0B" stop-opacity="0.4" />
+      </linearGradient>
+
+      <!-- Drop Shadows & Filters -->
+      <filter id="dropShadowSoft" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.55" />
+      </filter>
+
+      <filter id="dropShadowHard" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.75" />
+      </filter>
+
+      <filter id="dropShadowMark" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.8" />
+      </filter>
+
+      <filter id="ambientGoldGlow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="14" />
+        <feOffset dx="0" dy="0" />
+        <feComponentTransfer><feFuncA type="linear" slope="0.3" /></feComponentTransfer>
+        <feMerge>
+          <feMergeNode />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+  
+  <rect width="64" height="64" rx="16" fill="#0C0E13" />
+  <rect width="64" height="64" rx="16" stroke="#F59E0B" stroke-width="1.5" stroke-opacity="0.5" />
+  <g id="favicon-mark">
+    <polygon points="32,37 32.00,19.00 37.00,28.34" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 37.00,28.34 47.59,28.00" fill="url(#goldFacetDark)" />
+    <polygon points="32,37 47.59,28.00 42.00,37.00" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 42.00,37.00 47.59,46.00" fill="url(#goldFacetDark)" />
+    <polygon points="32,37 47.59,46.00 37.00,45.66" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 37.00,45.66 32.00,55.00" fill="url(#goldFacetDark)" />
+    <polygon points="32,37 32.00,55.00 27.00,45.66" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 27.00,45.66 16.41,46.00" fill="url(#goldFacetDark)" />
+    <polygon points="32,37 16.41,46.00 22.00,37.00" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 22.00,37.00 16.41,28.00" fill="url(#goldFacetDark)" />
+    <polygon points="32,37 16.41,28.00 27.00,28.34" fill="url(#goldFacetLit)" />
+    <polygon points="32,37 27.00,28.34 32.00,19.00" fill="url(#goldFacetDark)" />
+    <polygon points="32.00,19.00 37.00,28.34 47.59,28.00 42.00,37.00 47.59,46.00 37.00,45.66 32.00,55.00 27.00,45.66 16.41,46.00 22.00,37.00 16.41,28.00 27.00,28.34" fill="none" stroke="url(#goldBorderStroke)" stroke-width="2" />
+    <!-- Ball finials -->
+    <circle cx="32.00" cy="19.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="31.49" cy="18.41" r="0.82" fill="#FFFBEB" opacity="0.85" />
+    <circle cx="47.59" cy="28.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="47.07" cy="27.41" r="0.82" fill="#FFFBEB" opacity="0.85" />
+    <circle cx="47.59" cy="46.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="47.07" cy="45.41" r="0.82" fill="#FFFBEB" opacity="0.85" />
+    <circle cx="32.00" cy="55.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="31.49" cy="54.41" r="0.82" fill="#FFFBEB" opacity="0.85" />
+    <circle cx="16.41" cy="46.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="15.90" cy="45.42" r="0.82" fill="#FFFBEB" opacity="0.85" />
+    <circle cx="16.41" cy="28.00" r="2.34" fill="url(#goldSphere)" filter="url(#dropShadowSoft)" />
+    <circle cx="15.90" cy="27.42" r="0.82" fill="#FFFBEB" opacity="0.85" />
+
+
+    <!-- Bitcoin Monogram Group -->
+    <g id="bitcoin-monogram" transform="translate(32, 37) scale(0.13)">
+      <!-- Outer Medallion Plate -->
+      <circle cx="0" cy="0" r="54" fill="url(#discGradient)" stroke="url(#goldBorderStroke)" stroke-width="3" filter="url(#dropShadowSoft)" />
+      
+      <!-- Inner circular engraved groove -->
+      <circle cx="0" cy="0" r="48" fill="none" stroke="#F59E0B" stroke-opacity="0.25" stroke-dasharray="3 3" stroke-width="1.5" />
+
+      <!-- Top and Bottom vertical ticks -->
+      <path d="
+        M -6 -48 L 6 -48 L 6 -32 L -6 -32 Z
+        M 14 -48 L 26 -48 L 26 -32 L 14 -32 Z
+        M -6 32 L 6 32 L 6 48 L -6 48 Z
+        M 14 32 L 26 32 L 26 48 L 14 48 Z
+      " fill="url(#goldTextGradient)" filter="url(#dropShadowMark)" />
+
+      <!-- Main Body of 'B' -->
+      <path d="
+        M -26 -32
+        L 18 -32
+        C 29 -32, 38 -24, 38 -14
+        C 38 -5, 30 1, 22 2
+        C 32 3, 42 12, 42 22
+        C 42 33, 31 40, 16 40
+        L -26 40
+        L -26 28
+        L -14 28
+        L -14 -20
+        L -26 -20
+        Z
+        M 0 -21
+        L 15 -21
+        C 21 -21, 26 -18, 26 -14
+        C 26 -9, 21 -6, 15 -6
+        L 0 -6
+        Z
+        M 0 5
+        L 17 5
+        C 24 5, 29 9, 29 15
+        C 29 21, 24 25, 17 25
+        L 0 25
+        Z
+      " fill="url(#goldTextGradient)" fill-rule="evenodd" filter="url(#dropShadowMark)" />
+
+      <!-- Bevel Highlights on 'B' -->
+      <path d="
+        M -13 -19 L 13 -19 C 18 -19, 23 -16, 23 -14
+      " fill="none" stroke="#FFFDF0" stroke-width="1.8" stroke-linecap="round" opacity="0.8" />
+      <path d="
+        M -13 7 L 15 7 C 21 7, 26 10, 26 15
+      " fill="none" stroke="#FFFDF0" stroke-width="1.8" stroke-linecap="round" opacity="0.8" />
+    </g>
+  
+
+    <!-- Cowboy Hat Group -->
+    <g id="cowboy-hat" transform="rotate(-4 33 25.9)" filter="url(#dropShadowHard)">
+      <!-- Hat Crown -->
+      <path d="
+        M 26.2608 21.905
+        C 26.5416 16.3188, 28.226399999999998 20, 30.7536 26
+        C 32.1576 32, 33.8424 32, 35.2464 26
+        C 37.7736 20, 39.4584 16.3188, 39.7392 21.905
+        Z"
+        fill="url(#goldCrownGradient)"
+        stroke="url(#goldBorderStroke)"
+        stroke-width="3"
+      />
+      
+      <!-- Crown Cattleman Pinch Crease -->
+      <path d="
+        M 31.3152 28
+        C 32.1576 18.743, 32.4384 20.5348, 33 21.5888
+        C 33.5616 20.5348, 33.8424 18.743, 34.6848 28
+        C 33.8424 34, 32.1576 34, 31.3152 28
+        Z"
+        fill="url(#crownCreaseShadow)"
+        opacity="0.8"
+      />
+
+      <!-- Crown Left/Right Dimple Creases -->
+      <path d="
+        M 28.086 17.689
+        Q 29.9112 19.27, 29.49 21.378
+      " fill="none" stroke="#78350F" stroke-width="2.5" stroke-linecap="round" opacity="0.4" />
+      <path d="
+        M 37.914 17.689
+        Q 36.0888 19.27, 36.51 21.378
+      " fill="none" stroke="#78350F" stroke-width="2.5" stroke-linecap="round" opacity="0.4" />
+      
+      <!-- Hat Band (Dark Leather with Gold Stitch/Buckle) -->
+      <path d="
+        M 26.1204 21.5888
+        C 29.49 22.6428, 36.51 22.6428, 39.879599999999996 21.5888
+        L 40.02 22.8536
+        C 36.51 23.9076, 29.49 23.9076, 25.98 22.8536
+        Z"
+        fill="#14161C"
+        stroke="url(#goldBorderStroke)"
+        stroke-width="1.5"
+      />
+      <!-- Mini Buckle -->
+      <rect x="31.034399999999998" y="21.799599999999998" width="3.9312000000000005" height="1.3701999999999999" rx="2" fill="none" stroke="#FDE68A" stroke-width="1.5" />
+      
+      <!-- Hat Brim (Curved Western Upturned Brim) -->
+      <path d="
+        M 20 21.1672
+        C 23.64 18.4268, 26.240000000000002 23.0644, 33 24.1184
+        C 39.76 23.0644, 42.36 18.4268, 46 21.1672
+        C 44.44 26.8588, 39.5 27.912799999999997, 33 27.912799999999997
+        C 26.5 27.912799999999997, 21.560000000000002 26.8588, 20 21.1672
+        Z"
+        fill="url(#goldBrimGradient)"
+        stroke="url(#goldBorderStroke)"
+        stroke-width="3"
+      />
+
+      <!-- Brim Inner Rolled Edge Highlight -->
+      <path d="
+        M 21.04 21.5888
+        C 26.759999999999998 27.2804, 39.24 27.2804, 44.96 21.5888
+      "
+      fill="none"
+      stroke="#FFFBEB"
+      stroke-width="2.5"
+      opacity="0.85"
+      />
+    </g>
+  
+  </g>
+</svg>

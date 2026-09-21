@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <!-- Background Gradient: Deep Saddle Espresso / Obsidian -->
+    <radialGradient id="tileBg" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#221A15" />
+      <stop offset="65%" stop-color="#14100E" />
+      <stop offset="100%" stop-color="#0A0807" />
+    </radialGradient>
+
+    <!-- Star Metal Gradients -->
+    <linearGradient id="starFacetLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E9B973" />
+      <stop offset="50%" stop-color="#C6893F" />
+      <stop offset="100%" stop-color="#9C6221" />
+    </linearGradient>
+
+    <linearGradient id="starFacetDark" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#673B0F" />
+      <stop offset="50%" stop-color="#8E541A" />
+      <stop offset="100%" stop-color="#BD7E34" />
+    </linearGradient>
+
+    <!-- Bitcoin 'B' Rich Warm Gold / Bronze Gradient -->
+    <linearGradient id="btcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCE5B2" />
+      <stop offset="35%" stop-color="#E5A651" />
+      <stop offset="75%" stop-color="#BA772A" />
+      <stop offset="100%" stop-color="#844E13" />
+    </linearGradient>
+
+    <linearGradient id="btcBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE7BC" />
+      <stop offset="50%" stop-color="#A5671E" />
+      <stop offset="100%" stop-color="#552E08" />
+    </linearGradient>
+
+    <!-- Cowboy Hat Gradient -->
+    <linearGradient id="hatCrownGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#E8B46E" />
+      <stop offset="45%" stop-color="#C28236" />
+      <stop offset="100%" stop-color="#7C4813" />
+    </linearGradient>
+
+    <linearGradient id="hatBrimGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#965818" />
+      <stop offset="20%" stop-color="#E8B46E" />
+      <stop offset="50%" stop-color="#C28236" />
+      <stop offset="80%" stop-color="#E8B46E" />
+      <stop offset="100%" stop-color="#965818" />
+    </linearGradient>
+
+    <!-- Ball Finial Spheres -->
+    <radialGradient id="sphereGrad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#FFF0D1" />
+      <stop offset="30%" stop-color="#E8B46E" />
+      <stop offset="75%" stop-color="#9C6221" />
+      <stop offset="100%" stop-color="#5C340B" />
+    </radialGradient>
+
+    <!-- Tile Rim -->
+    <linearGradient id="tileRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C6893F" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#5C340B" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#C6893F" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadowHeavy" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+
+    <filter id="shadowMedium" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.7" />
+    </filter>
+  </defs>
+
+  <!-- Squircle App Icon Base -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#tileBg)" stroke="url(#tileRim)" stroke-width="3" />
+  <rect x="34" y="34" width="444" height="444" rx="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1.5" />
+
+  <!-- Main Emblem Group -->
+  <g id="emblem" transform="translate(256, 268)">
+    
+    <!-- 1. SHERIFF STAR (Faceted 5-Point Star in Background) -->
+    <g id="star" filter="url(#shadowHeavy)">
+      <!-- Star Facets -->
+      <!-- Center at (0, 30) -->
+      <!-- Point 0: Top (0, -135) -->
+      <!-- Point 1: Right (145, -30) -->
+      <!-- Point 2: Bottom Right (90, 140) -->
+      <!-- Point 3: Bottom Left (-90, 140) -->
+      <!-- Point 4: Left (-145, -30) -->
+      <!-- Inner Valleys at (48, -48), (62, 54), (0, 92), (-62, 54), (-48, -48) -->
+      
+      <!-- Top Point Facets -->
+      <polygon points="0,25 0,-135 48,-48" fill="url(#starFacetLight)" />
+      <polygon points="0,25 0,-135 -48,-48" fill="url(#starFacetDark)" />
+
+      <!-- Right Point Facets -->
+      <polygon points="0,25 145,-30 48,-48" fill="url(#starFacetDark)" />
+      <polygon points="0,25 145,-30 62,54" fill="url(#starFacetLight)" />
+
+      <!-- Bottom Right Point Facets -->
+      <polygon points="0,25 90,140 62,54" fill="url(#starFacetDark)" />
+      <polygon points="0,25 90,140 0,92" fill="url(#starFacetLight)" />
+
+      <!-- Bottom Left Point Facets -->
+      <polygon points="0,25 -90,140 0,92" fill="url(#starFacetDark)" />
+      <polygon points="0,25 -90,140 -62,54" fill="url(#starFacetLight)" />
+
+      <!-- Left Point Facets -->
+      <polygon points="0,25 -145,-30 -62,54" fill="url(#starFacetDark)" />
+      <polygon points="0,25 -145,-30 -48,-48" fill="url(#starFacetLight)" />
+
+      <!-- Star Outline Border -->
+      <polygon points="
+        0,-135 48,-48 145,-30 62,54 90,140 0,92 -90,140 -62,54 -145,-30 -48,-48
+      " fill="none" stroke="#7C4813" stroke-width="2.5" stroke-linejoin="round" />
+
+      <!-- Ball Finials on 5 Tips -->
+      <circle cx="0" cy="-135" r="14" fill="url(#sphereGrad)" filter="url(#shadowMedium)" />
+      <circle cx="145" cy="-30" r="14" fill="url(#sphereGrad)" filter="url(#shadowMedium)" />
+      <circle cx="90" cy="140" r="14" fill="url(#sphereGrad)" filter="url(#shadowMedium)" />
+      <circle cx="-90" cy="140" r="14" fill="url(#sphereGrad)" filter="url(#shadowMedium)" />
+      <circle cx="-145" cy="-30" r="14" fill="url(#sphereGrad)" filter="url(#shadowMedium)" />
+
+      <!-- High-gloss sparkle nodes on spheres -->
+      <circle cx="-3" cy="-138" r="4.5" fill="#FFFBEB" opacity="0.85" />
+      <circle cx="142" cy="-33" r="4.5" fill="#FFFBEB" opacity="0.85" />
+      <circle cx="87" cy="137" r="4.5" fill="#FFFBEB" opacity="0.85" />
+      <circle cx="-93" cy="137" r="4.5" fill="#FFFBEB" opacity="0.85" />
+      <circle cx="-148" cy="-33" r="4.5" fill="#FFFBEB" opacity="0.85" />
+    </g>
+
+    <!-- 2. BOLD CENTRAL BITCOIN 'B' (Large, Prominent, Centerpiece) -->
+    <g id="bitcoin-B" filter="url(#shadowHeavy)" transform="translate(0, 26)">
+      <!-- Outer Solid Dark Shield Behind B to give intense contrast over star -->
+      <path d="
+        M -68 -90
+        L 32 -90
+        C 76 -90, 96 -64, 96 -36
+        C 96 -12, 78 8, 54 14
+        C 86 20, 102 46, 102 78
+        C 102 114, 76 138, 28 138
+        L -68 138
+        Z
+      " fill="#0A0807" opacity="0.5" filter="url(#shadowMedium)" />
+
+      <!-- Bitcoin Vertical Hashes / Stems (Top and Bottom) -->
+      <!-- Top Ticks -->
+      <rect x="-18" y="-116" width="16" height="34" rx="4" fill="url(#btcGrad)" stroke="url(#btcBorder)" stroke-width="3" />
+      <rect x="22" y="-116" width="16" height="34" rx="4" fill="url(#btcGrad)" stroke="url(#btcBorder)" stroke-width="3" />
+      <!-- Bottom Ticks -->
+      <rect x="-18" y="112" width="16" height="34" rx="4" fill="url(#btcGrad)" stroke="url(#btcBorder)" stroke-width="3" />
+      <rect x="22" y="112" width="16" height="34" rx="4" fill="url(#btcGrad)" stroke="url(#btcBorder)" stroke-width="3" />
+
+      <!-- Main Body of 'B' (Chunky, Iconic, perfectly sculpted) -->
+      <path d="
+        M -56 -88
+        L 26 -88
+        C 62 -88, 86 -66, 86 -38
+        C 86 -14, 68 2, 44 8
+        C 72 14, 92 38, 92 72
+        C 92 108, 66 128, 22 128
+        L -56 128
+        L -56 94
+        L -24 94
+        L -24 -54
+        L -56 -54
+        Z
+        M 10 -54
+        L 26 -54
+        C 42 -54, 52 -46, 52 -38
+        C 52 -30, 42 -22, 26 -22
+        L 10 -22
+        Z
+        M 10 14
+        L 28 14
+        C 46 14, 56 24, 56 36
+        C 56 48, 46 58, 28 58
+        L 10 58
+        Z
+      " fill="url(#btcGrad)" fill-rule="evenodd" stroke="url(#btcBorder)" stroke-width="4.5" />
+
+      <!-- Subtle inner beveled facet highlights on the 'B' -->
+      <path d="
+        M -22 -52 L 24 -52 C 58 -52, 80 -32, 80 -38
+      " fill="none" stroke="#FFF7E0" stroke-width="3" opacity="0.6" stroke-linecap="round" />
+      <path d="
+        M -22 16 L 26 16 C 66 16, 86 40, 86 70
+      " fill="none" stroke="#FFF7E0" stroke-width="3" opacity="0.6" stroke-linecap="round" />
+    </g>
+
+    <!-- 3. COWBOY HAT (Tilted Naturally on Top of the Bitcoin 'B') -->
+    <!-- Positioned directly atop the upper bowl of the 'B' -->
+    <g id="cowboy-hat" transform="translate(4, -82) rotate(-8)" filter="url(#shadowHeavy)">
+      <!-- Hat Crown -->
+      <path d="
+        M -52 14
+        C -50 -26, -38 -56, -18 -52
+        C -6 -48, -2 -34, 0 -34
+        C 2 -34, 6 -48, 18 -52
+        C 38 -56, 50 -26, 52 14
+        Z
+      " fill="url(#hatCrownGrad)" stroke="url(#btcBorder)" stroke-width="4" />
+
+      <!-- Center Cattleman Pinch Crease -->
+      <path d="
+        M -12 -50
+        C -4 -28, -2 -6, 0 6
+        C 2 -6, 4 -28, 12 -50
+        C 4 -40, -4 -40, -12 -50
+        Z
+      " fill="#452306" opacity="0.8" />
+
+      <!-- Left & Right Dimple Creases -->
+      <path d="M -34 -28 Q -20 -10, -26 12" fill="none" stroke="#5C340B" stroke-width="3.5" stroke-linecap="round" opacity="0.5" />
+      <path d="M 34 -28 Q 20 -10, 26 12" fill="none" stroke="#5C340B" stroke-width="3.5" stroke-linecap="round" opacity="0.5" />
+
+      <!-- Hat Band (Dark Leather with Gold Accent Stitch) -->
+      <path d="
+        M -53 10
+        Q 0 20 53 10
+        L 54 20
+        Q 0 30 -54 20
+        Z
+      " fill="#1C140E" stroke="#552E08" stroke-width="1.5" />
+      <!-- Mini Buckle -->
+      <rect x="-10" y="11" width="20" height="12" rx="2" fill="none" stroke="#FCE5B2" stroke-width="2" />
+
+      <!-- Hat Brim (Curved Upturned Western Profile) -->
+      <path d="
+        M -105 10
+        C -68 -16, -50 26, 0 26
+        C 50 26, 68 -16, 105 10
+        C 80 44, 40 48, 0 48
+        C -40 48, -80 44, -105 10
+        Z
+      " fill="url(#hatBrimGrad)" stroke="url(#btcBorder)" stroke-width="4.5" />
+
+      <!-- Brim Rolled Edge Highlight -->
+      <path d="
+        M -98 14
+        C -62 -8, -45 28, 0 28
+        C 45 28, 62 -8, 98 14
+      " fill="none" stroke="#FFF7E0" stroke-width="3" opacity="0.85" />
+    </g>
+
+  </g>
+</svg>

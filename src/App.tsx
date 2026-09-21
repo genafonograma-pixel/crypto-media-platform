@@ -21,6 +21,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let timer: any;
+    let retries = 0;
+    const maxRetries = 10;
+
     async function fetchNews() {
       try {
         const response = await fetch('/api/news');
@@ -29,12 +33,19 @@ export default function App() {
         }
         const data: NewsResponse = await response.json();
         
-        if (data.status === 'success' && data.results) {
-          // Filter out articles with duplicate titles or IDs
+        if (data.status === 'success' && Array.isArray(data.results)) {
+          // Filter out articles with duplicate IDs or titles
           const uniqueArticles = Array.from(
-            new Map(data.results.map(item => [item.title, item])).values()
+            new Map(data.results.map(item => [item.article_id || item.title, item])).values()
           );
           setArticles(uniqueArticles);
+          setError(null);
+
+          // If pipeline is still processing initial articles, poll again until articles arrive
+          if (uniqueArticles.length === 0 && retries < maxRetries) {
+            retries++;
+            timer = setTimeout(fetchNews, 4000);
+          }
         } else {
           throw new Error('Invalid data format received');
         }
@@ -46,6 +57,10 @@ export default function App() {
     }
 
     fetchNews();
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
 
   return (

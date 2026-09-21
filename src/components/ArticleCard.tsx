@@ -32,7 +32,7 @@ const ArticleCard: React.FC<Props> = ({ article, compact = false }) => {
               }}
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#6366F1]/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#F4A917]/20"></div>
           )}
         </div>
       )}
@@ -48,7 +48,7 @@ const ArticleCard: React.FC<Props> = ({ article, compact = false }) => {
           </time>
         </div>
         
-        <h2 className={`font-bold leading-tight group-hover:text-[#3B82F6] transition-colors text-[#F5F5F5] ${compact ? 'text-sm mb-2' : 'text-xl mb-3 uppercase tracking-tight'} line-clamp-3`}>
+        <h2 className={`font-bold leading-tight group-hover:text-[#F4A917] transition-colors text-[#F5F5F5] ${compact ? 'text-sm mb-2' : 'text-xl mb-3 uppercase tracking-tight'} line-clamp-3`}>
           {displayTitle}
         </h2>
         

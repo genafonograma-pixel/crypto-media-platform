@@ -36,7 +36,7 @@ export default function NotFoundPage() {
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest px-8 py-4 rounded transition-colors mb-12"
+          className="inline-flex items-center gap-2 bg-[#F4A917] hover:bg-[#E09010] text-white text-xs font-black uppercase tracking-widest px-8 py-4 rounded transition-colors mb-12"
         >
           Back to Homepage
         </Link>
@@ -56,7 +56,7 @@ export default function NotFoundPage() {
               <Link
                 key={to}
                 to={to}
-                className="flex items-center justify-center py-3 px-4 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#3B82F6] hover:text-[#3B82F6] transition-colors text-xs font-bold uppercase tracking-widest text-[#888]"
+                className="flex items-center justify-center py-3 px-4 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#F4A917] hover:text-[#F4A917] transition-colors text-xs font-bold uppercase tracking-widest text-[#888]"
               >
                 {label}
               </Link>

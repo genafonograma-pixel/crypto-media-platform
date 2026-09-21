@@ -26,7 +26,7 @@ export default function TermsPage() {
           <h3>Intellectual Property</h3>
           <p>Content produced by Crypton's AI system is the property of Crypton Media Group. Third-party article summaries are provided under fair use and are clearly attributed to their original sources.</p>
           <h3>Contact</h3>
-          <p>For terms-related questions, contact <a href="mailto:hello@crypton.news" className="text-[#3B82F6] hover:underline">hello@crypton.news</a>.</p>
+          <p>For terms-related questions, contact <a href="mailto:hello@crypton.news" className="text-[#F4A917] hover:underline">hello@crypton.news</a>.</p>
         </div>
       </main>
       <Footer />

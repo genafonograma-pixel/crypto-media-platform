@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { useLocation, useParams, Link, Navigate } from 'react-router-dom';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { useLocation, useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AdPlacement from '../components/AdPlacement';
@@ -16,34 +16,69 @@ interface ArticlePageProps {
 
 export default function ArticlePage({ articles, loading }: ArticlePageProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const [fetchedArticle, setFetchedArticle] = useState<Article | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
+  const articleContentRef = useRef<HTMLDivElement | null>(null);
 
-  // Try state first (fast nav), then search in-memory list by slug, then fetch from API
-  const articleFromList = (location.state?.article as Article | undefined) 
-    || articles.find(a => generateSlug(a.headline || a.title) === slug);
+  const cleanSlug = slug ? decodeURIComponent(slug).toLowerCase().trim() : '';
+
+  // Try state first (fast nav), then search in-memory list by slug
+  const articleFromList = useMemo(() => {
+    if (location.state?.article) return location.state.article as Article;
+    if (!cleanSlug) return undefined;
+    return articles.find(a => {
+      const headlineSlug = generateSlug(a.headline || '');
+      const titleSlug = generateSlug(a.title || '');
+      return headlineSlug === cleanSlug || titleSlug === cleanSlug;
+    });
+  }, [location.state, articles, cleanSlug]);
 
   const article = articleFromList || fetchedArticle;
 
   // If not found in the in-memory list, fetch from the API by slug
   useEffect(() => {
-    if (!articleFromList && !loading && slug && !fetchedArticle) {
-      setFetchLoading(true);
-      fetch(`/api/article/${slug}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) setFetchedArticle(data); })
-        .catch(() => {})
-        .finally(() => setFetchLoading(false));
+    if (articleFromList) {
+      setFetchAttempted(true);
+      return;
     }
-  }, [articleFromList, loading, slug, fetchedArticle]);
+    if (!cleanSlug) return;
+
+    let isMounted = true;
+    setFetchLoading(true);
+
+    fetch(`/api/article/${encodeURIComponent(cleanSlug)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (isMounted && data && !data.error) {
+          setFetchedArticle(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) {
+          setFetchLoading(false);
+          setFetchAttempted(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [articleFromList, cleanSlug]);
 
   const relatedArticles = useMemo(() => {
     if (!article || !articles.length) return [];
-    const otherArticles = articles.filter(a => generateSlug(a.headline || a.title) !== slug);
+    const otherArticles = articles.filter(a => {
+      const headlineSlug = generateSlug(a.headline || '');
+      const titleSlug = generateSlug(a.title || '');
+      return headlineSlug !== cleanSlug && titleSlug !== cleanSlug;
+    });
     const shuffled = [...otherArticles].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 3);
-  }, [article, articles, slug]);
+  }, [article, articles, cleanSlug]);
 
   // Build the HTML string of a single related reading card to inject mid-article
   function buildSingleRelatedCard(related: Article): string {
@@ -51,7 +86,10 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     const slug = generateSlug(title);
     const href = `/article/${slug}`;
     const classification = (related as any).classification || related.category?.[0] || 'News';
-    const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(related.pubDate));
+    const relDate = new Date(related.pubDate);
+    const date = !isNaN(relDate.getTime())
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(relDate)
+      : '';
     const description = related.description ? related.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...' : '';
     return `
 <div class="not-prose my-10">
@@ -62,10 +100,10 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     </div>` : ''}
     <div class="flex flex-col justify-center flex-1 min-w-0 p-4 md:p-6 gap-0">
       <div class="flex items-center gap-2 mb-2.5">
-        <span class="inline-block text-[9px] font-black tracking-[0.18em] uppercase text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">${classification}</span>
+        <span class="inline-block text-[9px] font-black tracking-[0.18em] uppercase text-[#F4A917] bg-[#F4A917]/10 px-2 py-0.5 rounded">${classification}</span>
         <span class="text-[9px] font-bold tracking-[0.12em] uppercase text-[#444]">Related Reading</span>
       </div>
-      <span class="block text-[15px] md:text-base font-extrabold text-[#F0F0F0] leading-snug mb-2.5 tracking-tight group-hover:text-[#3B82F6] transition-colors">${title}</span>
+      <span class="block text-[15px] md:text-base font-extrabold text-[#F0F0F0] leading-snug mb-2.5 tracking-tight group-hover:text-[#F4A917] transition-colors">${title}</span>
       ${description ? `<span class="block text-xs text-[#666] leading-relaxed mb-3.5 overflow-hidden line-clamp-2">${description}</span>` : ''}
       <span class="text-[10px] text-[#444] tracking-wider uppercase font-semibold">${date}</span>
     </div>
@@ -116,7 +154,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       headers.forEach(faqHeader => {
         // Style the FAQ header
         const wrapper = doc.createElement('div');
-        wrapper.className = 'border-l-4 border-[#3B82F6] pl-4 mb-8 mt-16 not-prose';
+        wrapper.className = 'border-l-4 border-[#F4A917] pl-4 mb-8 mt-16 not-prose';
         const newHeader = doc.createElement('h2');
         newHeader.className = 'text-2xl font-black uppercase tracking-tight text-[#F5F5F5] m-0';
         newHeader.textContent = 'Frequently Asked Questions';
@@ -197,11 +235,11 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                 iconWrapper.className = 'relative w-5 h-5 flex items-center justify-center shrink-0';
                 
                 const iconPlus = doc.createElement('span');
-                iconPlus.className = 'text-[#3B82F6] font-bold text-xl transition-all duration-200 leading-none absolute';
+                iconPlus.className = 'text-[#F4A917] font-bold text-xl transition-all duration-200 leading-none absolute';
                 iconPlus.innerHTML = '&#43;'; // +
                 
                 const iconMinus = doc.createElement('span');
-                iconMinus.className = 'text-[#3B82F6] font-bold text-xl transition-all duration-200 leading-none absolute opacity-0';
+                iconMinus.className = 'text-[#F4A917] font-bold text-xl transition-all duration-200 leading-none absolute opacity-0';
                 iconMinus.innerHTML = '&#8722;'; // −
                 
                 iconWrapper.appendChild(iconPlus);
@@ -236,7 +274,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       style.innerHTML = `
         details > summary::-webkit-details-marker { display: none; }
         details[open] { border-color: rgba(59, 130, 246, 0.4) !important; background-color: #0b0e14 !important; }
-        details[open] summary span { color: #3B82F6 !important; }
+        details[open] summary span { color: #F4A917 !important; }
         details[open] summary div span:first-child { opacity: 0 !important; }
         details[open] summary div span:last-child { opacity: 1 !important; }
       `;
@@ -282,16 +320,16 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     };
   }, [article]);
 
-  if ((loading || fetchLoading) && !article) {
+  if (!article && (loading || fetchLoading || !fetchAttempted)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-12 h-12 border-4 border-[#222] border-t-[#3B82F6] rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin"></div>
         <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#888]">Loading Article...</p>
       </div>
     );
   }
 
-  if (!article && !loading && !fetchLoading) {
+  if (!article && fetchAttempted && !fetchLoading) {
     return <Navigate to="/" replace />;
   }
 
@@ -331,12 +369,12 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
           <div className="border border-[#222] bg-[#050505] rounded-sm">
           <div className="p-6 md:p-10">
             <Link to="/news" className="inline-flex items-center gap-2 text-[10px] font-bold text-[#888] uppercase tracking-widest hover:text-white transition-colors mb-6 md:mb-10">
-              <span className="text-[#3B82F6]">←</span> All News
+              <span className="text-[#F4A917]">←</span> All News
             </Link>
 
             <article>
               <div className="flex items-center gap-2 mb-6">
-                <span className="bg-[#3B82F6] text-white text-[10px] font-black px-2 py-0.5 uppercase">
+                <span className="bg-[#F4A917] text-white text-[10px] font-black px-2 py-0.5 uppercase">
                   {(article as any).classification || article.category?.[0] || 'News'}
                 </span>
                 <span className="text-[10px] text-[#666] font-mono uppercase">
@@ -353,7 +391,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                   <span className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-1">Author</span>
                   <Link
                     to="/author/jordan-cole"
-                    className="text-sm font-semibold text-[#F5F5F5] hover:text-[#3B82F6] transition-colors"
+                    className="text-sm font-semibold text-[#F5F5F5] hover:text-[#F4A917] transition-colors"
                   >
                     {AUTHOR.name}
                   </Link>
@@ -400,19 +438,19 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
                 return (
                   <div className="my-8 bg-gradient-to-br from-[#0d1b2e] to-[#0a0a0a] border border-[#1d3a5c] rounded-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#3B82F6] to-[#1d4ed8]"></div>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#F4A917] to-[#C4830B]"></div>
                     <div className="pl-5 pr-5 pt-4 pb-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#3B82F6] mb-3">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#F4A917] mb-3">
                         Market Brief
                       </p>
                     </div>
                     <div className="divide-y divide-[#1d3a5c]/50">
                       {items.map((item, i) => (
                         <div key={i} className="flex gap-3 px-5 py-4">
-                          <div className="w-1 shrink-0 mt-1.5 h-1 rounded-full bg-[#3B82F6]" />
+                          <div className="w-1 shrink-0 mt-1.5 h-1 rounded-full bg-[#F4A917]" />
                           <div>
                             {item.label && (
-                              <span className="text-[10px] font-black uppercase tracking-wider text-[#3B82F6] block mb-1">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-[#F4A917] block mb-1">
                                 {item.label}
                               </span>
                             )}
@@ -429,7 +467,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
               <div className="w-full overflow-hidden break-words">
                 {(() => {
-                  const proseClasses = "prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#3B82F6] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto";
+                  const proseClasses = "prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#F4A917] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto";
                   const rawContent = article.rewritten_content || article.content || article.description || null;
 
                   if (!rawContent) {
@@ -442,14 +480,26 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                   return (
                     <div className={article.rewritten_content ? 'font-light' : ''}>
                       <div
+                        ref={articleContentRef}
                         className={proseClasses}
                         dangerouslySetInnerHTML={{ __html: finalHTML }}
+                        onClick={(e) => {
+                          const target = (e.target as HTMLElement).closest('a');
+                          if (target) {
+                            const href = target.getAttribute('href');
+                            if (href && href.startsWith('/') && !href.startsWith('//')) {
+                              e.preventDefault();
+                              navigate(href);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }
+                        }}
                       />
                       {article.rewritten_content && (
                         <div className="flex items-center justify-between mt-12 pt-8 border-t border-[#222]">
                           <div>
                             <p className="text-xs text-[#555] uppercase tracking-widest font-bold mb-1">Written by</p>
-                            <Link to="/author/jordan-cole" className="text-sm font-semibold text-[#F5F5F5] hover:text-[#3B82F6] transition-colors">
+                            <Link to="/author/jordan-cole" className="text-sm font-semibold text-[#F5F5F5] hover:text-[#F4A917] transition-colors">
                               {AUTHOR.name}
                             </Link>
                             <span className="text-[#555] text-sm"> · {AUTHOR.title}</span>

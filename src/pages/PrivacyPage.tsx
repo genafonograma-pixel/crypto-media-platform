@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           <h3>Third-Party Services</h3>
           <p>We use third-party services including TradingView (charts) and advertising partners. These services have their own privacy policies.</p>
           <h3>Contact</h3>
-          <p>For privacy-related questions, contact <a href="mailto:hello@crypton.news" className="text-[#3B82F6] hover:underline">hello@crypton.news</a>.</p>
+          <p>For privacy-related questions, contact <a href="mailto:hello@crypton.news" className="text-[#F4A917] hover:underline">hello@crypton.news</a>.</p>
         </div>
       </main>
       <Footer />

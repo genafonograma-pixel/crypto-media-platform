@@ -7,7 +7,7 @@ export default function AdminAds() {
   const [format, setFormat] = useState('popup');
   const [targetUrl, setTargetUrl] = useState('');
   const [ctaText, setCtaText] = useState('Get Bonus');
-  const [buttonColor, setButtonColor] = useState('#3B82F6');
+  const [buttonColor, setButtonColor] = useState('#F4A917');
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -144,7 +144,7 @@ export default function AdminAds() {
                 <label className="block text-sm text-gray-400 mb-1">Upload Image (Banner/Popup Design)</label>
                 
                 {/* Recommended Size Helper Text */}
-                <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 border border-blue-900/50 rounded">
+                <div className="text-xs text-[#F4A917] mb-2 p-2 bg-[#F4A917]/10 border border-[#F4A917]/30 rounded">
                   <span className="font-bold">Recommended Size: </span>
                   {format === 'popup' && "400x500px (or similar portrait/square aspect ratio)"}
                   {format === 'billboard' && "728x90px or 970x250px (Horizontal Banner)"}
@@ -206,7 +206,7 @@ export default function AdminAds() {
             <button 
               type="submit" 
               disabled={uploading}
-              className="mt-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded transition-colors"
+              className="mt-4 bg-[#F4A917] hover:bg-[#C4830B] disabled:opacity-50 text-black font-bold py-2 px-6 rounded transition-colors"
             >
               {uploading ? 'Uploading & Saving...' : 'Create Ad'}
             </button>
@@ -226,7 +226,7 @@ export default function AdminAds() {
                 <div key={ad.id} className={`flex items-center gap-4 p-4 border rounded-xl bg-[#0a0a0a] ${ad.active ? 'border-[#333]' : 'border-red-900/30 opacity-50'}`}>
                   <img src={ad.image_url} alt="Ad preview" className="w-24 h-24 object-contain bg-black rounded" />
                   <div className="flex-1">
-                    <div className="font-bold uppercase text-xs text-blue-400 mb-1">{ad.format}</div>
+                    <div className="font-bold uppercase text-xs text-[#F4A917] mb-1">{ad.format}</div>
                     <div className="text-sm truncate max-w-sm text-gray-300">🔗 {ad.target_url}</div>
                     {ad.format === 'popup' && <div className="text-xs mt-1 text-gray-500">CTA: {ad.cta_text}</div>}
                   </div>

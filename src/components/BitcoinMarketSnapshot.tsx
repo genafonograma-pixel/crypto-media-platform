@@ -120,7 +120,7 @@ export default function BitcoinMarketSnapshot() {
         <div>
           <div className="text-[10px] font-black uppercase tracking-widest text-[#666] mb-1.5 flex items-center gap-2">
             Bitcoin Price
-            <span className="bg-[#3B82F6]/15 text-[#3B82F6] text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded animate-pulse">LIVE</span>
+            <span className="bg-[#F4A917]/15 text-[#F4A917] text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded animate-pulse">LIVE</span>
           </div>
           <div className="flex items-baseline gap-3">
             <span className="text-4xl md:text-5xl font-black text-white tabular-nums">{formatPrice(data.price)}</span>

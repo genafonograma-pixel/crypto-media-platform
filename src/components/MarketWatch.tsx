@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { fetchSharedPrices } from '../utils';
 
 const CDN = 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@master/32/color';
 const COIN_LOGOS: Record<string, string> = {
@@ -27,8 +28,8 @@ export default function MarketWatch() {
 
   const fetchPrices = async () => {
     try {
-      const res = await fetch('/api/prices');
-      if (res.ok) setPrices(await res.json());
+      const data = await fetchSharedPrices();
+      if (data && Object.keys(data).length > 0) setPrices(data);
     } catch {}
   };
 
@@ -98,7 +99,7 @@ export default function MarketWatch() {
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <div>
-                <div className="text-[12px] font-bold text-[#F0F0F0] group-hover:text-[#3B82F6] transition-colors">{item.symbol}</div>
+                <div className="text-[12px] font-bold text-[#F0F0F0] group-hover:text-[#F4A917] transition-colors">{item.symbol}</div>
                 <div className="text-[10px] text-[#555]">{item.name}</div>
               </div>
             </div>
@@ -119,7 +120,7 @@ export default function MarketWatch() {
           href="https://www.coingecko.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[9px] font-bold uppercase tracking-widest text-[#444] hover:text-[#3B82F6] transition-colors"
+          className="text-[9px] font-bold uppercase tracking-widest text-[#444] hover:text-[#F4A917] transition-colors"
         >
           Powered by CoinGecko →
         </a>

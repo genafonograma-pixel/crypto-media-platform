@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { Search, Rss, Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -81,13 +82,13 @@ export default function Header() {
 
           {/* Left section: Logo + Mobile Header Button */}
           <div className="flex items-center gap-2 min-w-0 flex-1 lg:flex-none">
-            <a href="/" className="shrink-0 flex items-center">
+            <Link to="/" className="shrink-0 flex items-center">
               <img
-                src="/crypton_logo.svg"
-                alt="Crypton"
+                src="/wildwest_logo.svg"
+                alt="Wild West Crypto Show"
                 className="h-9 sm:h-11 w-auto"
               />
-            </a>
+            </Link>
             
             {/* Mobile Header Button - Only shows next to logo on mobile */}
             {shouldShowAd && adData && (
@@ -96,23 +97,38 @@ export default function Header() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-white animate-in fade-in zoom-in duration-300 max-w-[120px] sm:max-w-[160px] truncate shadow-[0_4px_0_rgba(0,0,0,0.6)] active:translate-y-[4px] active:shadow-none transition-all"
-                style={{ backgroundColor: adData.button_color || '#3B82F6' }}
+                style={{ backgroundColor: adData.button_color || '#F4A917' }}
               >
                 {adData.cta_text}
               </a>
             )}
+
+            {/* Permanent Best Bitcoin Casinos Button - Mobile */}
+            <a
+              href="https://surbitcoin.com/"
+              target="_blank"
+              rel="noopener"
+              className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-white max-w-[130px] sm:max-w-[170px] truncate shadow-[0_4px_0_rgba(0,0,0,0.6)] active:translate-y-[4px] active:shadow-none transition-all"
+              style={{ backgroundColor: '#F4A917' }}
+            >
+              Best Bitcoin Casinos
+            </a>
           </div>
 
           {/* Categories (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-[#888]">
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest">
             {NAV_LINKS.map(({ href, label }) => (
-              <a
+              <NavLink
                 key={href}
-                href={href}
-                className={`hover:text-[#F5F5F5] transition-colors${href === '/news' ? ' text-[#F5F5F5]' : ''}`}
+                to={href}
+                className={({ isActive }) =>
+                  `transition-colors hover:text-[#F5F5F5] ${
+                    isActive ? 'text-[#F4A917]' : 'text-[#888]'
+                  }`
+                }
               >
                 {label}
-              </a>
+              </NavLink>
             ))}
           </nav>
 
@@ -125,11 +141,22 @@ export default function Header() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden lg:block text-xs font-black uppercase tracking-widest px-5 py-2 rounded-lg text-white mr-2 animate-in fade-in zoom-in duration-300 shadow-[0_5px_0_rgba(0,0,0,0.6)] hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.6)] active:translate-y-[5px] active:shadow-none transition-all"
-                style={{ backgroundColor: adData.button_color || '#3B82F6' }}
+                style={{ backgroundColor: adData.button_color || '#F4A917' }}
               >
                 {adData.cta_text}
               </a>
             )}
+
+            {/* Permanent Best Bitcoin Casinos Button - Desktop */}
+            <a
+              href="https://surbitcoin.com/"
+              target="_blank"
+              rel="noopener"
+              className="hidden lg:block text-xs font-black uppercase tracking-widest px-5 py-2 rounded-lg text-white mr-2 shadow-[0_5px_0_rgba(0,0,0,0.6)] hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.6)] active:translate-y-[5px] active:shadow-none transition-all"
+              style={{ backgroundColor: '#F4A917' }}
+            >
+              Best Bitcoin Casinos
+            </a>
 
             <button
               className="p-2 text-[#555] hover:text-[#F5F5F5] transition-colors"
@@ -160,9 +187,9 @@ export default function Header() {
       {menuOpen && (
         <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-[#1a1a1a]">
-            <a href="/" className="shrink-0 flex items-center" onClick={() => setMenuOpen(false)}>
-              <img src="/crypton_logo.svg" alt="Crypton" className="h-8 w-auto" />
-            </a>
+            <Link to="/" className="shrink-0 flex items-center" onClick={() => setMenuOpen(false)}>
+              <img src="/wildwest_logo.svg" alt="Wild West Crypto Show" className="h-8 w-auto" />
+            </Link>
             <button
               className="p-2 text-[#888] hover:text-[#F5F5F5] transition-colors"
               onClick={() => setMenuOpen(false)}
@@ -174,14 +201,18 @@ export default function Header() {
           <div className="flex-1 overflow-y-auto py-8 px-6">
             <nav className="flex flex-col gap-6">
               {NAV_LINKS.map(({ href, label }) => (
-                <a
+                <NavLink
                   key={href}
-                  href={href}
-                  className="text-2xl font-black uppercase tracking-tight text-[#888] hover:text-[#F5F5F5] transition-colors"
+                  to={href}
+                  className={({ isActive }) =>
+                    `text-2xl font-black uppercase tracking-tight transition-colors ${
+                      isActive ? 'text-[#F4A917]' : 'text-[#888] hover:text-[#F5F5F5]'
+                    }`
+                  }
                   onClick={() => setMenuOpen(false)}
                 >
                   {label}
-                </a>
+                </NavLink>
               ))}
             </nav>
             

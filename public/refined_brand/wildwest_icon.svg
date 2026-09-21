@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  
+    <defs>
+      <!-- Background: Deep Saddle Leatherette / Charcoal -->
+      <radialGradient id="tileBg" cx="50%" cy="32%" r="75%">
+        <stop offset="0%" stop-color="#261A14" />
+        <stop offset="60%" stop-color="#160F0C" />
+        <stop offset="100%" stop-color="#0C0806" />
+      </radialGradient>
+
+      <linearGradient id="tileBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#99602E" stop-opacity="0.7" />
+        <stop offset="50%" stop-color="#47260D" stop-opacity="0.3" />
+        <stop offset="100%" stop-color="#99602E" stop-opacity="0.5" />
+      </linearGradient>
+
+      <!-- Star Metal -->
+      <linearGradient id="starFacetLit" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F2C785" />
+        <stop offset="50%" stop-color="#CD9046" />
+        <stop offset="100%" stop-color="#A26622" />
+      </linearGradient>
+
+      <linearGradient id="starFacetDark" x1="100%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" stop-color="#5E330B" />
+        <stop offset="50%" stop-color="#884E18" />
+        <stop offset="100%" stop-color="#B87730" />
+      </linearGradient>
+
+      <!-- Bitcoin 'B' -->
+      <linearGradient id="btcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FDE8BE" />
+        <stop offset="35%" stop-color="#E8AC56" />
+        <stop offset="75%" stop-color="#BD7A2B" />
+        <stop offset="100%" stop-color="#8A5114" />
+      </linearGradient>
+
+      <linearGradient id="btcOutline" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFEBC4" />
+        <stop offset="50%" stop-color="#A2621A" />
+        <stop offset="100%" stop-color="#4E2704" />
+      </linearGradient>
+
+      <!-- Cowboy Hat -->
+      <linearGradient id="hatCrownGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+        <stop offset="0%" stop-color="#ECC07F" />
+        <stop offset="45%" stop-color="#C7873B" />
+        <stop offset="100%" stop-color="#7C4813" />
+      </linearGradient>
+
+      <linearGradient id="hatBrimGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+        <stop offset="0%" stop-color="#9E5D1B" />
+        <stop offset="20%" stop-color="#F0C788" />
+        <stop offset="50%" stop-color="#C7873B" />
+        <stop offset="80%" stop-color="#F0C788" />
+        <stop offset="100%" stop-color="#9E5D1B" />
+      </linearGradient>
+
+      <!-- Sphere Finials -->
+      <radialGradient id="sphereGrad" cx="35%" cy="30%" r="65%">
+        <stop offset="0%" stop-color="#FFF2D6" />
+        <stop offset="30%" stop-color="#EAB46C" />
+        <stop offset="75%" stop-color="#9E611E" />
+        <stop offset="100%" stop-color="#562F07" />
+      </radialGradient>
+
+      <!-- Filters -->
+      <filter id="dropShadowStar" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.8" />
+      </filter>
+
+      <filter id="dropShadowBtc" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity="0.9" />
+      </filter>
+
+      <filter id="dropShadowHat" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.85" />
+      </filter>
+
+      <filter id="dropShadowBall" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.75" />
+      </filter>
+    </defs>
+  
+
+  <!-- Squircle Base -->
+  <rect x="20" y="20" width="472" height="472" rx="108" fill="url(#tileBg)" stroke="url(#tileBorder)" stroke-width="3.5" />
+  <rect x="30" y="30" width="452" height="452" rx="98" fill="none" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="1.5" />
+
+  <!-- Emblem Group (Center: x=256, y=268) -->
+  <g id="brand-mark" transform="translate(256, 268)">
+    <g id="star" filter="url(#dropShadowStar)">
+      <polygon points="0,0 0.00,-146.00 39.97,-55.01" fill="url(#starFacetLit)" />
+      <polygon points="0,0 39.97,-55.01 138.85,-45.12" fill="url(#starFacetDark)" />
+      <polygon points="0,0 138.85,-45.12 64.67,21.01" fill="url(#starFacetLit)" />
+      <polygon points="0,0 64.67,21.01 85.82,118.12" fill="url(#starFacetDark)" />
+      <polygon points="0,0 85.82,118.12 0.00,68.00" fill="url(#starFacetLit)" />
+      <polygon points="0,0 0.00,68.00 -85.82,118.12" fill="url(#starFacetDark)" />
+      <polygon points="0,0 -85.82,118.12 -64.67,21.01" fill="url(#starFacetLit)" />
+      <polygon points="0,0 -64.67,21.01 -138.85,-45.12" fill="url(#starFacetDark)" />
+      <polygon points="0,0 -138.85,-45.12 -39.97,-55.01" fill="url(#starFacetLit)" />
+      <polygon points="0,0 -39.97,-55.01 0.00,-146.00" fill="url(#starFacetDark)" />
+      <polygon points="0.00,-146.00 39.97,-55.01 138.85,-45.12 64.67,21.01 85.82,118.12 0.00,68.00 -85.82,118.12 -64.67,21.01 -138.85,-45.12 -39.97,-55.01" fill="none" stroke="#784112" stroke-width="2.5" stroke-linejoin="round" />
+      <circle cx="0.00" cy="-146.00" r="16.79" fill="url(#sphereGrad)" filter="url(#dropShadowBall)" />
+      <circle cx="-4.20" cy="-150.20" r="5.88" fill="#FFFBEB" opacity="0.9" />
+      <circle cx="138.85" cy="-45.12" r="16.79" fill="url(#sphereGrad)" filter="url(#dropShadowBall)" />
+      <circle cx="134.66" cy="-49.31" r="5.88" fill="#FFFBEB" opacity="0.9" />
+      <circle cx="85.82" cy="118.12" r="16.79" fill="url(#sphereGrad)" filter="url(#dropShadowBall)" />
+      <circle cx="81.62" cy="113.92" r="5.88" fill="#FFFBEB" opacity="0.9" />
+      <circle cx="-85.82" cy="118.12" r="16.79" fill="url(#sphereGrad)" filter="url(#dropShadowBall)" />
+      <circle cx="-90.01" cy="113.92" r="5.88" fill="#FFFBEB" opacity="0.9" />
+      <circle cx="-138.85" cy="-45.12" r="16.79" fill="url(#sphereGrad)" filter="url(#dropShadowBall)" />
+      <circle cx="-143.05" cy="-49.31" r="5.88" fill="#FFFBEB" opacity="0.9" />
+
+    </g>
+
+    <g id="bitcoin-symbol" filter="url(#dropShadowBtc)">
+      <!-- Top Double Vertical Hashes -->
+      <rect x="-17" y="-96" width="13" height="30" rx="3.5" fill="url(#btcGrad)" stroke="url(#btcOutline)" stroke-width="3" />
+      <rect x="13" y="-96" width="13" height="30" rx="3.5" fill="url(#btcGrad)" stroke="url(#btcOutline)" stroke-width="3" />
+
+      <!-- Bottom Double Vertical Hashes -->
+      <rect x="-17" y="78" width="13" height="30" rx="3.5" fill="url(#btcGrad)" stroke="url(#btcOutline)" stroke-width="3" />
+      <rect x="13" y="78" width="13" height="30" rx="3.5" fill="url(#btcGrad)" stroke="url(#btcOutline)" stroke-width="3" />
+
+      <!-- Main 'B' Body (Balanced, centered at x=0, y=5) -->
+      <!-- Width: ~140, Height: ~160 -->
+      <path d="
+        M -50 -74
+        L 22 -74
+        C 55 -74, 76 -54, 76 -28
+        C 76 -6, 60 8, 38 14
+        C 65 20, 82 42, 82 72
+        C 82 104, 56 122, 18 122
+        L -50 122
+        L -50 92
+        L -22 92
+        L -22 -44
+        L -50 -44
+        Z
+        M 8 -44
+        L 22 -44
+        C 36 -44, 46 -37, 46 -28
+        C 46 -19, 36 -12, 22 -12
+        L 8 -12
+        Z
+        M 8 16
+        L 24 16
+        C 39 16, 49 25, 49 37
+        C 49 49, 39 58, 24 58
+        L 8 58
+        Z
+      " fill="url(#btcGrad)" fill-rule="evenodd" stroke="url(#btcOutline)" stroke-width="4.5" />
+
+      <!-- Crisp Inner Highlight Strokes -->
+      <path d="M -20 -42 L 20 -42 C 42 -42, 60 -26, 60 -28" fill="none" stroke="#FFF7E0" stroke-width="2.5" opacity="0.65" stroke-linecap="round" />
+      <path d="M -20 18 L 22 18 C 50 18, 66 38, 66 65" fill="none" stroke="#FFF7E0" stroke-width="2.5" opacity="0.65" stroke-linecap="round" />
+    </g>
+  
+
+    <g id="cowboy-hat" transform="translate(2, -80) rotate(-7)" filter="url(#dropShadowHat)">
+      <!-- Hat Crown -->
+      <path d="
+        M -46 16
+        C -44 -20, -34 -48, -16 -44
+        C -6 -40, -2 -28, 0 -28
+        C 2 -28, 6 -40, 16 -44
+        C 34 -48, 44 -20, 46 16
+        Z
+      " fill="url(#hatCrownGrad)" stroke="url(#btcOutline)" stroke-width="3.5" />
+
+      <!-- Center Cattleman Pinch Crease -->
+      <path d="
+        M -10 -42
+        C -3 -24, -1 -4, 0 6
+        C 1 -4, 3 -24, 10 -42
+        Z
+      " fill="#3D1D04" opacity="0.85" />
+
+      <!-- Dimples -->
+      <path d="M -28 -24 Q -16 -8, -22 12" fill="none" stroke="#683408" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+      <path d="M 28 -24 Q 16 -8, 22 12" fill="none" stroke="#683408" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+
+      <!-- Hat Band -->
+      <path d="
+        M -47 12
+        Q 0 22 47 12
+        L 48 21
+        Q 0 31 -48 21
+        Z
+      " fill="#18110B" stroke="#4D2706" stroke-width="1.5" />
+      <rect x="-8" y="13" width="16" height="11" rx="2" fill="none" stroke="#FCE5B2" stroke-width="2" />
+
+      <!-- Hat Brim (Curved Western Upturned Profile) -->
+      <path d="
+        M -94 12
+        C -60 -12, -45 26, 0 26
+        C 45 26, 60 -12, 94 12
+        C 72 42, 36 46, 0 46
+        C -36 46, -72 42, -94 12
+        Z
+      " fill="url(#hatBrimGrad)" stroke="url(#btcOutline)" stroke-width="4" />
+
+      <!-- Brim Rolled Edge Highlight -->
+      <path d="
+        M -88 15
+        C -55 -6, -40 28, 0 28
+        C 40 28, 55 -6, 88 15
+      " fill="none" stroke="#FFF7E0" stroke-width="2.5" opacity="0.85" />
+    </g>
+  
+  </g>
+</svg>

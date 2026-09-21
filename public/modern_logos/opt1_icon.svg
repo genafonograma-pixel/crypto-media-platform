@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <!-- Background Tile -->
+  <rect width="512" height="512" rx="112" fill="#0A0B0E" />
+  <rect x="2" y="2" width="508" height="508" rx="110" stroke="#1F242F" stroke-width="3" />
+
+  <!-- Accent ambient ring -->
+  <circle cx="256" cy="272" r="176" fill="#F59E0B" fill-opacity="0.03" />
+
+  <g id="mark" transform="translate(256, 272)">
+    <!-- 5-Point Modern Sheriff Star Silhouette -->
+    <!-- Tips with clean circular nodes -->
+    <path d="
+      M 0 -130
+      L 28 -42
+      L 122 -42
+      L 46 14
+      L 74 104
+      L 0 52
+      L -74 104
+      L -46 14
+      L -122 -42
+      L -28 -42
+      Z
+    " fill="#161922" stroke="#E5A93C" stroke-width="6" stroke-linejoin="round" />
+
+    <!-- Ball finials at the 5 star tips -->
+    <circle cx="0" cy="-130" r="10" fill="#E5A93C" />
+    <circle cx="122" cy="-42" r="10" fill="#E5A93C" />
+    <circle cx="74" cy="104" r="10" fill="#E5A93C" />
+    <circle cx="-74" cy="104" r="10" fill="#E5A93C" />
+    <circle cx="-122" cy="-42" r="10" fill="#E5A93C" />
+
+    <!-- Central Clean Medallion -->
+    <circle cx="0" cy="8" r="56" fill="#0E1015" stroke="#E5A93C" stroke-width="4.5" />
+
+    <!-- Minimalist Precision Bitcoin ₿ -->
+    <g fill="#E5A93C">
+      <!-- Stems -->
+      <rect x="-6" y="-36" width="4.5" height="72" rx="2.25" />
+      <rect x="7" y="-36" width="4.5" height="72" rx="2.25" />
+      <!-- 'B' Main Form -->
+      <path d="
+        M -18 -24
+        L 8 -24
+        C 17 -24, 23 -18, 23 -11
+        C 23 -5, 18 -1, 12 0
+        C 20 1, 26 7, 26 15
+        C 26 23, 19 26, 8 26
+        L -18 26
+        Z
+        M -10 -17
+        L 7 -17
+        C 12 -17, 16 -14, 16 -11
+        C 16 -8, 12 -5, 7 -5
+        L -10 -5
+        Z
+        M -10 3
+        L 8 3
+        C 13 3, 18 6, 18 11
+        C 18 16, 13 19, 8 19
+        L -10 19
+        Z
+      " fill-rule="evenodd" />
+    </g>
+
+    <!-- Sleek Modern Western Cowboy Hat perched on star & badge -->
+    <!-- Minimalist vector styling: clean lines, no cheesy gradients -->
+    <g id="hat" transform="translate(0, -96)">
+      <!-- Hat Crown -->
+      <path d="
+        M -34 18
+        C -32 -16, -24 -36, -12 -33
+        C -4 -30, -2 -22, 0 -22
+        C 2 -22, 4 -30, 12 -33
+        C 24 -36, 32 -16, 34 18
+        Z
+      " fill="#E5A93C" stroke="#0E1015" stroke-width="3" />
+      
+      <!-- Crown Crease Shadow line -->
+      <path d="M 0 -22 L 0 6" stroke="#B45309" stroke-width="3" stroke-linecap="round" />
+
+      <!-- Hat Band -->
+      <path d="M -34 14 Q 0 20 34 14 L 34 18 Q 0 24 -34 18 Z" fill="#0A0B0E" />
+
+      <!-- Hat Brim (Curved modern upturned profile) -->
+      <path d="
+        M -72 16
+        C -44 -4, -36 24, 0 24
+        C 36 24, 44 -4, 72 16
+        C 52 30, 24 33, 0 33
+        C -24 33, -52 30, -72 16
+        Z
+      " fill="#E5A93C" stroke="#0E1015" stroke-width="2.5" />
+    </g>
+  </g>
+</svg>

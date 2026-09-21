@@ -23,7 +23,7 @@ export default function FeaturedArticle({ article }: Props) {
         <div className="flex flex-col md:flex-row gap-10">
           <div className="flex-1 order-2 md:order-1 flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-6">
-              <span className="bg-[#3B82F6] text-white text-[10px] font-black px-2 py-0.5 uppercase">
+              <span className="bg-[#F4A917] text-white text-[10px] font-black px-2 py-0.5 uppercase">
                 {article.category?.[0] || 'Breaking'}
               </span>
               <span className="text-[10px] text-[#666] font-mono uppercase">
@@ -31,7 +31,7 @@ export default function FeaturedArticle({ article }: Props) {
               </span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[0.95] tracking-tighter mb-8 uppercase group-hover:text-[#3B82F6] transition-colors line-clamp-4 text-[#F5F5F5]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[0.95] tracking-tighter mb-8 uppercase group-hover:text-[#F4A917] transition-colors line-clamp-4 text-[#F5F5F5]">
               {article.title}
             </h1>
             
@@ -64,7 +64,7 @@ export default function FeaturedArticle({ article }: Props) {
                 }}
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#3B82F6]/20"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#F4A917]/20"></div>
             )}
           </div>
         </div>

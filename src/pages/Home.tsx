@@ -16,18 +16,23 @@ interface HomeProps {
   error: string | null;
 }
 
-function formatTimeAgo(dateStr: string) {
-  const now = new Date();
+function formatTimeAgo(dateStr?: string) {
+  if (!dateStr) return '';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
+  if (diff < 60) return `${Math.max(1, diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
 }
 
-function formatDate(dateStr: string) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(dateStr));
+function formatDate(dateStr?: string) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
 
 function getArticleHref(article: Article) {
@@ -66,14 +71,14 @@ function HeroCard({ article }: { article: Article }) {
             <Flame size={10} /> Top Breaking Story
           </span>
         </div>
-        <h1 className="text-xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#93C5FD] transition-colors mb-3 md:mb-4 line-clamp-3">
+        <h1 className="text-xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#FBBF5A] transition-colors mb-3 md:mb-4 line-clamp-3">
           {displayTitle}
         </h1>
         {article.description && (
           <p className="hidden sm:block text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
         )}
         <div className="flex items-center gap-3 text-[11px] text-[#777]">
-          <span className="bg-[#3B82F6] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
+          <span className="bg-[#F4A917] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
           <span className="flex items-center gap-1"><Clock size={10} />{formatTimeAgo(article.pubDate)}</span>
         </div>
       </div>
@@ -102,8 +107,8 @@ function SecondaryCard({ article }: { article: Article }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1">{classification}</span>
-        <h3 className="text-sm font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-3 leading-snug mb-2">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1">{classification}</span>
+        <h3 className="text-sm font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-3 leading-snug mb-2">
           {displayTitle}
         </h3>
         <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
@@ -137,8 +142,8 @@ function TrendingCard({ article, index }: { article: Article; index: number }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1.5">{classification}</span>
-        <h3 className="text-sm font-bold text-[#E0E0E0] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1.5">{classification}</span>
+        <h3 className="text-sm font-bold text-[#E0E0E0] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-2">
           {displayTitle}
         </h3>
         <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
@@ -168,8 +173,8 @@ function FeedCard({ article }: { article: Article }) {
         </div>
       )}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1.5">{classification}</span>
-        <h3 className="text-sm sm:text-base font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug mb-2">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1.5">{classification}</span>
+        <h3 className="text-sm sm:text-base font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-2">
           {displayTitle}
         </h3>
         {article.description && (
@@ -195,8 +200,8 @@ function SidebarCard({ article, index }: { article: Article; index: number }) {
         {index + 1}
       </span>
       <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#3B82F6] block mb-1">{classification}</span>
-        <h3 className="text-[13px] font-semibold text-[#D5D5D5] group-hover:text-[#3B82F6] transition-colors line-clamp-2 leading-snug">
+        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1">{classification}</span>
+        <h3 className="text-[13px] font-semibold text-[#D5D5D5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug">
           {displayTitle}
         </h3>
         <span className="text-[9px] text-[#555] flex items-center gap-1 mt-1"><Clock size={8} />{formatTimeAgo(article.pubDate)}</span>
@@ -207,7 +212,7 @@ function SidebarCard({ article, index }: { article: Article; index: number }) {
 
 export default function Home({ articles, loading, error }: HomeProps) {
   const sortedArticles = [...articles].sort((a, b) =>
-    new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+    (new Date(b.pubDate || 0).getTime() || 0) - (new Date(a.pubDate || 0).getTime() || 0)
   );
 
   const homeSchema = useMemo(() => ({
@@ -240,7 +245,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-10 h-10 border-4 border-[#222] border-t-[#3B82F6] rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin" />
         <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#555]">Loading Live Feed...</p>
       </div>
     );
@@ -252,7 +257,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
         <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center rounded-xl">
           <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Error Loading Feed</h2>
           <p className="text-[#888] mb-6 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#3B82F6] text-white px-6 py-3 hover:bg-blue-600 rounded transition-colors">
+          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#F4A917] text-white px-6 py-3 hover:bg-[#C4830B] rounded transition-colors">
             Try Again
           </button>
         </div>
@@ -262,9 +267,11 @@ export default function Home({ articles, loading, error }: HomeProps) {
 
   const hero = sortedArticles[0];
   const secondaryArticles = sortedArticles.slice(1, 4);
-  const trendingArticles = sortedArticles.slice(4, 8);
-  const feedArticles = sortedArticles.slice(8, 20);
-  const sidebarArticles = sortedArticles.slice(1, 10);
+  const trendingArticles = sortedArticles.length > 4 ? sortedArticles.slice(4, 8) : [];
+  const feedArticles = sortedArticles.length > 8 
+    ? sortedArticles.slice(8, 20) 
+    : (sortedArticles.length > 1 ? sortedArticles.slice(1) : sortedArticles);
+  const sidebarArticles = sortedArticles.length > 1 ? sortedArticles.slice(1, 10) : sortedArticles;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
@@ -308,7 +315,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
             {trendingArticles.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={14} className="text-[#3B82F6]" />
+                  <TrendingUp size={14} className="text-[#F4A917]" />
                   <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Trending Cryptocurrency News &amp; Market Stories">Trending Now</h2>
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
                 </div>
@@ -330,7 +337,7 @@ export default function Home({ articles, loading, error }: HomeProps) {
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-[10px] font-black uppercase tracking-widest text-[#888]" title="Latest Cryptocurrency & Bitcoin News">Latest News</h2>
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
-                  <Link to="/news" className="text-[10px] font-bold uppercase tracking-widest text-[#3B82F6] hover:text-[#93C5FD] transition-colors">
+                  <Link to="/news" className="text-[10px] font-bold uppercase tracking-widest text-[#F4A917] hover:text-[#FBBF5A] transition-colors">
                     View All →
                   </Link>
                 </div>

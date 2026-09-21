@@ -9,9 +9,9 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-2">
             <Link to="/" className="inline-block mb-6">
               <img
-                src="/crypton_logo.svg"
-                alt="Crypton Cryptocurrency News"
-                className="h-10 w-auto opacity-75 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+                src="/wildwest_logo.svg"
+                alt="Wild West Crypto Show"
+                className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
               />
             </Link>
             <p className="text-[#888] max-w-sm text-sm leading-relaxed font-light">

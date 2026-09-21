@@ -14,11 +14,13 @@ interface CategoryPageProps {
   error: string | null;
 }
 
-function formatTimeAgo(dateStr: string) {
-  const now = new Date();
+function formatTimeAgo(dateStr?: string) {
+  if (!dateStr) return '';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const now = new Date();
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
+  if (diff < 60) return `${Math.max(1, diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
@@ -47,7 +49,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
     : articles;
 
   const sortedArticles = [...filteredArticles].sort((a, b) =>
-    new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+    (new Date(b.pubDate || 0).getTime() || 0) - (new Date(a.pubDate || 0).getTime() || 0)
   );
 
   const CATEGORY_DESCRIPTIONS: Record<string, string> = {
@@ -96,7 +98,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-10 h-10 border-4 border-[#222] border-t-[#3B82F6] rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin" />
         <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#555]">Loading Category...</p>
       </div>
     );
@@ -108,7 +110,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
         <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center rounded-xl">
           <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Error Loading Category</h2>
           <p className="text-[#888] mb-6 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#3B82F6] text-white px-6 py-3 hover:bg-blue-600 rounded transition-colors">
+          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#F4A917] text-white px-6 py-3 hover:bg-[#C4830B] rounded transition-colors">
             Try Again
           </button>
         </div>
@@ -138,7 +140,7 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
             {categoryId && (
               <>
                 <span>/</span>
-                <span className="text-[#3B82F6]">{activeCategory || categoryId}</span>
+                <span className="text-[#F4A917]">{activeCategory || categoryId}</span>
               </>
             )}
           </div>
@@ -185,14 +187,14 @@ export default function CategoryPage({ articles, loading, error }: CategoryPageP
                   </div>
                   
                   <div className="p-5 flex flex-col flex-1">
-                    <h3 className="text-[15px] font-bold text-[#E5E5E5] group-hover:text-[#3B82F6] transition-colors line-clamp-3 leading-snug mb-4">
+                    <h3 className="text-[15px] font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-3 leading-snug mb-4">
                       {displayTitle}
                     </h3>
                     <div className="mt-auto flex items-center gap-2">
                       <span className="text-[9px] font-black uppercase tracking-widest bg-[#1a1a1a] text-[#888] px-2 py-1 rounded">
                         {formatTimeAgo(article.pubDate)}
                       </span>
-                      <span className="text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 px-2 py-1 rounded">
+                      <span className="text-[9px] font-black uppercase tracking-widest bg-[#F4A917]/10 text-[#F4A917] px-2 py-1 rounded">
                         {getClassification(article)}
                       </span>
                     </div>

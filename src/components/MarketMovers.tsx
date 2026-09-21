@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { fetchSharedPrices } from '../utils';
 
 interface FearGreedData {
   value: string;
@@ -59,8 +60,8 @@ export default function MarketMovers() {
 
   const fetchPrices = async () => {
     try {
-      const res = await fetch('/api/prices');
-      if (res.ok) setPrices(await res.json());
+      const data = await fetchSharedPrices();
+      if (data && Object.keys(data).length > 0) setPrices(data);
     } catch {}
   };
 

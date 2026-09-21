@@ -105,8 +105,14 @@ function safeParseJSON(raw: string): any {
   return null;
 }
 
-async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+const GEMINI_MODELS: string[] = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+];
+
+async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-3.5-flash-lite"): Promise<any> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -123,6 +129,9 @@ async function runGeminiPrompt(prompt: string, apiKey: string): Promise<any> {
       // Cooldown for 1 minute (60,000ms) to recover from RPM limits
       exhaustedKeys.set(apiKey, Date.now() + 60000);
       throw new Error(`QUOTA_EXHAUSTED:${apiKey}`);
+    }
+    if (code === 503) {
+      throw new Error(`MODEL_503:${model}:${data.error.message}`);
     }
     throw new Error(`Gemini error ${code}: ${data.error.message}`);
   }
@@ -145,7 +154,7 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemma-2-9b-it:free",
+      model: "google/gemma-4-26b-a4b-it:free",
       messages: [{ role: "user", content: prompt }]
     })
   });
@@ -162,42 +171,40 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
 
 // ─── AI Helpers ──────────────────────────────────────────────────────────────
 async function runAIPrompt(prompt: string) {
-  const timeoutMs = 120000;
+  const timeoutMs = 90000;
   const withTimeout = (p: Promise<any>) => Promise.race([
     p,
     new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("AI request timed out after 120s")), timeoutMs)
+      setTimeout(() => reject(new Error("AI request timed out after 90s")), timeoutMs)
     )
   ]);
 
-  // Try Gemini keys first (rotating through all), with 503 backoff cap
-  let consecutive503s = 0;
-  while (GEMINI_KEYS.length > 0) {
-    const key = getNextGeminiKey();
-    if (!key) break; // all Gemini keys exhausted
-    try {
-      console.log(`🔑 Using Gemini key ...${key.slice(-6)} (${exhaustedKeys.size}/${GEMINI_KEYS.length} exhausted)`);
-      const result = await withTimeout(runGeminiPrompt(prompt, key));
-      return result;
-    } catch (err: any) {
-      if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
-        console.warn(`⚠️ Gemini key ...${key.slice(-6)} quota exhausted — trying next key`);
-        await delay(2000);
-        continue;
-      }
-      if (err.message?.includes("503")) {
-        consecutive503s++;
-        const backoff = Math.min(5000 * consecutive503s, 20000); // 5s, 10s, 20s cap
-        console.warn(`⚠️ Gemini 503 (attempt ${consecutive503s}/3) — backing off ${backoff / 1000}s`);
-        if (consecutive503s >= 3) {
-          console.warn("⚠️ Gemini 503 limit reached — falling through to fallback.");
-          break;
+  // Try each Gemini model with rotating keys
+  if (GEMINI_KEYS.length > 0) {
+    for (const model of GEMINI_MODELS) {
+      let keyAttempts = 0;
+      while (keyAttempts < GEMINI_KEYS.length) {
+        const key = getNextGeminiKey();
+        if (!key) break;
+        keyAttempts++;
+        try {
+          console.log(`🔑 Using Gemini ${model} with key ...${key.slice(-6)} (${exhaustedKeys.size}/${GEMINI_KEYS.length} exhausted)`);
+          const result = await withTimeout(runGeminiPrompt(prompt, key, model));
+          return result;
+        } catch (err: any) {
+          if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
+            console.warn(`⚠️ Gemini key ...${key.slice(-6)} quota exhausted — trying next key`);
+            await delay(1000);
+            continue;
+          }
+          if (err.message?.includes("MODEL_503") || err.message?.includes("503")) {
+            console.warn(`⚠️ Gemini model ${model} 503 / unavailable — trying next model`);
+            break; // Switch to next model
+          }
+          console.error(`AI prompt failed (${model}): ${err.message}`);
+          break; // Non-quota/503 error, try next model
         }
-        await delay(backoff);
-        continue;
       }
-      console.error(`AI prompt failed (Gemini): ${err.message}`);
-      break; // non-quota/503 error, fall through
     }
   }
 
@@ -714,7 +721,6 @@ async function getPublishedArticles(): Promise<any[]> {
     classification: row.classification,
     quality_score: row.quality_score,
     related_sources: row.related_sources,
-    research_data: row.research_data,
     category: row.category || ["News"],
   }));
 }
@@ -725,7 +731,7 @@ async function saveArticleToDB(article: any): Promise<void> {
     title: article.title,
     link: article.link,
     description: article.description,
-    pub_date: article.pubDate,
+    pub_date: new Date().toISOString(), // Use actual processing time, not the original RSS pub date
     image_url: article.image_url,
     source_id: article.source_id,
     category: article.category,
@@ -1664,6 +1670,13 @@ app.get("/api/logs", (req, res) => {
         cachedNews = await getPublishedArticles();
         lastFetchTime = now;
       }
+
+      // If no published articles yet, automatically trigger pipeline in the background
+      if (cachedNews.length === 0 && !processingInProgress) {
+        console.log("ℹ️ No published articles in cache. Triggering AI pipeline in background...");
+        runAIPipeline().catch((err) => console.error("Auto AI pipeline error:", err));
+      }
+
       res.json({
         status: "success",
         totalResults: cachedNews.length,
@@ -1695,7 +1708,8 @@ app.get("/api/logs", (req, res) => {
   // ── GET /api/article/:slug — Fetch a single article by its slug ──────────
   app.get("/api/article/:slug", async (req, res) => {
     const { slug } = req.params;
-    const generateSlug = (title: string) => title
+    const cleanSlug = decodeURIComponent(slug || "").toLowerCase().trim();
+    const generateSlug = (title: string) => (title || "")
       .toLowerCase()
       .replace(/[^\w\s-]/g, "")
       .replace(/[\s_-]+/g, "-")
@@ -1703,8 +1717,9 @@ app.get("/api/logs", (req, res) => {
 
     // Search in-memory cache first
     const fromCache = cachedNews.find(a => {
-      const articleSlug = generateSlug(a.headline || a.title || "");
-      return articleSlug === slug;
+      const headlineSlug = generateSlug(a.headline || "");
+      const titleSlug = generateSlug(a.title || "");
+      return headlineSlug === cleanSlug || titleSlug === cleanSlug;
     });
     if (fromCache) return res.json(fromCache);
 
@@ -1714,11 +1729,12 @@ app.get("/api/logs", (req, res) => {
         .from("articles")
         .select("*")
         .order("pub_date", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (!error && data) {
         const match = data.find((row: any) => {
-          const articleSlug = generateSlug(row.headline || row.title || "");
-          return articleSlug === slug;
+          const headlineSlug = generateSlug(row.headline || "");
+          const titleSlug = generateSlug(row.title || "");
+          return headlineSlug === cleanSlug || titleSlug === cleanSlug;
         });
         if (match) {
           return res.json({
@@ -2095,6 +2111,12 @@ app.get("/api/logs", (req, res) => {
     refreshBitcoinIntelligence().catch(console.error);
     setInterval(() => refreshBitcoinIntelligence().catch(console.error), 20 * 60 * 1000);
   }, 30000); // 30s delay on startup
+
+  // Start AI pipeline cron (on startup after 5s, and every 15 mins)
+  setTimeout(() => {
+    runAIPipeline().catch(console.error);
+    setInterval(() => runAIPipeline().catch(console.error), 15 * 60 * 1000);
+  }, 5000); // 5s delay on startup
 
 
   app.listen(Number(PORT), "0.0.0.0", () => {

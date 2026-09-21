@@ -22,7 +22,7 @@ export default function AboutPage() {
           <h3>Our Mission</h3>
           <p>To be the most useful Bitcoin and cryptocurrency information hub on the internet. Not just another news aggregator — but a continuous intelligence feed that helps readers understand what is actually happening and why it matters.</p>
           <h3>How We Work</h3>
-          <p>See our <Link to="/methodology" className="text-[#3B82F6] hover:underline">AI Methodology page</Link> for a detailed explanation of how Crypton ingests, processes, and presents information.</p>
+          <p>See our <Link to="/methodology" className="text-[#F4A917] hover:underline">AI Methodology page</Link> for a detailed explanation of how Crypton ingests, processes, and presents information.</p>
         </div>
       </main>
       <Footer />

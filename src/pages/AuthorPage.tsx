@@ -49,15 +49,15 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
         <div className="max-w-4xl mx-auto px-6 py-16 md:py-24">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
             {/* Avatar placeholder */}
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-[#1d3a5c] to-[#0d1b2e] border-2 border-[#3B82F6]/40 flex items-center justify-center shrink-0">
-              <span className="text-4xl md:text-5xl font-black text-[#3B82F6]">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-[#2D1A00] to-[#120C00] border-2 border-[#F4A917]/40 flex items-center justify-center shrink-0">
+              <span className="text-4xl md:text-5xl font-black text-[#F4A917]">
                 {AUTHOR.name.split(' ').map(n => n[0]).join('')}
               </span>
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#3B82F6]">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#F4A917]">
                   {AUTHOR.title}
                 </p>
               </div>
@@ -103,7 +103,7 @@ export default function AuthorPage({ articles, loading }: AuthorPageProps) {
         </h2>
         {loading ? (
           <div className="flex items-center gap-3 text-[#555]">
-            <div className="w-5 h-5 border-2 border-[#222] border-t-[#3B82F6] rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#222] border-t-[#F4A917] rounded-full animate-spin" />
             <span className="text-xs uppercase tracking-widest font-bold">Loading...</span>
           </div>
         ) : (
