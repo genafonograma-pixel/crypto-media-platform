@@ -585,45 +585,60 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
 }
 
 
-/** Fetch a 1200×630 image from Gemini image generation — higher quality fallback. */
+/** Fetch an image from Gemini image generation — higher quality fallback.
+ *  Rotates across all available GEMINI_KEYS to avoid per-key quota limits. */
 async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
-  if (!process.env.GEMINI_API_KEY) return null;
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": process.env.GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
-      }),
-      signal: AbortSignal.timeout(45000),
-    });
-    if (!response.ok) {
-      console.error(`Gemini image API returned ${response.status}: ${await response.text()}`);
-      return null;
-    }
-    const data = await response.json() as any;
-    const parts = data?.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (part?.inlineData?.data) {
-        const rawBuffer = Buffer.from(part.inlineData.data, "base64");
-        // Convert to WebP for smaller file size without altering native 1024x1024 size
-        const webpBuffer = await sharp(rawBuffer)
-          .webp({ quality: 80 })
-          .toBuffer();
-        return webpBuffer;
+  if (GEMINI_KEYS.length === 0) return null;
+
+  const MODEL = "gemini-3.1-flash-image";
+
+  for (const key of GEMINI_KEYS) {
+    try {
+      console.log(`🖼  Trying Gemini image gen with key ...${key.slice(-6)}`);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": key,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+
+      if (response.status === 429) {
+        console.warn(`⚠️ Gemini image key ...${key.slice(-6)} quota exhausted — trying next key`);
+        continue;
       }
+
+      if (!response.ok) {
+        console.error(`Gemini image API (key ...${key.slice(-6)}) returned ${response.status}: ${await response.text()}`);
+        continue;
+      }
+
+      const data = await response.json() as any;
+      const parts = data?.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (part?.inlineData?.data) {
+          const rawBuffer = Buffer.from(part.inlineData.data, "base64");
+          const webpBuffer = await sharp(rawBuffer)
+            .webp({ quality: 80 })
+            .toBuffer();
+          console.log(`✅ Gemini image gen succeeded with key ...${key.slice(-6)}`);
+          return webpBuffer;
+        }
+      }
+      console.error(`Gemini image key ...${key.slice(-6)} response had no inlineData.`);
+    } catch (err) {
+      console.error(`Gemini thumbnail (key ...${key.slice(-6)}) failed: ${(err as Error).message}`);
     }
-    console.error("Gemini image response had no inlineData.");
-    return null;
-  } catch (err) {
-    console.error(`Gemini thumbnail generation failed: ${(err as Error).message}`);
-    return null;
   }
+
+  console.error("❌ All Gemini image keys exhausted.");
+  return null;
 }
 
 /**
