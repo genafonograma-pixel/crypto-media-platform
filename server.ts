@@ -529,6 +529,8 @@ const CLOUDFLARE_ACCOUNTS = [
   { accountId: process.env.CLOUDFLARE_ACCOUNT_ID,   token: process.env.CLOUDFLARE_API_TOKEN   },
   { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_2, token: process.env.CLOUDFLARE_API_TOKEN_2 },
   { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_3, token: process.env.CLOUDFLARE_API_TOKEN_3 },
+  { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_4, token: process.env.CLOUDFLARE_API_TOKEN_4 },
+  { accountId: process.env.CLOUDFLARE_ACCOUNT_ID_5, token: process.env.CLOUDFLARE_API_TOKEN_5 },
 ].filter((a) => a.accountId && a.token) as { accountId: string; token: string }[];
 
 async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | null> {
@@ -641,30 +643,6 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
 
   console.error("❌ All Gemini image keys exhausted.");
   return null;
-}
-
-/** Generate a 1200x630 retro pixel art image from Pollinations AI (Free fallback) */
-async function generateThumbnailPollinations(prompt: string): Promise<Buffer | null> {
-  try {
-    const encodedPrompt = encodeURIComponent(prompt);
-    const seed = Math.floor(Math.random() * 1000000);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1200&height=630&nologo=true&seed=${seed}`;
-    console.log("🎨 Fetching thumbnail from Pollinations AI...");
-    const response = await fetch(url, { signal: AbortSignal.timeout(35000) });
-    if (!response.ok) {
-      console.warn(`Pollinations AI returned ${response.status}`);
-      return null;
-    }
-    const rawBuffer = Buffer.from(await response.arrayBuffer());
-    if (rawBuffer.length < 1000) {
-      console.warn("Pollinations response too small, likely an error response");
-      return null;
-    }
-    return await sharp(rawBuffer).webp({ quality: 80 }).toBuffer();
-  } catch (err) {
-    console.warn(`Pollinations AI thumbnail generation failed: ${(err as Error).message}`);
-    return null;
-  }
 }
 
 /**
@@ -787,23 +765,11 @@ async function generateAndStoreThumbnail(
 
   let imageBuffer: Buffer | null = null;
   
-  console.log("Using Cloudflare AI as primary provider...");
+  console.log("🎨 Generating thumbnail via Cloudflare Workers AI (FLUX-1-Schnell)...");
   imageBuffer = await generateThumbnailCloudflare(prompt);
 
-  // Fallback 1: Pollinations AI (Free, high quality, reliable when Cloudflare daily quota is hit)
   if (!imageBuffer) {
-    console.log("Cloudflare AI unavailable or quota exhausted — trying Pollinations AI...");
-    imageBuffer = await generateThumbnailPollinations(prompt);
-  }
-
-  // Fallback 2: Gemini image generation
-  if (!imageBuffer) {
-    console.log("Pollinations failed — falling back to Gemini image generation.");
-    imageBuffer = await generateThumbnailGemini(prompt);
-  }
-
-  if (!imageBuffer) {
-    console.error("❌ All thumbnail generation methods failed.");
+    console.error("❌ Cloudflare thumbnail generation failed (accounts exhausted or rate-limited).");
     return null;
   }
 
