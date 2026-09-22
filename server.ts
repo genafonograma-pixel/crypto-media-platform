@@ -174,12 +174,13 @@ function safeParseJSON(raw: string): any {
 }
 
 const GEMINI_MODELS: string[] = [
-  "gemini-2.0-flash-lite",
-  "gemini-2.0-flash",
-  "gemini-2.5-flash",
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
 ];
 
-async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-2.0-flash-lite"): Promise<any> {
+async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-flash-latest"): Promise<any> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -512,8 +513,9 @@ INSTRUCTIONS:
   }
 
   // Fallback
-  const c = article.classification || "Crypto News";
-  return `AUTHENTIC 8-BIT PIXEL ART of ${c}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words.`;
+  const c = article.classification || "Crypto";
+  const topic = (title || c).slice(0, 80);
+  return `AUTHENTIC 8-BIT PIXEL ART scene representing ${topic}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words, NO typography.`;
 }
 
 
@@ -641,6 +643,30 @@ async function generateThumbnailGemini(prompt: string): Promise<Buffer | null> {
   return null;
 }
 
+/** Generate a 1200x630 retro pixel art image from Pollinations AI (Free fallback) */
+async function generateThumbnailPollinations(prompt: string): Promise<Buffer | null> {
+  try {
+    const encodedPrompt = encodeURIComponent(prompt);
+    const seed = Math.floor(Math.random() * 1000000);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1200&height=630&nologo=true&seed=${seed}`;
+    console.log("🎨 Fetching thumbnail from Pollinations AI...");
+    const response = await fetch(url, { signal: AbortSignal.timeout(35000) });
+    if (!response.ok) {
+      console.warn(`Pollinations AI returned ${response.status}`);
+      return null;
+    }
+    const rawBuffer = Buffer.from(await response.arrayBuffer());
+    if (rawBuffer.length < 1000) {
+      console.warn("Pollinations response too small, likely an error response");
+      return null;
+    }
+    return await sharp(rawBuffer).webp({ quality: 80 }).toBuffer();
+  } catch (err) {
+    console.warn(`Pollinations AI thumbnail generation failed: ${(err as Error).message}`);
+    return null;
+  }
+}
+
 /**
  * Upload a thumbnail Buffer to ImgBB.
  * Returns the public CDN URL, or null on failure.
@@ -721,9 +747,15 @@ async function generateAndStoreThumbnail(
   console.log("Using Cloudflare AI as primary provider...");
   imageBuffer = await generateThumbnailCloudflare(prompt);
 
-  // Last resort: Gemini image generation
+  // Fallback 1: Pollinations AI (Free, high quality, reliable when Cloudflare daily quota is hit)
   if (!imageBuffer) {
-    console.log("All main providers failed — falling back to Gemini image generation.");
+    console.log("Cloudflare AI unavailable or quota exhausted — trying Pollinations AI...");
+    imageBuffer = await generateThumbnailPollinations(prompt);
+  }
+
+  // Fallback 2: Gemini image generation
+  if (!imageBuffer) {
+    console.log("Pollinations failed — falling back to Gemini image generation.");
     imageBuffer = await generateThumbnailGemini(prompt);
   }
 
