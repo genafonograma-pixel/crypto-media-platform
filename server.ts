@@ -728,8 +728,51 @@ async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promis
 }
 
 /**
+ * Returns a categorized fallback thumbnail when live generation fails.
+ * Searches tags in backup_thumbnails.json, and if no tag matches,
+ * hashes the title to select among 30+ diverse categories so different articles never get the same image.
+ */
+async function getFallbackThumbnail(
+  title?: string | null,
+  headline?: string | null,
+  classification?: string | null
+): Promise<string> {
+  try {
+    const mappingData = await fs.readFile(path.join(process.cwd(), "backup_thumbnails.json"), "utf-8");
+    const backupMap = JSON.parse(mappingData);
+    const matchText = `${title || ""} ${headline || ""} ${classification || ""}`.toLowerCase();
+
+    for (const [key, details] of Object.entries(backupMap)) {
+      const tags = (details as any).tags || [];
+      if (tags.some((tag: string) => matchText.includes(tag.toLowerCase()))) {
+        console.log(`ℹ️ Selected categorized fallback: "${key}"`);
+        return (details as any).url;
+      }
+    }
+
+    // Deterministic distribution across all 30 backup categories
+    const keys = Object.keys(backupMap);
+    if (keys.length > 0) {
+      const str = title || headline || "crypto";
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const selectedKey = keys[Math.abs(hash) % keys.length];
+      console.log(`ℹ️ Selected hash-distributed fallback: "${selectedKey}"`);
+      return backupMap[selectedKey].url;
+    }
+    return "https://files.catbox.moe/2k119g.jpg";
+  } catch (e) {
+    console.warn("Failed to load backup thumbnails mapping:", e);
+    return "https://files.catbox.moe/2k119g.jpg";
+  }
+}
+
+/**
  * Full thumbnail generation orchestrator.
- * Tries Pollinations first (free), falls back to Gemini, uploads to ImgBB.
+ * Tries Cloudflare first, falls back to Pollinations / Gemini, uploads to ImgBB / Catbox.
  * Skips entirely if GENERATE_THUMBNAILS env var is not "true".
  */
 async function generateAndStoreThumbnail(
@@ -1210,31 +1253,11 @@ export async function runAIPipeline(): Promise<{
         // NEVER use scraped original images. If AI generation completely fails (due to quota/timeout), use a generic pixel art fallback.
         let finalImageUrl = thumbnailUrl;
         if (!finalImageUrl) {
-          try {
-            const mappingData = await fs.readFile(path.join(process.cwd(), "backup_thumbnails.json"), "utf-8");
-            const backupMap = JSON.parse(mappingData);
-            
-            const matchText = `${article.title || ""} ${aiResult.headline || ""} ${aiResult.classification || ""}`.toLowerCase();
-            let matchedKey = "altcoins"; // default fallback key
-            
-            for (const [key, details] of Object.entries(backupMap)) {
-              const tags = (details as any).tags || [];
-              if (tags.some((tag: string) => matchText.includes(tag.toLowerCase()))) {
-                matchedKey = key;
-                break;
-              }
-            }
-            
-            if (backupMap[matchedKey]) {
-              finalImageUrl = backupMap[matchedKey].url;
-              console.log(`ℹ️ AI thumbnail generation failed. Selected categorized fallback: "${matchedKey}" (${finalImageUrl})`);
-            } else {
-              finalImageUrl = "https://files.catbox.moe/2k119g.jpg";
-            }
-          } catch (e) {
-            console.warn("Failed to load backup thumbnails mapping, using global fallback:", e);
-            finalImageUrl = "https://files.catbox.moe/2k119g.jpg";
-          }
+          finalImageUrl = await getFallbackThumbnail(
+            article.title,
+            aiResult.headline,
+            aiResult.classification
+          );
         }
 
         // Save to DB
@@ -2111,12 +2134,20 @@ app.get("/api/logs", (req, res) => {
         title: mockArticle.title,
         classification: aiResult.classification,
       });
+      let finalImageUrl = thumbnailUrl;
+      if (!finalImageUrl) {
+        finalImageUrl = await getFallbackThumbnail(
+          mockArticle.title,
+          aiResult.headline,
+          aiResult.classification
+        );
+      }
       res.json({
         success: true,
         headline: aiResult.headline,
         classification: aiResult.classification,
         quality_score: aiResult.quality_score,
-        image_url: thumbnailUrl,
+        image_url: finalImageUrl,
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
