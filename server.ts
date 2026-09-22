@@ -174,12 +174,12 @@ function safeParseJSON(raw: string): any {
 }
 
 const GEMINI_MODELS: string[] = [
-  "gemini-3.5-flash-lite",
-  "gemini-3.5-flash",
-  "gemini-3.6-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.5-flash",
 ];
 
-async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-3.5-flash-lite"): Promise<any> {
+async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-2.0-flash-lite"): Promise<any> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -222,7 +222,7 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemma-4-26b-a4b-it:free",
+      model: "google/gemma-3-12b-it:free",
       messages: [{ role: "user", content: prompt }]
     })
   });
