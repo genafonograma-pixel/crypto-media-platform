@@ -2336,6 +2336,122 @@ app.get("/api/logs", (req, res) => {
     return false;
   }
 
+  // ── OG tag injection helpers ──────────────────────────────────────────────
+  // Cache the built index.html in memory so we only read it once from disk.
+  let indexHtmlCache: string | null = null;
+  async function getIndexHtml(distPath: string): Promise<string> {
+    if (!indexHtmlCache) {
+      indexHtmlCache = await fs.readFile(path.join(distPath, "index.html"), "utf-8");
+    }
+    return indexHtmlCache;
+  }
+
+  /** Look up a full article row by URL slug. Returns null if not found. */
+  async function fetchArticleBySlug(slug: string): Promise<any | null> {
+    const cleanSlug = decodeURIComponent(slug || "").toLowerCase().trim();
+    if (!cleanSlug) return null;
+
+    // 1. Check in-memory cache first
+    if (cachedNews && cachedNews.length > 0) {
+      const match = cachedNews.find((a) => {
+        const hs = generateSlugForRedirect(a.headline || "");
+        const ts = generateSlugForRedirect(a.title || "");
+        return hs === cleanSlug || ts === cleanSlug;
+      });
+      if (match) return match;
+    }
+
+    // 2. Fallback to Supabase
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("id,title,headline,seo_title,ai_meta_description,description,image_url")
+          .order("pub_date", { ascending: false })
+          .limit(500);
+        if (!error && Array.isArray(data)) {
+          const match = data.find((row: any) => {
+            const hs = generateSlugForRedirect(row.headline || "");
+            const ts = generateSlugForRedirect(row.title || "");
+            return hs === cleanSlug || ts === cleanSlug;
+          });
+          if (match) return match;
+        }
+      } catch (err) {
+        console.error("fetchArticleBySlug error:", err);
+      }
+    }
+
+    return null;
+  }
+
+  const SITE_URL_BASE = "https://wildwestcryptoshow.com";
+  const DEFAULT_OG_IMAGE = `${SITE_URL_BASE}/wildwest_logo.svg`;
+
+  /** Replace static OG/Twitter meta tags in index.html with article-specific values. */
+  function injectArticleOG(html: string, article: any, slug: string): string {
+    const title = (article.seo_title || article.headline || article.title || "").trim();
+    const description = (article.ai_meta_description || article.description || "").trim();
+    const image = (article.image_url || DEFAULT_OG_IMAGE).trim();
+    const url = `${SITE_URL_BASE}/article/${slug}`;
+
+    const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+    const t = escape(title);
+    const d = escape(description);
+    const img = escape(image);
+    const u = escape(url);
+
+    return html
+      // <title>
+      .replace(/<title>[^<]*<\/title>/, `<title>${t}</title>`)
+      // og:title
+      .replace(
+        /(<meta\s+property="og:title"\s+content=")[^"]*(")/,
+        `$1${t}$2`
+      )
+      // og:description
+      .replace(
+        /(<meta\s+property="og:description"\s+content=")[^"]*(")/,
+        `$1${d}$2`
+      )
+      // og:image
+      .replace(
+        /(<meta\s+property="og:image"\s+content=")[^"]*(")/,
+        `$1${img}$2`
+      )
+      // og:url
+      .replace(
+        /(<meta\s+property="og:url"\s+content=")[^"]*(")/,
+        `$1${u}$2`
+      )
+      // og:type
+      .replace(
+        /(<meta\s+property="og:type"\s+content=")[^"]*(")/,
+        `$1article$2`
+      )
+      // twitter:title
+      .replace(
+        /(<meta\s+name="twitter:title"\s+content=")[^"]*(")/,
+        `$1${t}$2`
+      )
+      // twitter:description
+      .replace(
+        /(<meta\s+name="twitter:description"\s+content=")[^"]*(")/,
+        `$1${d}$2`
+      )
+      // twitter:image
+      .replace(
+        /(<meta\s+name="twitter:image"\s+content=")[^"]*(")/,
+        `$1${img}$2`
+      )
+      // canonical link
+      .replace(
+        /(<link\s+rel="canonical"\s+href=")[^"]*(")/,
+        `$1${u}$2`
+      );
+  }
+
   // ── Vite middleware (dev) / Static files (prod) ───────────────────────────
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -2406,13 +2522,21 @@ app.get("/api/logs", (req, res) => {
         return res.sendFile(path.join(distPath, "index.html"));
       }
 
-      // 4. Valid article routes
+      // 4. Valid article routes — serve with article-specific OG tags injected
       const articleMatch = req.path.match(/^\/article\/([^/?#]+)$/i);
       if (articleMatch) {
         const slug = articleMatch[1];
-        const exists = await isValidArticleSlug(slug);
-        if (exists) {
-          return res.sendFile(path.join(distPath, "index.html"));
+        const article = await fetchArticleBySlug(slug);
+        if (article) {
+          try {
+            const html = await getIndexHtml(distPath);
+            const injected = injectArticleOG(html, article, slug);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            return res.send(injected);
+          } catch (err) {
+            console.error("OG injection error, falling back to sendFile:", err);
+            return res.sendFile(path.join(distPath, "index.html"));
+          }
         }
       }
 
