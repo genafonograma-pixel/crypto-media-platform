@@ -94,10 +94,10 @@ function SecondaryCard({ article }: { article: Article }) {
     <Link
       to={getArticleHref(article)}
       state={{ article }}
-      className="group flex gap-4 p-4 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#111] transition-all"
+      className="group flex gap-3 p-3 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#111] transition-all items-start"
     >
       {article.image_url && (
-        <div className="w-24 h-20 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
+        <div className="w-[76px] h-[48px] flex-shrink-0 overflow-hidden rounded-md bg-[#111]">
           <img
             src={article.image_url}
             alt={displayTitle}
@@ -108,7 +108,7 @@ function SecondaryCard({ article }: { article: Article }) {
       )}
       <div className="flex-1 min-w-0">
         <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1">{classification}</span>
-        <h3 className="text-sm font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-3 leading-snug mb-2">
+        <h3 className="text-[13px] font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-1.5">
           {displayTitle}
         </h3>
         <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>

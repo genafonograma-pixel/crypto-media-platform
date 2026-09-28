@@ -2197,6 +2197,85 @@ app.get("/api/logs", (req, res) => {
     }
   });
 
+  // ── GET /rss.xml & /feed.xml ────────────────────────────────────────────────
+  const escapeXml = (str: string): string => {
+    if (!str) return "";
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+  };
+
+  app.get(["/rss.xml", "/feed.xml", "/rss", "/feed"], async (req, res) => {
+    try {
+      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+
+      const now = Date.now();
+      if (now - lastFetchTime > CACHE_TTL || cachedNews.length === 0) {
+        cachedNews = await getPublishedArticles();
+        lastFetchTime = now;
+      }
+
+      const buildDate = new Date().toUTCString();
+
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">\n`;
+      xml += `  <channel>\n`;
+      xml += `    <title>Wild West Crypto Show | Crypto News &amp; Bitcoin Intelligence</title>\n`;
+      xml += `    <link>${baseUrl}</link>\n`;
+      xml += `    <description>Latest cryptocurrency news, Bitcoin updates, altcoin markets, and DeFi insights.</description>\n`;
+      xml += `    <language>en-us</language>\n`;
+      xml += `    <lastBuildDate>${buildDate}</lastBuildDate>\n`;
+      xml += `    <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml"/>\n`;
+
+      for (const article of cachedNews) {
+        const slug = generateSlug(article.headline || article.title);
+        if (!slug) continue;
+        const articleUrl = `${baseUrl}/article/${slug}`;
+        const title = escapeXml(article.headline || article.title || "");
+        const pubDate = new Date(article.pubDate || Date.now()).toUTCString();
+        const description = escapeXml(
+          article.ai_meta_description ||
+          (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(" ") : article.ai_summary) ||
+          article.description ||
+          ""
+        );
+        const category = escapeXml(
+          article.classification ||
+          (Array.isArray(article.category) ? article.category[0] : article.category) ||
+          "Crypto"
+        );
+        const imageUrl = article.image_url ? escapeXml(article.image_url) : "";
+
+        xml += `    <item>\n`;
+        xml += `      <title>${title}</title>\n`;
+        xml += `      <link>${articleUrl}</link>\n`;
+        xml += `      <guid isPermaLink="true">${articleUrl}</guid>\n`;
+        xml += `      <pubDate>${pubDate}</pubDate>\n`;
+        xml += `      <description>${description}</description>\n`;
+        xml += `      <category>${category}</category>\n`;
+        if (imageUrl) {
+          xml += `      <enclosure url="${imageUrl}" type="image/jpeg" length="0"/>\n`;
+          xml += `      <media:content url="${imageUrl}" medium="image"/>\n`;
+        }
+        xml += `    </item>\n`;
+      }
+
+      xml += `  </channel>\n`;
+      xml += `</rss>`;
+
+      res.header("Content-Type", "application/xml; charset=utf-8");
+      res.send(xml);
+    } catch (error) {
+      console.error("Error generating RSS feed:", error);
+      res.status(500).send("Error generating RSS feed");
+    }
+  });
+
   // ── GET /robots.txt ───────────────────────────────────────────────────────
   app.get("/robots.txt", (req, res) => {
     res.type("text/plain");
