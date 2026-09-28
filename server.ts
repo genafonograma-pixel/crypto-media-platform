@@ -97,6 +97,122 @@ export async function submitToIndexNow(urls: string | string[]): Promise<{ succe
   }
 }
 
+// ─── Auto-Post Articles to X (Twitter) via Buffer ─────────────────────────────
+export async function postArticleToX(
+  article: {
+    headline?: string | null;
+    title?: string;
+    classification?: string | null;
+    image_url?: string | null;
+  },
+  slug: string
+): Promise<{ success: boolean; error?: string; postId?: string }> {
+  const token = process.env.BUFFER_ACCESS_TOKEN;
+  if (!token) {
+    console.log("ℹ️ [X / Buffer] Auto-post skipped: BUFFER_ACCESS_TOKEN is not configured.");
+    return { success: false, error: "BUFFER_ACCESS_TOKEN not set" };
+  }
+
+  const title = (article.headline || article.title || "").trim();
+  if (!title || !slug) {
+    return { success: false, error: "Missing title or slug" };
+  }
+
+  const url = `${SITE_URL}/article/${slug}`;
+
+  // Build clean hashtags based on classification
+  const categoryTag = (article.classification || "Crypto").replace(/[^a-zA-Z0-9]/g, "");
+  const hashtags = categoryTag.toLowerCase() === "crypto" ? "#Crypto #Bitcoin" : `#${categoryTag} #Crypto`;
+
+  // X limit is 280 chars. URL is counted as 23 chars. Allow ample room for hashtags and spacing.
+  const maxTitleLen = 280 - 25 - hashtags.length - 6;
+  const safeTitle = title.length > maxTitleLen ? title.slice(0, maxTitleLen - 1).trimEnd() + "…" : title;
+
+  const tweetText = `${safeTitle}\n\n${url}\n\n${hashtags}`;
+
+  try {
+    let channelId = process.env.BUFFER_CHANNEL_ID;
+    if (!channelId) {
+      // Auto-detect Twitter channel from Buffer account
+      const orgRes = await fetch("https://api.buffer.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ query: `query { account { organizations { id } } }` }),
+      });
+      const orgJson: any = await orgRes.json();
+      const orgId = orgJson?.data?.account?.organizations?.[0]?.id;
+      if (orgId) {
+        const chanRes = await fetch("https://api.buffer.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ query: `query { channels(input: { organizationId: "${orgId}" }) { id service } }` }),
+        });
+        const chanJson: any = await chanRes.json();
+        const twitterChannel = chanJson?.data?.channels?.find((c: any) => c.service === "twitter");
+        if (twitterChannel) channelId = twitterChannel.id;
+      }
+    }
+
+    if (!channelId) {
+      console.warn("⚠️ [X / Buffer] No Twitter channel found in Buffer.");
+      return { success: false, error: "No Twitter channel found in Buffer" };
+    }
+
+    const mutation = `
+      mutation CreatePost($input: CreatePostInput!) {
+        createPost(input: $input) {
+          ... on PostActionSuccess {
+            post { id text status }
+          }
+          ... on InvalidInputError {
+            message
+          }
+          ... on LimitReachedError {
+            message
+          }
+          ... on UnexpectedError {
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      input: {
+        channelId,
+        text: tweetText,
+        mode: "shareNow",
+        schedulingType: "automatic",
+        needsApproval: false,
+        assets: [],
+      },
+    };
+
+    const res = await fetch("https://api.buffer.com", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ query: mutation, variables }),
+    });
+
+    const result: any = await res.json();
+    const post = result?.data?.createPost?.post;
+    if (post) {
+      console.log(`🐦 [X / Buffer] Successfully published tweet for: "${safeTitle.slice(0, 50)}..." (Post ID: ${post.id})`);
+      return { success: true, postId: post.id };
+    } else {
+      const errDetail = result?.data?.createPost?.message || result?.errors?.[0]?.message || JSON.stringify(result);
+      console.error("❌ [X / Buffer] Failed to create post:", errDetail);
+      return { success: false, error: errDetail };
+    }
+  } catch (err: any) {
+    console.error("❌ [X / Buffer] Error posting to X:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ─── Gemini AI Client ────────────────────────────────────────────────────────
 
 
@@ -1254,6 +1370,19 @@ export async function runAIPipeline(): Promise<{
           submitToIndexNow([articleUrl, `${SITE_URL}/`, `${SITE_URL}/bitcoin-news`]).catch((err) => {
             console.error("IndexNow ping failed:", err.message);
           });
+
+          // Auto-post new article to X (Twitter) via Buffer (non-blocking)
+          postArticleToX(
+            {
+              headline: aiResult.headline,
+              title: article.title,
+              classification: aiResult.classification,
+              image_url: finalImageUrl,
+            },
+            articleSlug
+          ).catch((err) => {
+            console.error("X auto-post failed:", err.message);
+          });
         }
       } catch (articleErr: any) {
         console.error(`❌ Unexpected error processing "${article.title?.slice(0, 50)}": ${articleErr.message}`);
@@ -2138,6 +2267,31 @@ app.get("/api/logs", (req, res) => {
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message, stack: err.stack });
+    }
+  });
+
+  // ── GET /api/test-x — Test posting latest article to X via Buffer ───────────
+  app.get("/api/test-x", async (req, res) => {
+    try {
+      if (!cachedNews || cachedNews.length === 0) {
+        cachedNews = await getPublishedArticles();
+      }
+      const latestArticle = cachedNews?.[0];
+      if (!latestArticle) {
+        return res.status(404).json({ success: false, error: "No articles found in database" });
+      }
+      const slug = generateSlug(latestArticle.headline || latestArticle.title);
+      const result = await postArticleToX(latestArticle, slug);
+      res.json({
+        success: result.success,
+        article: {
+          title: latestArticle.headline || latestArticle.title,
+          slug,
+        },
+        result,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 
