@@ -241,18 +241,24 @@ const GEMINI_KEYS: string[] = [
   process.env.GEMINI_API_KEY_6,  // Local .env extra slot
 ].filter(Boolean) as string[];
 
-const exhaustedKeys = new Map<string, number>(); // key -> expiry timestamp
+const exhaustedKeys = new Map<string, number>(); // `${model}:${key}` or `${key}` -> expiry timestamp
 let geminiKeyIndex = 0;
 
-function getNextGeminiKey(): string | null {
+function getNextGeminiKey(model?: string): string | null {
   for (let i = 0; i < GEMINI_KEYS.length; i++) {
     const idx = (geminiKeyIndex + i) % GEMINI_KEYS.length;
     const key = GEMINI_KEYS[idx];
-    const expiry = exhaustedKeys.get(key);
+    const keyBlocked = exhaustedKeys.get(key);
+    if (keyBlocked && Date.now() < keyBlocked) {
+      continue; // Globally invalid or disabled key
+    }
+
+    const mapKey = model ? `${model}:${key}` : key;
+    const expiry = exhaustedKeys.get(mapKey);
     
-    // If key is not exhausted OR the 1-minute cooldown has passed
+    // If key is not exhausted OR the cooldown has passed
     if (!expiry || Date.now() > expiry) {
-      if (expiry) exhaustedKeys.delete(key);
+      if (expiry) exhaustedKeys.delete(mapKey);
       geminiKeyIndex = (idx + 1) % GEMINI_KEYS.length;
       return key;
     }
@@ -290,13 +296,13 @@ function safeParseJSON(raw: string): any {
 }
 
 const GEMINI_MODELS: string[] = [
-  "gemini-flash-latest",
-  "gemini-flash-lite-latest",
   "gemini-3.6-flash",
-  "gemini-3.5-flash",
+  "gemini-flash-latest",
+  "gemini-3.8-flash",
+  "gemini-flash-lite-latest",
 ];
 
-async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-flash-latest"): Promise<any> {
+async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "gemini-3.6-flash"): Promise<any> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -310,15 +316,20 @@ async function runGeminiPrompt(prompt: string, apiKey: string, model: string = "
   const data = await res.json();
   if (data.error) {
     const code = data.error.code;
+    const msg = data.error.message || "";
+    if (msg.includes("invalid authentication credentials") || code === 400 || code === 401) {
+      exhaustedKeys.set(apiKey, Date.now() + 86400000); // 24h ignore
+      throw new Error(`INVALID_KEY:${apiKey}`);
+    }
     if (code === 429) {
-      // Cooldown for 1 minute (60,000ms) to recover from RPM limits
-      exhaustedKeys.set(apiKey, Date.now() + 60000);
-      throw new Error(`QUOTA_EXHAUSTED:${apiKey}`);
+      // Cooldown for 1 minute (60,000ms) for this specific model
+      exhaustedKeys.set(`${model}:${apiKey}`, Date.now() + 60000);
+      throw new Error(`QUOTA_EXHAUSTED:${model}:${apiKey}`);
     }
-    if (code === 503) {
-      throw new Error(`MODEL_503:${model}:${data.error.message}`);
+    if (code === 503 || msg.includes("high demand") || msg.includes("temporarily unavailable")) {
+      throw new Error(`MODEL_503:${model}:${msg}`);
     }
-    throw new Error(`Gemini error ${code}: ${data.error.message}`);
+    throw new Error(`Gemini error ${code}: ${msg}`);
   }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
   const parsed = safeParseJSON(text);
@@ -339,7 +350,7 @@ async function runOpenRouterPrompt(prompt: string): Promise<any> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemma-3-12b-it:free",
+      model: "google/gemma-4-26b-a4b-it:free",
       messages: [{ role: "user", content: prompt }]
     })
   });
@@ -369,21 +380,25 @@ async function runAIPrompt(prompt: string) {
     for (const model of GEMINI_MODELS) {
       let keyAttempts = 0;
       while (keyAttempts < GEMINI_KEYS.length) {
-        const key = getNextGeminiKey();
+        const key = getNextGeminiKey(model);
         if (!key) break;
         keyAttempts++;
         try {
-          console.log(`🔑 Using Gemini ${model} with key ...${key.slice(-6)} (${exhaustedKeys.size}/${GEMINI_KEYS.length} exhausted)`);
+          console.log(`🔑 Using Gemini ${model} with key ...${key.slice(-6)}`);
           const result = await withTimeout(runGeminiPrompt(prompt, key, model));
           return result;
         } catch (err: any) {
           if (err.message?.startsWith("QUOTA_EXHAUSTED")) {
-            console.warn(`⚠️ Gemini key ...${key.slice(-6)} quota exhausted — trying next key`);
+            console.warn(`⚠️ Gemini model ${model} with key ...${key.slice(-6)} quota exhausted — trying next key`);
             await delay(1000);
             continue;
           }
-          if (err.message?.includes("MODEL_503") || err.message?.includes("503")) {
-            console.warn(`⚠️ Gemini model ${model} 503 / unavailable — trying next model`);
+          if (err.message?.startsWith("INVALID_KEY")) {
+            console.warn(`⚠️ Gemini key ...${key.slice(-6)} invalid — skipping`);
+            continue;
+          }
+          if (err.message?.includes("MODEL_503") || err.message?.includes("503") || err.message?.includes("high demand")) {
+            console.warn(`⚠️ Gemini model ${model} 503 / high demand — trying next model`);
             break; // Switch to next model
           }
           console.error(`AI prompt failed (${model}): ${err.message}`);
