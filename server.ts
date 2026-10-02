@@ -104,6 +104,7 @@ export async function postArticleToX(
     title?: string;
     classification?: string | null;
     image_url?: string | null;
+    summary?: { label: string; text: string }[] | null;
   },
   slug: string
 ): Promise<{ success: boolean; error?: string; postId?: string }> {
@@ -113,22 +114,55 @@ export async function postArticleToX(
     return { success: false, error: "BUFFER_ACCESS_TOKEN not set" };
   }
 
-  const title = (article.headline || article.title || "").trim();
-  if (!title || !slug) {
-    return { success: false, error: "Missing title or slug" };
+  const headline = (article.headline || article.title || "").trim();
+  if (!headline || !slug) {
+    return { success: false, error: "Missing headline or slug" };
+  }
+
+  // Never post articles that were classified as irrelevant or have no AI headline
+  if (!article.headline || (article.classification || "").toLowerCase() === "irrelevant") {
+    console.log(`ℹ️ [X / Buffer] Skipping post — classification is "${article.classification}" or headline missing.`);
+    return { success: false, error: "Article is irrelevant or missing headline" };
   }
 
   const url = `${SITE_URL}/article/${slug}`;
 
-  // Build clean hashtags based on classification
-  const categoryTag = (article.classification || "Crypto").replace(/[^a-zA-Z0-9]/g, "");
-  const hashtags = categoryTag.toLowerCase() === "crypto" ? "#Crypto #Bitcoin" : `#${categoryTag} #Crypto`;
+  // Map classification to meaningful crypto hashtags
+  const classificationHashtagMap: Record<string, string> = {
+    bitcoin:  "#Bitcoin #BTC #Crypto",
+    altcoins: "#Altcoins #Crypto #Web3",
+    defi:     "#DeFi #Crypto #Web3",
+    web3:     "#Web3 #NFT #Crypto",
+  };
+  const cls = (article.classification || "").toLowerCase();
+  const hashtags = classificationHashtagMap[cls] ?? "#Crypto #Bitcoin #Web3";
 
-  // X limit is 280 chars. URL is counted as 23 chars. Allow ample room for hashtags and spacing.
-  const maxTitleLen = 280 - 25 - hashtags.length - 6;
-  const safeTitle = title.length > maxTitleLen ? title.slice(0, maxTitleLen - 1).trimEnd() + "…" : title;
+  // Pull the "What happened" summary sentence for tweet body
+  const whatHappened = article.summary?.find((s) => s.label?.toLowerCase().includes("what happened"))?.text?.trim() ?? "";
+  const whyMatters = article.summary?.find((s) => s.label?.toLowerCase().includes("why"))?.text?.trim() ?? "";
 
-  const tweetText = `${safeTitle}\n\n${url}\n\n${hashtags}`;
+  // Build tweet: headline + short context + URL + hashtags, strict 280 char limit
+  // X counts URLs as 23 chars regardless of actual length
+  const TWITTER_URL_LEN = 23;
+  const RESERVED = TWITTER_URL_LEN + hashtags.length + 6; // 6 = newlines/spaces
+  const MAX_BODY = 280 - RESERVED;
+
+  let body = headline;
+  // Try to fit "What happened" sentence after headline
+  if (whatHappened && whatHappened !== headline) {
+    const candidate = `${headline}\n\n${whatHappened}`;
+    if (candidate.length <= MAX_BODY) body = candidate;
+    else if (headline.length + 4 <= MAX_BODY && whyMatters) {
+      // fallback: try "why it matters" if shorter
+      const candidate2 = `${headline}\n\n${whyMatters}`;
+      if (candidate2.length <= MAX_BODY) body = candidate2;
+    }
+  }
+
+  // Safety trim if still over
+  if (body.length > MAX_BODY) body = body.slice(0, MAX_BODY - 1).trimEnd() + "…";
+
+  const tweetText = `${body}\n\n${url}\n\n${hashtags}`;
 
   try {
     let channelId = process.env.BUFFER_CHANNEL_ID;
@@ -1432,6 +1466,7 @@ export async function runAIPipeline(): Promise<{
               title: article.title,
               classification: aiResult.classification,
               image_url: finalImageUrl,
+              summary: aiResult.summary,
             },
             articleSlug
           ).catch((err) => {
