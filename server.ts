@@ -1125,7 +1125,7 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const DAILY_LIMIT = 12; // Strictly 12 articles/day to match Cloudflare free neuron limits (4 accounts x 3 images)
+const DAILY_LIMIT = 15; // 4 active CF accounts × ~3 images/day = 12 pixel art images; +3 buffer
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parser = new Parser({ timeout: 15000,
