@@ -735,7 +735,8 @@ async function generateThumbnailCloudflare(prompt: string): Promise<Buffer | nul
 
       const data = await response.json() as any;
       if (data && data.result && data.result.image) {
-        if (i > 0) console.log(`✅ Cloudflare AI (${label}) succeeded.`);
+        const neuronsUsed = data.result?.usage?.neurons ?? "172.8";
+        console.log(`🎨 Cloudflare AI (${label}) generated pixel art image (${neuronsUsed} neurons used).`);
         const rawBuffer = Buffer.from(data.result.image, "base64");
         // Convert to WebP for massive file size reduction (~500kb -> ~80kb)
         // keeping the native 1024x1024 dimensions so the pixel art stays perfectly crisp!
@@ -1124,8 +1125,9 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
   if (error) console.error("Supabase saveQuotaInfo error:", error.message);
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-const DAILY_LIMIT = 15; // 4 active CF accounts × ~3 images/day = 12 pixel art images; +3 buffer
+// 1 CF account = 10,000 neurons / 172.8 neurons/image ≈ 57 pixel art images/day.
+// With 4 active accounts (~228 images/day capacity), 50 articles/day comfortably covers all breaking news.
+const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT || "50", 10);
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parser = new Parser({ timeout: 15000,

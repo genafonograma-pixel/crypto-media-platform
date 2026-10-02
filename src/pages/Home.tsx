@@ -74,9 +74,15 @@ function HeroCard({ article }: { article: Article }) {
         <h2 className="text-xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#FBBF5A] transition-colors mb-3 md:mb-4 line-clamp-3">
           {displayTitle}
         </h2>
-        {article.description && (
-          <p className="hidden sm:block text-sm text-[#aaa] line-clamp-2 mb-4 max-w-xl">{article.description}</p>
-        )}
+        {(() => {
+          const raw = article.ai_meta_description || article.description || '';
+          if (!raw) return null;
+          const plain = raw.replace(/<[^>]*>/g, '').trim();
+          const snippet = plain.length > 160 ? plain.slice(0, 160) + '…' : plain;
+          return snippet ? (
+            <p className="hidden sm:block text-sm text-[#aaa] mb-4 max-w-xl overflow-hidden">{snippet}</p>
+          ) : null;
+        })()}
         <div className="flex items-center gap-3 text-[11px] text-[#777]">
           <span className="bg-[#F4A917] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
           <span className="flex items-center gap-1"><Clock size={10} />{formatTimeAgo(article.pubDate)}</span>
@@ -178,7 +184,9 @@ function FeedCard({ article }: { article: Article }) {
           {displayTitle}
         </h3>
         {article.description && (
-          <p className="hidden sm:block text-[13px] text-[#666] line-clamp-1 mb-2">{article.description}</p>
+          <p className="hidden sm:block text-[13px] text-[#666] line-clamp-1 mb-2 overflow-hidden">
+            {article.description.replace(/<[^>]*>/g, '').trim().slice(0, 120)}
+          </p>
         )}
         <span className="text-[10px] text-[#555] flex items-center gap-1 mt-auto"><Clock size={9} />{formatDate(article.pubDate)}</span>
       </div>

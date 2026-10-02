@@ -53,8 +53,8 @@ const ArticleCard: React.FC<Props> = ({ article, compact = false }) => {
         </h2>
         
         {!compact && article.description && (
-          <p className="text-sm text-[#888] leading-relaxed mb-4 line-clamp-2 flex-1">
-            {article.description}
+          <p className="text-sm text-[#888] leading-relaxed mb-4 line-clamp-2 flex-1 overflow-hidden">
+            {article.description.replace(/<[^>]*>/g, '').trim().slice(0, 200)}
           </p>
         )}
         

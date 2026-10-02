@@ -36,8 +36,8 @@ export default function FeaturedArticle({ article }: Props) {
             </h1>
             
             {article.description && (
-              <p className="text-xl text-[#AAA] leading-relaxed max-w-xl font-light mb-10 line-clamp-3">
-                {article.description}
+              <p className="text-xl text-[#AAA] leading-relaxed max-w-xl font-light mb-10 line-clamp-3 overflow-hidden">
+                {article.description.replace(/<[^>]*>/g, '').trim().slice(0, 200)}
               </p>
             )}
             
