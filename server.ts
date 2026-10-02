@@ -1412,6 +1412,14 @@ export async function runAIPipeline(): Promise<{
           continue;
         }
 
+        // Drop articles the AI classified as off-topic — no DB save, no thumbnail, no X post.
+        if ((aiResult.classification || "").toLowerCase() === "irrelevant") {
+          console.log(`🚫 Irrelevant article dropped: "${article.title?.slice(0, 60)}"`);
+          processedIds.add(article.article_id); // mark so we never process it again this session
+          skipped++;
+          continue;
+        }
+
         // Generate thumbnail via Cloudflare AI
         const thumbnailUrl = await generateAndStoreThumbnail({
           article_id: article.article_id,
