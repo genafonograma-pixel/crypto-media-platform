@@ -841,42 +841,68 @@ async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promis
  * Searches tags in backup_thumbnails.json, and if no tag matches,
  * hashes the title to select among 30+ diverse categories so different articles never get the same image.
  */
+// Pixel art .webp category files served statically from /public/backup_thumbnails/
+const PIXEL_ART_CATEGORIES: Record<string, string[]> = {
+  bitcoin:        ["bitcoin", "btc", "satoshi", "lightning network", "ordinals", "inscriptions"],
+  ethereum:       ["ethereum", "eth", "vitalik", "eip", "merge", "shapella"],
+  altcoins:       ["altcoin", "solana", "sol", "cardano", "ada", "avalanche", "avax", "polkadot", "dot", "chainlink", "link", "xrp", "ripple", "bnb", "binance coin"],
+  defi:           ["defi", "decentralized finance", "yield", "liquidity", "amm", "lending", "borrowing", "tvl", "protocol", "aave", "compound", "uniswap", "curve"],
+  web3_nfts:      ["nft", "non-fungible", "web3", "metaverse", "opensea", "blur", "collection", "mint"],
+  stablecoins:    ["stablecoin", "usdt", "usdc", "dai", "tether", "circle", "peg", "depeg"],
+  exchange_cex:   ["exchange", "cex", "coinbase", "binance", "kraken", "bybit", "okx", "trading volume", "listing"],
+  dex:            ["dex", "decentralized exchange", "swap", "uniswap", "dydx", "perp", "orderbook"],
+  legal_regulation: ["regulation", "sec", "cftc", "lawsuit", "ban", "legal", "court", "compliance", "kyc", "aml", "government", "congress", "law"],
+  security_hacks: ["hack", "exploit", "breach", "stolen", "vulnerability", "attack", "phishing", "scam", "rug pull", "fraud"],
+  market_bull:    ["bull", "rally", "surge", "ath", "all-time high", "moon", "pump", "breakout", "bullish"],
+  market_bear:    ["bear", "crash", "dump", "drop", "correction", "selloff", "bearish", "decline", "plunge"],
+  institutions:   ["institution", "etf", "fund", "blackrock", "fidelity", "grayscale", "wall street", "corporate", "treasury", "microstrategy"],
+  macro_fed:      ["fed", "federal reserve", "inflation", "interest rate", "macro", "dollar", "economy", "gdp", "cpi", "fomc"],
+  mining:         ["mining", "miner", "hashrate", "asic", "proof of work", "pow", "difficulty", "block reward", "halving"],
+  staking:        ["staking", "stake", "validator", "proof of stake", "pos", "delegation", "slashing", "rewards", "apy"],
+  layer2:         ["layer 2", "l2", "rollup", "arbitrum", "optimism", "polygon", "zksync", "base", "scaling", "sidechain"],
+  cbdc:           ["cbdc", "central bank digital currency", "digital dollar", "digital euro", "digital yuan"],
+  privacy:        ["privacy", "zero knowledge", "zk", "monero", "xmr", "zcash", "mixer", "tornado cash"],
+  smart_contracts: ["smart contract", "solidity", "evm", "bytecode", "audit", "bug bounty"],
+  gamefi:         ["gamefi", "game", "gaming", "play-to-earn", "p2e", "axie", "gala", "sandbox"],
+  memecoins:      ["memecoin", "meme", "doge", "dogecoin", "shiba", "pepe", "floki", "bonk"],
+  funding:        ["funding", "venture", "vc", "raise", "investment", "seed", "series", "a16z", "andreessen"],
+  adoption:       ["adoption", "payment", "merchant", "accept", "el salvador", "real world", "use case"],
+  tokenomics:     ["token", "tokenomics", "supply", "burn", "vesting", "unlock", "emission"],
+  wallets:        ["wallet", "hardware wallet", "ledger", "trezor", "metamask", "seed phrase", "custody"],
+  nodes:          ["node", "full node", "rpc", "peer", "network", "decentralization"],
+  hardware:       ["hardware", "chip", "gpu", "cpu", "rig", "equipment"],
+  airdrops:       ["airdrop", "snapshot", "claim", "distribution", "retroactive"],
+  ai_crypto:      ["ai", "artificial intelligence", "machine learning", "gpt", "llm", "robot", "automation"],
+};
+
 async function getFallbackThumbnail(
   title?: string | null,
   headline?: string | null,
   classification?: string | null
 ): Promise<string> {
-  try {
-    const mappingData = await fs.readFile(path.join(process.cwd(), "backup_thumbnails.json"), "utf-8");
-    const backupMap = JSON.parse(mappingData);
-    const matchText = `${title || ""} ${headline || ""} ${classification || ""}`.toLowerCase();
+  const matchText = `${title || ""} ${headline || ""} ${classification || ""}`.toLowerCase();
 
-    for (const [key, details] of Object.entries(backupMap)) {
-      const tags = (details as any).tags || [];
-      if (tags.some((tag: string) => matchText.includes(tag.toLowerCase()))) {
-        console.log(`ℹ️ Selected categorized fallback: "${key}"`);
-        return (details as any).url;
-      }
+  // Try to match a pixel art category by keywords
+  for (const [key, tags] of Object.entries(PIXEL_ART_CATEGORIES)) {
+    if (tags.some((tag) => matchText.includes(tag))) {
+      const url = `${SITE_URL}/backup_thumbnails/${key}.webp`;
+      console.log(`ℹ️ Selected pixel art fallback: "${key}" → ${url}`);
+      return url;
     }
-
-    // Deterministic distribution across all 30 backup categories
-    const keys = Object.keys(backupMap);
-    if (keys.length > 0) {
-      const str = title || headline || "crypto";
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-      }
-      const selectedKey = keys[Math.abs(hash) % keys.length];
-      console.log(`ℹ️ Selected hash-distributed fallback: "${selectedKey}"`);
-      return backupMap[selectedKey].url;
-    }
-    return "https://files.catbox.moe/2k119g.jpg";
-  } catch (e) {
-    console.warn("Failed to load backup thumbnails mapping:", e);
-    return "https://files.catbox.moe/2k119g.jpg";
   }
+
+  // Deterministic hash-based selection across all 30 pixel art categories
+  const keys = Object.keys(PIXEL_ART_CATEGORIES);
+  const str = title || headline || "crypto";
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const selectedKey = keys[Math.abs(hash) % keys.length];
+  const url = `${SITE_URL}/backup_thumbnails/${selectedKey}.webp`;
+  console.log(`ℹ️ Selected hash-distributed pixel art fallback: "${selectedKey}" → ${url}`);
+  return url;
 }
 
 /**
@@ -986,7 +1012,7 @@ async function saveArticleToDB(article: any): Promise<void> {
     title: article.title,
     link: article.link,
     description: article.description,
-    pub_date: new Date().toISOString(), // Use actual processing time, not the original RSS pub date
+    pub_date: article.pubDate ? new Date(article.pubDate).toISOString() : new Date().toISOString(),
     image_url: article.image_url,
     source_id: article.source_id,
     category: article.category,
@@ -1065,7 +1091,7 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const DAILY_LIMIT = 200;
+const DAILY_LIMIT = 12; // Strictly 12 articles/day to match Cloudflare free neuron limits (4 accounts x 3 images)
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const parser = new Parser({ timeout: 15000,
@@ -1169,6 +1195,17 @@ export async function fetchRSSArticles(): Promise<any[]> {
 
         if (!isCryptoRelated || isExcluded) continue;
 
+        // Strict 12-hour age cutoff: completely ignore older news
+        const rawPubDate = item.isoDate || item.pubDate;
+        const pubDateMs = new Date(rawPubDate).getTime();
+        const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+        if (!pubDateMs || isNaN(pubDateMs) || pubDateMs < twelveHoursAgo) {
+          continue; // Discard articles older than 12 hours
+        }
+        if (pubDateMs > Date.now() + 10 * 60 * 1000) {
+          continue; // Discard invalid future timestamps
+        }
+
         allArticles.push({
           article_id: Buffer.from(
             // Always prefer the full article URL as the unique ID - it is guaranteed unique.
@@ -1179,7 +1216,7 @@ export async function fetchRSSArticles(): Promise<any[]> {
           link: item.link,
           description: cleanDescription,
           content: rawContent,
-          pubDate: item.isoDate || item.pubDate,
+          pubDate: rawPubDate,
           image_url: imageUrl,
           source_id: source.name,
           creator: item.creator ? [item.creator] : [],
@@ -1224,9 +1261,13 @@ export async function fetchRSSArticles(): Promise<any[]> {
       const timeDiff = Math.abs(
         new Date(article.pubDate).getTime() - new Date(group.primary.pubDate).getTime()
       );
-      if (timeDiff > 48 * 60 * 60 * 1000) continue;
+      if (timeDiff > 12 * 60 * 60 * 1000) continue;
       if (calculateSimilarity(article.title, group.primary.title) > 0.3) {
         group.related.push(article);
+        // If this article is newer than the current primary, promote it so newest headline & pubDate lead
+        if (new Date(article.pubDate).getTime() > new Date(group.primary.pubDate).getTime()) {
+          group.primary = article;
+        }
         foundGroup = true;
         break;
       }
@@ -1234,10 +1275,8 @@ export async function fetchRSSArticles(): Promise<any[]> {
     if (!foundGroup) groupedEvents.push({ primary: article, related: [] });
   }
 
-  // Sort groupedEvents by number of related sources descending (popularity), then by pubDate descending (freshness)
+  // Sort groupedEvents strictly by freshness (newest pubDate descending): breaking news is always processed first!
   groupedEvents.sort((a, b) => {
-    const coverageDiff = b.related.length - a.related.length;
-    if (coverageDiff !== 0) return coverageDiff;
     return new Date(b.primary.pubDate).getTime() - new Date(a.primary.pubDate).getTime();
   });
 
