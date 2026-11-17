@@ -1,21 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import { SPORTS_NAV } from '../data/nav';
+import { useAdInteraction } from '../utils/adInteraction';
 
-const NAV_LINKS = [
-  { href: '/news', label: 'All News' },
-  { href: '/news/bitcoin', label: 'Bitcoin' },
-  { href: '/news/altcoins', label: 'Altcoins' },
-  { href: '/news/defi', label: 'DeFi' },
-  { href: '/news/web3', label: 'Web3 & NFT' }
-];
+interface HeaderAd {
+  id: string;
+  target_url: string;
+  cta_text: string;
+  button_color?: string;
+}
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [shouldShowAd, setShouldShowAd] = useState(false);
-  const [adData, setAdData] = useState<any>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [headerAd, setHeaderAd] = useState<HeaderAd | null>(null);
+  const hasInteracted = useAdInteraction();
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  // Close menu on route change / resize to desktop
+  const primaryLinks = SPORTS_NAV.filter(item => !item.inMore);
+  const moreLinks = SPORTS_NAV.filter(item => item.inMore);
+
+  // Close menus on resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setMenuOpen(false);
@@ -24,144 +30,142 @@ export default function Header() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Prevent body scroll when menu is open
+  // Prevent background scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [menuOpen]);
 
-  // Load cloaked header button
+  // Click outside to close More dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch optional header button ad if configured in admin
   useEffect(() => {
     fetch('/api/ads')
       .then(res => res.json())
       .then(data => {
-        if (data.status === 'success') {
-          const btn = data.ads.find((a: any) => a.format === 'header-button' && a.active);
-          if (btn) setAdData(btn);
+        if (data?.status === 'success' && Array.isArray(data.ads)) {
+          const match = data.ads.find((a: any) => a.format === 'header-button' && a.active);
+          if (match) setHeaderAd(match);
         }
       })
-      .catch(console.error);
-
-    const isBot = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      const botIdentifiers = [
-        'facebookexternalhit', 'facebot',
-        'googlebot', 'adsbot-google', 'mediapartners-google',
-        'twitterbot', 'bot', 'crawler', 'spider', 'ping'
-      ];
-      return botIdentifiers.some(bot => ua.includes(bot));
-    };
-
-    if (isBot()) return;
-
-    const handleInteraction = () => {
-      setTimeout(() => setShouldShowAd(true), 500); // slight delay to avoid layout shift pop
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
-
-    window.addEventListener('scroll', handleInteraction, { once: true, passive: true });
-    window.addEventListener('mousemove', handleInteraction, { once: true, passive: true });
-    window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
-    window.addEventListener('keydown', handleInteraction, { once: true, passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
+      .catch(() => {});
   }, []);
+
+  const getButtonColorClass = (color?: string) => {
+    switch (color) {
+      case 'emerald':
+      case 'green':
+        return 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20';
+      case 'blue':
+        return 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20';
+      case 'gold':
+        return 'bg-brand hover:bg-brand-600 text-white font-bold shadow-brand/20';
+      case 'purple':
+        return 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/20';
+      case 'dark':
+        return 'bg-white/10 hover:bg-white/20 text-white border border-white/20';
+      case 'brand':
+      default:
+        return 'bg-brand hover:bg-brand-600 text-white shadow-brand/20';
+    }
+  };
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-14 flex items-center border-b border-[#1a1a1a] bg-[#080808]/95 backdrop-blur-sm">
-        <div className="max-w-[1280px] w-full mx-auto px-3 md:px-6 flex items-center justify-between gap-2 h-full">
+      <header className="sticky top-0 z-50 h-16 bg-ink-900 border-b border-line/20">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-6 flex items-center justify-between h-full gap-4">
+          {/* Logo */}
+          <Link to="/" className="shrink-0 flex items-center" aria-label="SPORT25 Home">
+            <img
+              src="/sport25_logo.svg"
+              alt="SPORT25"
+              className="h-8 w-auto"
+            />
+          </Link>
 
-          {/* Left section: Logo + Mobile Header Button */}
-          <div className="flex items-center gap-2 min-w-0 flex-1 lg:flex-none">
-            <Link to="/" className="shrink-0 flex items-center">
-              <img
-                src="/wildwest_logo.svg"
-                alt="Wild West Crypto Show"
-                className="h-9 sm:h-11 w-auto"
-              />
-            </Link>
-            
-            {/* Mobile Header Button - Only shows next to logo on mobile */}
-            {shouldShowAd && adData && (
-              <a 
-                href={adData.target_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-white animate-in fade-in zoom-in duration-300 max-w-[120px] sm:max-w-[160px] truncate shadow-[0_4px_0_rgba(0,0,0,0.6)] active:translate-y-[4px] active:shadow-none transition-all"
-                style={{ backgroundColor: adData.button_color || '#F4A917' }}
-              >
-                {adData.cta_text}
-              </a>
-            )}
-
-            {/* Permanent Best Bitcoin Casinos Button - Mobile */}
-            <a
-              href="https://surbitcoin.com/"
-              target="_blank"
-              rel="noopener"
-              className="lg:hidden shrink-0 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg text-white max-w-[130px] sm:max-w-[170px] truncate shadow-[0_4px_0_rgba(0,0,0,0.6)] active:translate-y-[4px] active:shadow-none transition-all"
-              style={{ backgroundColor: '#F4A917' }}
-            >
-              Best Bitcoin Casinos
-            </a>
-          </div>
-
-          {/* Categories (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest">
-            {NAV_LINKS.map(({ href, label }) => (
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-6 h-full" aria-label="Main Navigation">
+            {primaryLinks.map(({ href, label }) => (
               <NavLink
                 key={href}
                 to={href}
                 className={({ isActive }) =>
-                  `transition-colors hover:text-[#F5F5F5] ${
-                    isActive ? 'text-[#F4A917]' : 'text-[#888]'
+                  `h-full flex items-center text-sm font-semibold transition-colors duration-150 relative ${
+                    isActive
+                      ? 'text-white after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-brand'
+                      : 'text-white/75 hover:text-white'
                   }`
                 }
               >
                 {label}
               </NavLink>
             ))}
+
+            {/* More Dropdown */}
+            <div className="relative h-full flex items-center" ref={moreRef}>
+              <button
+                type="button"
+                onClick={() => setMoreOpen(prev => !prev)}
+                className="h-full flex items-center gap-1 text-sm font-semibold text-white/75 hover:text-white transition-colors duration-150 cursor-pointer"
+                aria-expanded={moreOpen}
+                aria-haspopup="true"
+              >
+                <span>More</span>
+                <ChevronDown size={16} className={`transition-transform duration-150 ${moreOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {moreOpen && (
+                <div className="absolute top-full left-0 mt-1 w-44 bg-ink-900 border border-line/20 rounded-card py-2 shadow-lg z-50">
+                  {moreLinks.map(({ href, label }) => (
+                    <NavLink
+                      key={href}
+                      to={href}
+                      onClick={() => setMoreOpen(false)}
+                      className={({ isActive }) =>
+                        `block px-4 py-2 text-sm font-semibold transition-colors duration-150 ${
+                          isActive ? 'text-brand bg-white/5' : 'text-white/75 hover:text-white hover:bg-white/5'
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
-          {/* Right side actions */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {/* Desktop Header Button */}
-            {shouldShowAd && adData && (
-              <a 
-                href={adData.target_url}
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
+            {/* Dynamic Sponsor / Action Button (Revealed on mouse move/scroll) */}
+            {hasInteracted && headerAd && (
+              <a
+                href={headerAd.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden lg:block text-xs font-black uppercase tracking-widest px-5 py-2 rounded-lg text-white mr-2 animate-in fade-in zoom-in duration-300 shadow-[0_5px_0_rgba(0,0,0,0.6)] hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.6)] active:translate-y-[5px] active:shadow-none transition-all"
-                style={{ backgroundColor: adData.button_color || '#F4A917' }}
+                className={`h-9 px-4 rounded-card text-xs md:text-sm font-semibold flex items-center justify-center transition-all duration-150 shadow-sm shrink-0 ${getButtonColorClass(headerAd.button_color)}`}
               >
-                {adData.cta_text}
+                {headerAd.cta_text || 'Sponsored'}
               </a>
             )}
 
-            {/* Permanent Best Bitcoin Casinos Button - Desktop */}
-            <a
-              href="https://surbitcoin.com/"
-              target="_blank"
-              rel="noopener"
-              className="hidden lg:block text-xs font-black uppercase tracking-widest px-5 py-2 rounded-lg text-white mr-2 shadow-[0_5px_0_rgba(0,0,0,0.6)] hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(0,0,0,0.6)] active:translate-y-[5px] active:shadow-none transition-all"
-              style={{ backgroundColor: '#F4A917' }}
-            >
-              Best Bitcoin Casinos
-            </a>
-
-            {/* Mobile Menu Toggle */}
+            {/* Mobile Hamburger */}
             <button
-              className="lg:hidden p-2 text-[#555] hover:text-[#F5F5F5] transition-colors"
+              type="button"
+              aria-label="Open menu"
               onClick={() => setMenuOpen(true)}
+              className="lg:hidden w-10 h-10 flex items-center justify-center text-white/75 hover:text-white transition-colors duration-150"
             >
               <Menu size={24} />
             </button>
@@ -169,38 +173,54 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile Navigation Overlay */}
+      {/* Mobile Navigation Panel (Full screen) */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-[#1a1a1a]">
-            <Link to="/" className="shrink-0 flex items-center" onClick={() => setMenuOpen(false)}>
-              <img src="/wildwest_logo.svg" alt="Wild West Crypto Show" className="h-8 w-auto" />
+        <div className="fixed inset-0 z-[100] bg-ink-900 flex flex-col">
+          <div className="h-16 max-w-[1200px] w-full mx-auto px-4 md:px-6 flex items-center justify-between border-b border-line/20 shrink-0">
+            <Link to="/" onClick={() => setMenuOpen(false)}>
+              <img src="/sport25_logo.svg" alt="SPORT25" className="h-8 w-auto" />
             </Link>
             <button
-              className="p-2 text-[#888] hover:text-[#F5F5F5] transition-colors"
+              type="button"
+              aria-label="Close menu"
               onClick={() => setMenuOpen(false)}
+              className="w-10 h-10 flex items-center justify-center text-white/75 hover:text-white transition-colors duration-150"
             >
               <X size={24} />
             </button>
           </div>
-          
-          <div className="flex-1 overflow-y-auto py-8 px-6">
-            <nav className="flex flex-col gap-6">
-              {NAV_LINKS.map(({ href, label }) => (
+
+          <div className="flex-1 overflow-y-auto px-6 py-8">
+            <nav className="flex flex-col gap-4" aria-label="Mobile Navigation">
+              {SPORTS_NAV.map(({ href, label }) => (
                 <NavLink
                   key={href}
                   to={href}
+                  onClick={() => setMenuOpen(false)}
                   className={({ isActive }) =>
-                    `text-2xl font-black uppercase tracking-tight transition-colors ${
-                      isActive ? 'text-[#F4A917]' : 'text-[#888] hover:text-[#F5F5F5]'
+                    `text-card font-semibold py-3 transition-colors duration-150 ${
+                      isActive ? 'text-brand' : 'text-white/75 hover:text-white'
                     }`
                   }
-                  onClick={() => setMenuOpen(false)}
                 >
                   {label}
                 </NavLink>
               ))}
             </nav>
+
+            {hasInteracted && headerAd && (
+              <div className="mt-8 pt-8 border-t border-line/20">
+                <a
+                  href={headerAd.target_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className={`w-full h-12 rounded-card text-sm font-semibold flex items-center justify-center transition-colors duration-150 ${getButtonColorClass(headerAd.button_color)}`}
+                >
+                  {headerAd.cta_text || 'Sponsored'}
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}

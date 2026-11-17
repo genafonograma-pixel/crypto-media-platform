@@ -1,38 +1,135 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from '../components/Header';
+import {
+  Layers,
+  Layout,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Copy,
+  Check,
+  Eye,
+  Sparkles,
+  Image as ImageIcon,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  RefreshCw,
+  Sliders,
+  MousePointerClick
+} from 'lucide-react';
+
+interface AdItem {
+  id: string;
+  format: string;
+  image_url?: string | null;
+  target_url: string;
+  cta_text?: string | null;
+  active: boolean;
+  created_at: string;
+  button_color?: string;
+}
+
+const AD_FORMAT_CONFIGS = [
+  {
+    id: 'skyscraper',
+    label: 'Skyscraper Banner',
+    category: 'sidebar',
+    dimensions: '160x600 (Vertical)',
+    description: 'Strictly on Article pages: left and right gutters flanking the article',
+    badge: 'Article Only'
+  },
+  {
+    id: 'billboard',
+    label: 'Billboard Banner',
+    category: 'banner',
+    dimensions: '970x250 or 728x90 (Horizontal)',
+    description: 'Top placement: top of Homepage, Category pages & Article headers',
+    badge: 'Top Banner'
+  },
+  {
+    id: 'in-article',
+    label: 'In-Article / Sidebar Card',
+    category: 'sidebar',
+    dimensions: '300x250 (Medium Rectangle)',
+    description: 'Inside article body & Homepage Most Read sidebar',
+    badge: 'Content & Sidebar'
+  },
+  {
+    id: 'native',
+    label: 'Native In-Feed Card',
+    category: 'banner',
+    dimensions: 'Responsive (1200x200)',
+    description: 'Mid-feed breaks between news sections on Homepage & Category pages',
+    badge: 'Mid-Feed'
+  },
+  {
+    id: 'header-button',
+    label: 'Header Sponsor Button',
+    category: 'button',
+    dimensions: 'CTA Text & Link',
+    description: 'Strictly in top navigation header replacing the subscribe button',
+    badge: 'Navbar Only'
+  },
+  {
+    id: 'popup',
+    label: 'Popup Modal',
+    category: 'popup',
+    dimensions: '400x500 (Portrait/Square)',
+    description: 'High-converting modal dialogue shown after user activity',
+    badge: 'Modal Overlay'
+  }
+];
+
+const BUTTON_COLORS = [
+  { id: 'brand', label: 'SPORT25 Red', class: 'bg-brand text-white border-transparent' },
+  { id: 'emerald', label: 'Emerald Green', class: 'bg-emerald-600 text-white border-transparent' },
+  { id: 'blue', label: 'Royal Blue', class: 'bg-blue-600 text-white border-transparent' },
+  { id: 'gold', label: 'Gold Accent', class: 'bg-brand text-white border-transparent' },
+  { id: 'purple', label: 'Deep Purple', class: 'bg-purple-600 text-white border-transparent' },
+  { id: 'dark', label: 'Sleek Dark', class: 'bg-white/10 text-white border-white/30' }
+];
 
 export default function AdminAds() {
-  // Prevent search engines from ever indexing this page
   useEffect(() => {
     const meta = document.createElement('meta');
     meta.name = 'robots';
     meta.content = 'noindex, nofollow';
     document.head.appendChild(meta);
-    document.title = 'Admin | Wild West Crypto Show';
+    document.title = 'Ad Campaign Manager | SPORT25 Admin';
     return () => { meta.remove(); };
   }, []);
-  const [ads, setAds] = useState<any[]>([]);
+
+  const [ads, setAds] = useState<AdItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [format, setFormat] = useState('popup');
-  const [targetUrl, setTargetUrl] = useState('');
-  const [ctaText, setCtaText] = useState('Get Bonus');
-  const [buttonColor, setButtonColor] = useState('#F4A917');
   const [uploading, setUploading] = useState(false);
+  const [format, setFormat] = useState('billboard');
+  const [targetUrl, setTargetUrl] = useState('');
+  const [ctaText, setCtaText] = useState('Bet now');
+  const [buttonColor, setButtonColor] = useState('brand');
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formSuccessMessage, setFormSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAds();
   }, []);
 
   const fetchAds = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/ads');
       const data = await res.json();
-      if (data.status === 'success') {
+      if (data.status === 'success' && Array.isArray(data.ads)) {
         setAds(data.ads);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching ads:', err);
     } finally {
       setLoading(false);
     }
@@ -45,212 +142,658 @@ export default function AdminAds() {
     reader.onerror = reject;
   });
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
+    if (file) {
+      const base64 = await toBase64(file);
+      setImagePreview(base64);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (format !== 'header-button' && !imageFile) return alert('Please select an image file first.');
-    setUploading(true);
+    setErrorMessage(null);
+    setFormSuccessMessage(null);
 
+    if (format !== 'header-button') {
+      if (imageInputMode === 'upload' && !imageFile && !imagePreview) {
+        setErrorMessage('Please select an ad image file to upload.');
+        return;
+      }
+      if (imageInputMode === 'url' && !imageUrl.trim()) {
+        setErrorMessage('Please enter an image URL.');
+        return;
+      }
+    }
+
+    if (!targetUrl.trim()) {
+      setErrorMessage('Please provide a valid Target URL.');
+      return;
+    }
+
+    setUploading(true);
     try {
-      let finalImageUrl = '';
-      
-      if (imageFile) {
-        const base64Image = await toBase64(imageFile);
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64Image })
-        });
-        const uploadData = await uploadRes.json();
-        
-        if (uploadData.status !== 'success') {
-          throw new Error(uploadData.message || 'Image upload failed');
+      let finalImageUrl = imageInputMode === 'url' ? imageUrl.trim() : null;
+
+      if (imageInputMode === 'upload') {
+        let base64 = imagePreview;
+        if (imageFile) {
+          base64 = await toBase64(imageFile);
         }
-        finalImageUrl = uploadData.url;
+        if (base64) {
+          try {
+            const uploadRes = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ base64Image: base64 })
+            });
+            const uploadData = await uploadRes.json();
+            if (uploadData.status === 'success' && uploadData.url) {
+              finalImageUrl = uploadData.url;
+            } else {
+              finalImageUrl = base64;
+            }
+          } catch (uploadErr) {
+            console.warn('Upload error, using base64 fallback:', uploadErr);
+            finalImageUrl = base64;
+          }
+        }
       }
 
-      // Create ad
-      const adRes = await fetch('/api/ads', {
+      const res = await fetch('/api/ads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           format,
-          image_url: finalImageUrl,
-          target_url: targetUrl,
-          cta_text: ctaText,
+          target_url: targetUrl.trim(),
+          cta_text: ctaText.trim(),
           button_color: buttonColor,
+          image_url: finalImageUrl,
           active: true
         })
       });
-      const adData = await adRes.json();
-      
-      if (adData.status === 'success') {
-        setAds([adData.ad, ...ads]);
+
+      const data = await res.json();
+      if (data.status === 'success') {
+        setFormSuccessMessage(`New ${format} ad created and activated successfully!`);
         setImageFile(null);
+        setImagePreview(null);
+        setImageUrl('');
         setTargetUrl('');
+        fetchAds();
+        setTimeout(() => setFormSuccessMessage(null), 4000);
       } else {
-         throw new Error(adData.message);
+        setErrorMessage(data.message || data.error || 'Failed to create ad.');
       }
     } catch (err: any) {
-      alert(err.message);
+      console.error(err);
+      setErrorMessage('Failed to connect to server. Please try again.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this ad?')) return;
-    try {
-      await fetch(`/api/ads/${id}`, { method: 'DELETE' });
-      setAds(ads.filter(a => a.id !== id));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const toggleActive = async (ad: any) => {
+  const toggleActive = async (ad: AdItem) => {
     try {
       const res = await fetch(`/api/ads/${ad.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...ad, active: !ad.active })
+        body: JSON.stringify({ active: !ad.active })
       });
       const data = await res.json();
       if (data.status === 'success') {
-        setAds(ads.map(a => a.id === ad.id ? data.ad : a));
+        fetchAds();
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error toggling ad:', err);
     }
   };
 
+  const handleDelete = async (id: string, adFormat: string) => {
+    if (!confirm(`Are you sure you want to permanently delete this ${adFormat} ad?`)) return;
+    try {
+      const res = await fetch(`/api/ads/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.status === 'success') {
+        fetchAds();
+      }
+    } catch (err) {
+      console.error('Error deleting ad:', err);
+    }
+  };
+
+  const copyUrl = (id: string, url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Stats calculation
+  const totalCount = ads.length;
+  const activeCount = ads.filter(a => a.active).length;
+  const inactiveCount = totalCount - activeCount;
+
+  // Filtered ads
+  const filteredAds = useMemo(() => {
+    if (filterCategory === 'all') return ads;
+    if (filterCategory === 'banner') return ads.filter(a => a.format === 'billboard' || a.format === 'native');
+    if (filterCategory === 'popup') return ads.filter(a => a.format === 'popup');
+    if (filterCategory === 'button') return ads.filter(a => a.format === 'header-button');
+    if (filterCategory === 'sidebar') return ads.filter(a => a.format === 'skyscraper' || a.format === 'in-article');
+    return ads;
+  }, [ads, filterCategory]);
+
+  const activeFormatConfig = AD_FORMAT_CONFIGS.find(f => f.id === format);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans">
       <Header />
-      <div className="max-w-4xl w-full mx-auto px-4 py-8">
-        <h1 className="text-3xl font-black uppercase tracking-tight mb-8">Ad Management Backoffice</h1>
-        
-        {/* Create Ad Form */}
-        <div className="bg-[#0A0A0A] border border-[#1a1a1a] p-6 rounded-xl mb-12">
-          <h2 className="text-xl font-bold mb-4 border-b border-[#222] pb-2">Create New Ad</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Ad Format</label>
-              <select 
-                value={format} 
-                onChange={(e) => setFormat(e.target.value)}
-                className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-white"
-              >
-                <option value="popup">Popup Ad</option>
-                <option value="billboard">Billboard (Top/Banner)</option>
-                <option value="skyscraper">Skyscraper (Sidebar)</option>
-                <option value="in-article">In-Article (Square)</option>
-                <option value="header-button">Header Button (Cloaked)</option>
-              </select>
+
+      <main className="max-w-[1240px] w-full mx-auto px-4 md:px-6 py-8 flex-1">
+        {/* Top Header & Overview */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-8 border-b border-line gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-brand animate-pulse" />
+              <span className="text-xs font-bold text-muted">Backoffice Admin</span>
             </div>
+            <h1 className="text-title-mobile md:text-title font-extrabold font-display text-ink">
+              Ad Campaign &amp; Placement Manager
+            </h1>
+            <p className="text-sm text-muted mt-1">
+              Control top billboards, sponsor buttons, popup modals, sidebar skyscrapers, and in-feed ads.
+            </p>
+          </div>
 
-            {format !== 'header-button' && (
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Upload Image (Banner/Popup Design)</label>
-                
-                {/* Recommended Size Helper Text */}
-                <div className="text-xs text-[#F4A917] mb-2 p-2 bg-[#F4A917]/10 border border-[#F4A917]/30 rounded">
-                  <span className="font-bold">Recommended Size: </span>
-                  {format === 'popup' && "400x500px (or similar portrait/square aspect ratio)"}
-                  {format === 'billboard' && "728x90px or 970x250px (Horizontal Banner)"}
-                  {format === 'skyscraper' && "160x600px (Tall Vertical Sidebar)"}
-                  {format === 'in-article' && "300x250px (Medium Rectangle)"}
-                </div>
-
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-white"
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Target URL (Where does it link to?)</label>
-              <input 
-                type="url" 
-                value={targetUrl}
-                onChange={(e) => setTargetUrl(e.target.value)}
-                className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-white"
-                placeholder="https://your-sponsor-link.com"
-                required
-              />
-            </div>
-
-            {(format === 'popup' || format === 'header-button') && (
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Button Text</label>
-                <input 
-                  type="text" 
-                  value={ctaText}
-                  onChange={(e) => setCtaText(e.target.value)}
-                  className="w-full bg-[#111] border border-[#333] rounded px-3 py-2 text-white"
-                  placeholder="e.g. GET BONUS"
-                  required
-                />
-              </div>
-            )}
-
-            {format === 'header-button' && (
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Button Color</label>
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="color" 
-                    value={buttonColor}
-                    onChange={(e) => setButtonColor(e.target.value)}
-                    className="h-10 w-20 bg-transparent cursor-pointer"
-                  />
-                  <span className="text-sm text-gray-300">{buttonColor}</span>
-                </div>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              disabled={uploading}
-              className="mt-4 bg-[#F4A917] hover:bg-[#C4830B] disabled:opacity-50 text-black font-bold py-2 px-6 rounded transition-colors"
-            >
-              {uploading ? 'Uploading & Saving...' : 'Create Ad'}
-            </button>
-          </form>
+          <button
+            onClick={fetchAds}
+            disabled={loading}
+            className="self-start md:self-auto flex items-center gap-2 px-4 py-2 bg-bg-soft hover:bg-line border border-line rounded-card text-xs font-semibold text-ink transition-colors cursor-pointer"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Sync Ads</span>
+          </button>
         </div>
 
-        {/* Existing Ads List */}
-        <div>
-          <h2 className="text-xl font-bold mb-4 border-b border-[#222] pb-2">Active & Past Ads</h2>
-          {loading ? (
-            <p className="text-gray-500">Loading ads...</p>
-          ) : ads.length === 0 ? (
-            <p className="text-gray-500">No ads found. Create one above!</p>
-          ) : (
-            <div className="grid gap-4">
-              {ads.map(ad => (
-                <div key={ad.id} className={`flex items-center gap-4 p-4 border rounded-xl bg-[#0a0a0a] ${ad.active ? 'border-[#333]' : 'border-red-900/30 opacity-50'}`}>
-                  <img src={ad.image_url} alt="Ad preview" className="w-24 h-24 object-contain bg-black rounded" />
-                  <div className="flex-1">
-                    <div className="font-bold uppercase text-xs text-[#F4A917] mb-1">{ad.format}</div>
-                    <div className="text-sm truncate max-w-sm text-gray-300">🔗 {ad.target_url}</div>
-                    {ad.format === 'popup' && <div className="text-xs mt-1 text-gray-500">CTA: {ad.cta_text}</div>}
+        {/* Metrics Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="bg-bg-soft border border-line p-4 rounded-card">
+            <span className="text-xs text-muted font-medium block">Total Campaigns</span>
+            <span className="text-2xl font-bold font-display text-ink mt-1 block">{totalCount}</span>
+          </div>
+          <div className="bg-bg-soft border border-emerald-500/30 p-4 rounded-card">
+            <span className="text-xs text-emerald-600 font-medium block">Active Online</span>
+            <span className="text-2xl font-bold font-display text-emerald-600 mt-1 block">{activeCount}</span>
+          </div>
+          <div className="bg-bg-soft border border-line p-4 rounded-card">
+            <span className="text-xs text-muted font-medium block">Paused / Inactive</span>
+            <span className="text-2xl font-bold font-display text-muted mt-1 block">{inactiveCount}</span>
+          </div>
+          <div className="bg-bg-soft border border-brand/30 p-4 rounded-card">
+            <span className="text-xs text-brand font-medium block">Supported Formats</span>
+            <span className="text-2xl font-bold font-display text-brand mt-1 block">6 Types</span>
+          </div>
+        </div>
+
+        {/* Create Ad Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+          {/* Form Side (7 cols) */}
+          <div className="lg:col-span-7 bg-bg-soft border border-line p-6 rounded-card">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-line">
+              <Plus size={18} className="text-brand" />
+              <h2 className="text-card font-bold font-display text-ink">
+                Create new ad campaign
+              </h2>
+            </div>
+
+            {formSuccessMessage && (
+              <div className="mb-5 p-3 rounded-card bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                <span>{formSuccessMessage}</span>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="mb-5 p-3 rounded-card bg-alert/10 border border-alert/30 text-alert text-xs font-semibold flex items-center gap-2">
+                <XCircle size={16} />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* 1. Format Selection */}
+              <div>
+                <label className="block text-xs font-bold text-ink mb-2">
+                  1. Select Ad Placement Format
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {AD_FORMAT_CONFIGS.map(f => {
+                    const isSelected = format === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setFormat(f.id)}
+                        className={`text-left p-3 rounded-card border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand/5 border-brand ring-1 ring-brand text-brand'
+                            : 'bg-white border-line hover:border-ink/40 text-ink'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold leading-tight line-clamp-1">{f.label}</span>
+                        </div>
+                        <span className="text-xs text-muted block line-clamp-1 font-mono">{f.dimensions}</span>
+                        <span className="text-xs font-semibold text-brand mt-1 inline-block">
+                          {f.badge}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {activeFormatConfig && (
+                  <p className="text-xs text-muted mt-2 bg-white/60 p-2.5 rounded border border-line/60">
+                    <span className="font-semibold text-ink">Placement: </span>
+                    {activeFormatConfig.description}
+                  </p>
+                )}
+              </div>
+
+              {/* 2. Image Input (if not header button) */}
+              {format !== 'header-button' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-ink">
+                      2. Ad Banner Artwork
+                    </label>
+                    <div className="flex rounded border border-line overflow-hidden text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setImageInputMode('upload')}
+                        className={`px-3 py-1 font-semibold cursor-pointer ${imageInputMode === 'upload' ? 'bg-brand text-white' : 'bg-white text-muted hover:text-ink'}`}
+                      >
+                        File Upload
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageInputMode('url')}
+                        className={`px-3 py-1 font-semibold cursor-pointer ${imageInputMode === 'url' ? 'bg-brand text-white' : 'bg-white text-muted hover:text-ink'}`}
+                      >
+                        Image URL
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => toggleActive(ad)}
-                      className={`px-3 py-1 rounded text-xs font-bold ${ad.active ? 'bg-orange-600 hover:bg-orange-500' : 'bg-green-600 hover:bg-green-500'}`}
+
+                  {imageInputMode === 'upload' ? (
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="w-full bg-white border border-line rounded-card px-3 py-2 text-ink text-sm cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-bg-soft file:text-ink hover:file:bg-line"
+                      />
+                      <span className="text-xs text-muted block">
+                        Recommended aspect ratio: {activeFormatConfig?.dimensions}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => {
+                          setImageUrl(e.target.value);
+                          setImagePreview(e.target.value);
+                        }}
+                        placeholder="https://example.com/banner.jpg"
+                        className="w-full bg-white border border-line rounded-card px-3 py-2 text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                      />
+                      <span className="text-xs text-muted block">
+                        Direct link to HTTPS image resource
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Target URL */}
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  {format === 'header-button' ? '2.' : '3.'} Target Destination URL
+                </label>
+                <input
+                  type="url"
+                  value={targetUrl}
+                  onChange={(e) => setTargetUrl(e.target.value)}
+                  placeholder="https://sponsor.com/promo-link"
+                  className="w-full bg-white border border-line rounded-card px-3 py-2 text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                  required
+                />
+              </div>
+
+              {/* 4. CTA Text & Color (for popup, header button, and native) */}
+              {(format === 'header-button' || format === 'popup' || format === 'native') && (
+                <div className="space-y-3 pt-2 border-t border-line">
+                  <div>
+                    <label className="block text-xs font-bold text-ink mb-1">
+                      Button Text (CTA)
+                    </label>
+                    <input
+                      type="text"
+                      value={ctaText}
+                      onChange={(e) => setCtaText(e.target.value)}
+                      placeholder="e.g. Bet now, Play free, Claim 100%"
+                      className="w-full bg-white border border-line rounded-card px-3 py-2 text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-ink mb-2">
+                      Button Color Palette
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {BUTTON_COLORS.map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setButtonColor(c.id)}
+                          className={`h-9 px-2 rounded-card text-xs font-bold flex items-center justify-center transition-all cursor-pointer ${c.class} ${
+                            buttonColor === c.id ? 'ring-2 ring-offset-2 ring-brand scale-105' : 'opacity-85 hover:opacity-100'
+                          }`}
+                        >
+                          {c.label.split(' ')[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="pt-3">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full sm:w-auto h-11 px-8 rounded-card bg-brand hover:bg-brand-600 disabled:opacity-50 text-white font-bold text-sm transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      <span>Saving &amp; deploying ad...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} />
+                      <span>Publish &amp; Activate Ad</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Live Preview Side (5 cols) */}
+          <div className="lg:col-span-5 flex flex-col">
+            <div className="bg-bg-soft border border-line p-5 rounded-card flex-1 flex flex-col">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-line">
+                <div className="flex items-center gap-2">
+                  <Eye size={18} className="text-brand" />
+                  <h3 className="text-card font-bold font-display text-ink">
+                    Live Placement Preview
+                  </h3>
+                </div>
+                <span className="text-xs font-bold bg-white px-2 py-0.5 rounded border border-line text-muted">
+                  {format}
+                </span>
+              </div>
+
+              {/* Interactive preview box */}
+              <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] p-4 bg-white/70 rounded-card border border-dashed border-line">
+                {format === 'header-button' ? (
+                  <div className="w-full bg-ink-900 p-4 rounded-card border border-line/30 flex items-center justify-between">
+                    <img src="/sport25_logo.svg" alt="Logo" className="h-6 w-auto" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-white/50 hidden sm:inline">Nav items...</span>
+                      <a
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        className={`h-8 px-4 rounded-card text-xs font-bold flex items-center justify-center shadow-md ${
+                          BUTTON_COLORS.find(c => c.id === buttonColor)?.class || 'bg-brand text-white'
+                        }`}
+                      >
+                        {ctaText || 'Button CTA'}
+                      </a>
+                    </div>
+                  </div>
+                ) : format === 'popup' ? (
+                  <div className="w-full max-w-[280px] bg-bg border border-line rounded-card shadow-xl overflow-hidden">
+                    <div className="p-2 bg-ink-900 text-white flex items-center justify-between">
+                      <span className="text-xs font-bold text-white/70">Sponsored Modal</span>
+                      <span className="text-white/50 text-xs">✕</span>
+                    </div>
+                    <div className="aspect-[4/3] bg-bg-soft flex items-center justify-center overflow-hidden">
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="text-center p-4 text-muted">
+                          <ImageIcon size={32} className="mx-auto mb-1 opacity-40" />
+                          <span className="text-xs">Select an image to preview</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 border-t border-line">
+                      <div className={`w-full h-8 rounded-card text-xs font-bold flex items-center justify-center ${
+                        BUTTON_COLORS.find(c => c.id === buttonColor)?.class || 'bg-brand text-white'
+                      }`}>
+                        {ctaText || 'Learn more'}
+                      </div>
+                    </div>
+                  </div>
+                ) : format === 'skyscraper' ? (
+                  <div className="w-[120px] h-[340px] bg-bg-soft border border-line rounded-card flex flex-col items-center justify-between p-2 overflow-hidden">
+                    <span className="text-xs text-muted font-bold">Ad 160x600</span>
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="text-center text-muted">
+                        <ImageIcon size={24} className="mx-auto mb-1 opacity-40" />
+                        <span className="text-xs">Skyscraper</span>
+                      </div>
+                    )}
+                    <span className="text-xs text-muted">SPORT25 Sidebar</span>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-md bg-bg-soft border border-line rounded-card p-3 flex flex-col items-center">
+                    <span className="text-label font-bold text-muted block mb-1 text-center">
+                      Advertisement
+                    </span>
+                    <div className="w-full aspect-[4/1] bg-white rounded border border-line/60 flex items-center justify-center overflow-hidden">
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="text-center text-muted">
+                          <ImageIcon size={24} className="mx-auto mb-1 opacity-40" />
+                          <span className="text-xs">Banner Graphic (728x90 / Native)</span>
+                        </div>
+                      )}
+                    </div>
+                    {ctaText && format === 'native' && (
+                      <div className="w-full mt-2 pt-2 border-t border-line/20 flex items-center justify-between text-xs">
+                        <span className="text-muted font-medium">Sponsored</span>
+                        <span className="font-bold text-brand">{ctaText} →</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-muted mt-4 text-center">
+                  Target: <span className="text-ink font-mono">{targetUrl || 'https://...'}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Existing Ads List & Management Section */}
+        <div className="bg-bg-soft border border-line p-6 rounded-card">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-line gap-4">
+            <div>
+              <h2 className="text-card font-bold font-display text-ink">
+                Campaign Inventory
+              </h2>
+              <span className="text-xs text-muted">Manage active status, inspect links, and remove obsolete banners</span>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold">
+              <button
+                onClick={() => setFilterCategory('all')}
+                className={`px-3 py-1.5 rounded-card transition-colors cursor-pointer ${filterCategory === 'all' ? 'bg-brand text-white' : 'bg-white border border-line text-ink hover:bg-line'}`}
+              >
+                All ({totalCount})
+              </button>
+              <button
+                onClick={() => setFilterCategory('banner')}
+                className={`px-3 py-1.5 rounded-card transition-colors cursor-pointer ${filterCategory === 'banner' ? 'bg-brand text-white' : 'bg-white border border-line text-ink hover:bg-line'}`}
+              >
+                Banners
+              </button>
+              <button
+                onClick={() => setFilterCategory('popup')}
+                className={`px-3 py-1.5 rounded-card transition-colors cursor-pointer ${filterCategory === 'popup' ? 'bg-brand text-white' : 'bg-white border border-line text-ink hover:bg-line'}`}
+              >
+                Popups
+              </button>
+              <button
+                onClick={() => setFilterCategory('button')}
+                className={`px-3 py-1.5 rounded-card transition-colors cursor-pointer ${filterCategory === 'button' ? 'bg-brand text-white' : 'bg-white border border-line text-ink hover:bg-line'}`}
+              >
+                Buttons
+              </button>
+              <button
+                onClick={() => setFilterCategory('sidebar')}
+                className={`px-3 py-1.5 rounded-card transition-colors cursor-pointer ${filterCategory === 'sidebar' ? 'bg-brand text-white' : 'bg-white border border-line text-ink hover:bg-line'}`}
+              >
+                Sidebars
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center text-muted text-sm flex items-center justify-center gap-2">
+              <RefreshCw size={16} className="animate-spin" />
+              <span>Fetching campaigns...</span>
+            </div>
+          ) : filteredAds.length === 0 ? (
+            <div className="py-16 text-center bg-white rounded-card border border-dashed border-line">
+              <p className="text-ink font-semibold text-sm mb-1">No ads found in this filter.</p>
+              <p className="text-muted text-xs">Create your first ad campaign using the builder above.</p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {filteredAds.map(ad => (
+                <div
+                  key={ad.id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-card bg-white transition-all gap-4 ${
+                    ad.active ? 'border-line shadow-xs' : 'border-line/40 opacity-60 bg-white/50'
+                  }`}
+                >
+                  {/* Left: Thumbnail & Details */}
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    {ad.format === 'header-button' ? (
+                      <div className="w-16 h-16 rounded-card bg-ink-900 flex items-center justify-center text-white shrink-0 border border-line">
+                        <MousePointerClick size={22} className="text-brand" />
+                      </div>
+                    ) : ad.image_url ? (
+                      <img
+                        src={ad.image_url}
+                        alt="Ad preview"
+                        className="w-16 h-16 object-contain bg-bg-soft rounded-card border border-line shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-card bg-bg-soft flex items-center justify-center text-muted shrink-0 border border-line">
+                        <ImageIcon size={20} />
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
+                          {ad.format}
+                        </span>
+                        {ad.active ? (
+                          <span className="text-xs font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Active
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-muted bg-bg-soft px-2 py-0.5 rounded flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                            Paused
+                          </span>
+                        )}
+                        {ad.cta_text && (
+                          <span className="text-xs text-muted font-medium">
+                            CTA: <span className="text-ink font-semibold">{ad.cta_text}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-ink truncate font-mono">
+                        {ad.target_url}
+                      </div>
+
+                      <span className="text-xs text-muted block mt-0.5">
+                        Created {new Date(ad.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    {/* Test Target Link */}
+                    <a
+                      href={ad.target_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-muted hover:text-ink hover:bg-bg-soft rounded-card border border-line transition-colors"
+                      title="Open target URL in new tab"
                     >
-                      {ad.active ? 'Disable' : 'Enable'}
+                      <ExternalLink size={15} />
+                    </a>
+
+                    {/* Copy Link */}
+                    <button
+                      onClick={() => copyUrl(ad.id, ad.target_url)}
+                      className="p-2 text-muted hover:text-ink hover:bg-bg-soft rounded-card border border-line transition-colors cursor-pointer"
+                      title="Copy URL"
+                    >
+                      {copiedId === ad.id ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
                     </button>
-                    <button 
-                      onClick={() => handleDelete(ad.id)}
-                      className="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-xs font-bold"
+
+                    {/* Active/Pause Switch */}
+                    <button
+                      onClick={() => toggleActive(ad)}
+                      className={`h-8 px-3 rounded-card text-xs font-semibold transition-colors cursor-pointer ${
+                        ad.active
+                          ? 'bg-ink text-white hover:bg-ink-900'
+                          : 'bg-brand text-white hover:bg-brand-600'
+                      }`}
                     >
-                      Delete
+                      {ad.active ? 'Pause' : 'Activate'}
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDelete(ad.id, ad.format)}
+                      className="p-2 text-alert hover:bg-alert/10 rounded-card border border-alert/30 transition-colors cursor-pointer"
+                      title="Delete ad"
+                    >
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -258,7 +801,7 @@ export default function AdminAds() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,99 +1,110 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
+import { useAdInteraction, isBotUser } from '../utils/adInteraction';
 
 export default function PopupAd() {
-  const [shouldShowAd, setShouldShowAd] = useState(false);
+  const hasInteracted = useAdInteraction();
   const [isDismissed, setIsDismissed] = useState(false);
   const [adData, setAdData] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch active popup ad
     fetch('/api/ads')
       .then(res => res.json())
       .then(data => {
-        if (data.status === 'success') {
+        if (data.status === 'success' && Array.isArray(data.ads)) {
           const popup = data.ads.find((a: any) => a.format === 'popup' && a.active);
           if (popup) setAdData(popup);
         }
       })
       .catch(console.error);
-
-    // 1. Bot Detection via User-Agent
-    const isBot = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      const botIdentifiers = [
-        'facebookexternalhit', 'facebot',
-        'googlebot', 'adsbot-google', 'mediapartners-google',
-        'twitterbot',
-        'bot', 'crawler', 'spider', 'ping'
-      ];
-      return botIdentifiers.some(bot => ua.includes(bot));
-    };
-
-    if (isBot()) {
-      return; // Never show popup to bots
-    }
-
-    // 2. Interaction Check + Delay
-    const handleInteraction = () => {
-      setTimeout(() => {
-        setShouldShowAd(true);
-      }, 2000);
-      
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
-
-    window.addEventListener('scroll', handleInteraction, { once: true, passive: true });
-    window.addEventListener('mousemove', handleInteraction, { once: true, passive: true });
-    window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
-    window.addEventListener('keydown', handleInteraction, { once: true, passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
   }, []);
 
-  // If no popup ad is configured or it's dismissed, render nothing
-  if (!shouldShowAd || isDismissed || !adData) {
+  // Listen for ESC key to dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDismissed(true);
+      }
+    };
+    if (hasInteracted && !isDismissed) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasInteracted, isDismissed]);
+
+  if (!hasInteracted || isDismissed || isBotUser() || !adData || !adData.image_url) {
     return null;
   }
 
+  const getButtonColorClass = (color?: string) => {
+    switch (color) {
+      case 'emerald':
+      case 'green':
+        return 'bg-emerald-600 hover:bg-emerald-500 text-white';
+      case 'blue':
+        return 'bg-blue-600 hover:bg-blue-500 text-white';
+      case 'gold':
+        return 'bg-brand hover:bg-brand-600 text-white font-bold';
+      case 'purple':
+        return 'bg-purple-600 hover:bg-purple-500 text-white';
+      case 'brand':
+      default:
+        return 'bg-brand hover:bg-brand-600 text-white';
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-[400px] bg-[#0a0a0a] border border-[#222] rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col">
-        {/* Close Button */}
-        <button 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/80 backdrop-blur-sm transition-opacity duration-200"
+      onClick={() => setIsDismissed(true)}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Promotional Announcement"
+    >
+      <div
+        className="relative w-full max-w-sm bg-bg border border-line rounded-card overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header Tag & Close */}
+        <div className="absolute top-3 left-3 z-20">
+          <span className="bg-ink-900/80 text-white/80 text-label font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+            Sponsored
+          </span>
+        </div>
+
+        <button
           onClick={() => setIsDismissed(true)}
-          className="absolute top-3 right-3 z-20 p-2 bg-black/60 hover:bg-black/90 rounded-full text-white/70 hover:text-white transition-colors"
+          className="absolute top-2.5 right-2.5 z-20 p-1.5 bg-ink-900/70 hover:bg-ink-900 rounded-full text-white/80 hover:text-white transition-colors duration-150 cursor-pointer shadow-md"
+          aria-label="Close promotion"
         >
-          <X size={20} />
+          <X size={16} />
         </button>
-        
-        {/* Ad Image Area */}
-        <a href={adData.target_url} target="_blank" rel="noopener noreferrer" className="block w-full cursor-pointer relative bg-black aspect-[4/5] sm:aspect-square flex-1">
-           <img 
-             src={adData.image_url} 
-             alt="Sponsored"
-             className="w-full h-full object-contain"
-           />
+
+        {/* Ad Image Link */}
+        <a
+          href={adData.target_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full cursor-pointer relative bg-bg-soft aspect-[4/5] max-h-[380px] overflow-hidden group"
+        >
+          <img
+            src={adData.image_url}
+            alt={adData.cta_text || 'Sponsored advertisement'}
+            className="w-full h-full object-contain p-2 group-hover:scale-[1.02] transition-transform duration-200"
+          />
         </a>
 
-        {/* Dynamic CTA Area below image */}
-        <div className="p-4 bg-[#111] border-t border-[#222]">
-           <a 
-             href={adData.target_url} 
-             target="_blank" 
-             rel="noopener noreferrer"
-             className="block text-center bg-[#E91E63] hover:bg-[#D81B60] text-white font-bold py-3.5 px-8 rounded-full text-lg w-full shadow-[0_0_15px_rgba(233,30,99,0.3)] transition-transform active:scale-95 uppercase tracking-wide"
-           >
-             {adData.cta_text || 'CLICK HERE'}
-           </a>
+        {/* Footer CTA Button */}
+        <div className="p-3 bg-bg border-t border-line">
+          <a
+            href={adData.target_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center justify-center gap-2 text-center font-semibold h-11 px-6 rounded-card text-sm w-full transition-colors duration-150 shadow-md ${getButtonColorClass(adData.button_color)}`}
+          >
+            <span>{adData.cta_text || 'Learn more'}</span>
+            <ExternalLink size={14} className="opacity-80" />
+          </a>
         </div>
       </div>
     </div>

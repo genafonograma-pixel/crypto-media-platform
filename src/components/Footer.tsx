@@ -1,49 +1,118 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SPORTS_NAV } from '../data/nav';
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-[#0A0A0A] text-[#F5F5F5] py-10 md:py-16 border-t border-[#222]">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-          <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="inline-block mb-6">
+    <footer className="bg-ink-900 text-white/70 border-t border-line/20 py-12 md:py-16">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 pb-12">
+          {/* Col 1: Brand */}
+          <div className="space-y-4">
+            <Link to="/" aria-label="SPORT25 Home" className="inline-block">
               <img
-                src="/wildwest_logo.svg"
-                alt="Wild West Crypto Show"
-                className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                src="/sport25_logo.svg"
+                alt="SPORT25"
+                className="h-8 w-auto"
               />
             </Link>
-            <p className="text-[#888] max-w-sm text-sm leading-relaxed font-light">
-              A landmark shift in digital asset reporting. In-depth analysis, market intelligence, and raw perspectives on the decentralized economy.
+            <p className="text-sm text-white/70 leading-relaxed font-normal">
+              Real-time sports reporting, breaking transfers, and match updates from global sports journalism.
             </p>
           </div>
+
+          {/* Col 2: Sports */}
           <div>
-            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Cryptocurrency News Sections">Sections</h2>
-            <ul className="space-y-4 text-xs font-medium">
-              <li><Link to="/news" className="text-[#AAA] hover:text-white transition-colors">All News</Link></li>
-              <li><Link to="/news/bitcoin" className="text-[#AAA] hover:text-white transition-colors">Bitcoin</Link></li>
-              <li><Link to="/news/altcoins" className="text-[#AAA] hover:text-white transition-colors">Altcoins</Link></li>
-              <li><Link to="/news/defi" className="text-[#AAA] hover:text-white transition-colors">DeFi</Link></li>
+            <p className="text-sm font-semibold text-white mb-4">Sports</p>
+            <ul className="space-y-2.5">
+              {SPORTS_NAV.map(({ href, label }) => (
+                <li key={href}>
+                  <Link
+                    to={href}
+                    className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Col 3: Company */}
           <div>
-            <h2 className="font-bold uppercase tracking-widest text-[10px] mb-6 text-[#555]" title="Wild West Crypto Show Company Information">Company</h2>
-            <ul className="space-y-4 text-xs font-medium">
-              <li><Link to="/about" className="text-[#AAA] hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/methodology" className="text-[#AAA] hover:text-white transition-colors">AI Methodology</Link></li>
-              <li><Link to="/contact" className="text-[#AAA] hover:text-white transition-colors">Advertise</Link></li>
-              <li><Link to="/contact" className="text-[#AAA] hover:text-white transition-colors">Contact</Link></li>
+            <p className="text-sm font-semibold text-white mb-4">Company</p>
+            <ul className="space-y-2.5">
+              <li>
+                <Link to="/about" className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150">
+                  About us
+                </Link>
+              </li>
+              <li>
+                <Link to="/methodology" className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150">
+                  How we work
+                </Link>
+              </li>
+              <li>
+                <Link to="/help" className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150">
+                  Help &amp; FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150">
+                  Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 4: Follow */}
+          <div>
+            <p className="text-sm font-semibold text-white mb-4">Follow</p>
+            <ul className="space-y-2.5">
+              <li>
+                <a
+                  href="https://x.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150"
+                >
+                  X (Twitter)
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://t.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150"
+                >
+                  Telegram
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/rss.xml"
+                  className="block py-1 text-sm text-white/70 hover:text-white transition-colors duration-150"
+                >
+                  RSS feed
+                </a>
+              </li>
             </ul>
           </div>
         </div>
-        <div className="mt-16 pt-8 border-t border-[#222] flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-[9px] font-bold text-[#444] uppercase tracking-widest">
-            &copy; {new Date().getFullYear()} Wild West Crypto Show. All rights reserved.
-          </div>
-          <div className="flex gap-8">
-            <Link to="/privacy" className="text-[9px] font-bold text-[#444] uppercase hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="text-[9px] font-bold text-[#444] uppercase hover:text-white transition-colors">Terms of Service</Link>
+
+        {/* Bottom row */}
+        <div className="pt-8 border-t border-line/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-meta text-white/60">
+          <p>© {currentYear} SPORT25. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link to="/privacy" className="hover:text-white transition-colors duration-150">
+              Privacy policy
+            </Link>
+            <Link to="/terms" className="hover:text-white transition-colors duration-150">
+              Terms of service
+            </Link>
           </div>
         </div>
       </div>

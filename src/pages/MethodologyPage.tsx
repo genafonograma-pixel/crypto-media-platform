@@ -1,35 +1,61 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 
 export default function MethodologyPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title="AI Methodology | Wild West Crypto Show" description="How Wild West Crypto Show produces AI-powered crypto news and market analysis." />
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans">
+      <SEO
+        title="How We Work | SPORT25"
+        description="How our sports news platform ingests, clusters, and synthesizes football, basketball, tennis, and Formula 1 coverage."
+      />
       <Header />
-      <main className="flex-1 max-w-[800px] w-full mx-auto px-4 py-12">
-        <h1 className="text-4xl font-black mb-8 text-white">How Wild West Crypto Show AI News Works</h1>
-        <div className="prose prose-invert max-w-none">
-          <p>Wild West Crypto Show uses a hybrid intelligence system to track, normalize, and analyze the cryptocurrency market. Our platform combines real-time data ingestion with advanced AI models to synthesize events without human editorial bottlenecks.</p>
-          
-          <h3>1. Source Ingestion & Aggregation</h3>
-          <p>We monitor top cryptocurrency news outlets, regulatory announcements, and financial publications via RSS and API feeds. Articles are fetched every 5 minutes to ensure up-to-date coverage.</p>
+      <main id="main" tabIndex={-1} className="flex-1 max-w-[1200px] w-full mx-auto px-4 md:px-6 py-12">
+        <nav className="flex items-center gap-2 text-sm text-subtle mb-8">
+          <Link to="/" className="text-brand hover:underline">Home</Link>
+          <span>/</span>
+          <span>How we work</span>
+        </nav>
 
-          <h3>2. Event Clustering (Duplicate Detection)</h3>
-          <p>When multiple publications report on the same event (e.g., a Bitcoin ETF approval), our system uses similarity algorithms to detect the duplication. Instead of spamming our feed with ten identical stories, we cluster them into a single "Event" and cite all relevant sources.</p>
+        <div className="max-w-3xl">
+          <h1 className="text-hero-mobile md:text-hero font-extrabold font-display text-ink mb-6">
+            How we work
+          </h1>
+          <div className="space-y-6 text-excerpt text-muted leading-relaxed">
+            <p>
+              Our platform uses a hybrid intelligence system to track, normalize, and analyze sports news in real time. We combine continuous source ingestion with automated verification to synthesize events from leading global sports newsrooms without human editorial bottlenecks.
+            </p>
 
-          <h3>3. AI Analysis & Summarization</h3>
-          <p>Our Large Language Models process the clustered news stories alongside live market data (like price and trading volume). The AI is strictly instructed to:</p>
-          <ul>
-            <li>Extract only verified facts.</li>
-            <li>Maintain neutrality and avoid financial advice.</li>
-            <li>Identify "Why it matters" for market participants.</li>
-            <li>Avoid hallucinations by refusing to generate analysis when data is insufficient.</li>
-          </ul>
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-4">
+              1. Source ingestion &amp; aggregation
+            </h2>
+            <p>
+              We monitor top sports news outlets — Sky Sports, BBC Sport, The Guardian, CBS Sports, ESPN, and Marca — via verified newsroom feeds. Stories are fetched continuously to ensure up-to-date coverage across Football, Basketball, Tennis, Formula 1, and American Football.
+            </p>
 
-          <h3>4. Continuous Updates</h3>
-          <p>Pages like our Bitcoin News Hub are updated automatically throughout the day as significant new information arrives or major price movements occur.</p>
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-4">
+              2. Event clustering &amp; duplicate detection
+            </h2>
+            <p>
+              When multiple publications report on the same event (such as a major transfer or match result), our system groups them into a single coherent story and cites all relevant primary sources.
+            </p>
+
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-4">
+              3. Journalistic synthesis
+            </h2>
+            <p>
+              Our editorial pipeline extracts only verified facts from source reporting, maintaining neutrality and clear context while avoiding unverified speculation.
+            </p>
+
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-4">
+              4. Authentic photography
+            </h2>
+            <p>
+              All article photography is sourced directly from original publishers. We do not generate AI images — authentic sports photography is used throughout the platform.
+            </p>
+          </div>
         </div>
       </main>
       <Footer />

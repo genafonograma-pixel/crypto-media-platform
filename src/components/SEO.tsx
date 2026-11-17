@@ -9,9 +9,9 @@ interface SEOProps {
   schema?: any; // Structured JSON-LD schema
 }
 
-const SITE_NAME = 'Wild West Crypto Show';
-const SITE_URL = 'https://wildwestcryptoshow.com';
-const DEFAULT_IMAGE = `${SITE_URL}/wildwest_logo.svg`;
+const SITE_NAME = 'SPORT25';
+const SITE_URL = ((import.meta as any).env?.VITE_SITE_URL || 'https://sport25.news').replace(/\/+$/, '');
+const DEFAULT_IMAGE = `${SITE_URL}/sport25_logo.png`;
 
 function setMeta(selector: string, attribute: string, value: string) {
   let el = document.querySelector(selector);
@@ -32,15 +32,16 @@ function setMeta(selector: string, attribute: string, value: string) {
 
 export default function SEO({ 
   title, 
-  description = "Stay updated with the latest cryptocurrency news, insights, and market movements on Wild West Crypto Show.", 
+  description = "Stay updated with breaking sports news, football transfers, Champions League, Premier League, NBA, Tennis Grand Slams, and F1 updates on SPORT25.news.", 
   image = DEFAULT_IMAGE, 
   type = "website",
   canonical,
   schema
 }: SEOProps) {
   useEffect(() => {
-    // Canonical URL
-    const canonicalUrl = canonical || (window.location.origin + window.location.pathname);
+    // Canonical URL built from SITE_URL to ensure production domain
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const canonicalUrl = canonical || `${SITE_URL}${path}`;
 
     // Clamp title to ≤ 60 characters (Google SERP limit)
     const clampTitle = (t: string) => t.length > 60 ? t.slice(0, 57).trimEnd() + '…' : t;

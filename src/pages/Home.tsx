@@ -1,15 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, ChevronRight, Flame, TrendingUp, HelpCircle } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import MarketMovers from '../components/MarketMovers';
-import MarketWatch from '../components/MarketWatch';
 import SEO from '../components/SEO';
+import ArticleCard from '../components/ArticleCard';
+import NewsImage from '../components/NewsImage';
 import AdPlacement from '../components/AdPlacement';
-import SeoEditorialBlog from '../components/SeoEditorialBlog';
 import type { Article } from '../types';
-import { generateSlug } from '../utils';
+import {
+  generateSlug,
+  formatArticleTime,
+  formatSource,
+  getArticleClassification,
+  formatExcerpt,
+  clusterDuplicateArticles
+} from '../utils';
 
 interface HomeProps {
   articles: Article[];
@@ -17,523 +22,774 @@ interface HomeProps {
   error: string | null;
 }
 
-function formatTimeAgo(dateStr?: string) {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '';
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return `${Math.max(1, diff)}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
-}
-
-function formatDate(dateStr?: string) {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
-}
-
-function getArticleHref(article: Article) {
+function getArticleHref(article: Article): string {
   const displayTitle = article.headline || article.title;
   return `/article/${generateSlug(displayTitle)}`;
 }
 
-function getClassification(article: Article) {
-  return (article as any).classification || article.category?.[0] || 'News';
+function isBreaking(article: Article): boolean {
+  const cat = (article.category || []).join(' ').toLowerCase();
+  const kw = (article.keywords || []).join(' ').toLowerCase();
+  const title = (article.headline || article.title || '').toLowerCase();
+  return cat.includes('breaking') || kw.includes('breaking') || title.startsWith('breaking:');
 }
 
-// ─── Hero (Breaking Story) ────────────────────────────────────────────────────
-function HeroCard({ article }: { article: Article }) {
-  const displayTitle = article.headline || article.title;
-  const classification = getClassification(article);
-  return (
-    <Link
-      to={getArticleHref(article)}
-      state={{ article }}
-      className="group relative flex flex-col justify-end overflow-hidden rounded-xl min-h-[280px] md:min-h-[420px] bg-[#0a0a0a] border border-[#1a1a1a]"
-    >
-      {article.image_url && (
-        <img
-          src={article.image_url}
-          alt={displayTitle}
-          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-75 group-hover:scale-105 transition-all duration-700"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+function matchesSport(article: Article, sportKey: string): boolean {
+  const c = getArticleClassification(article).toLowerCase();
+  const raw = ((article as any).classification || article.category?.[0] || '').toLowerCase();
+  const t = (article.headline || article.title || '').toLowerCase();
+  const combined = `${c} ${raw} ${t}`;
 
-      <div className="relative z-10 p-4 md:p-8">
-        <div className="flex items-center gap-2 mb-2 md:mb-3">
-          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-amber-400">
-            <Flame size={10} /> Top Breaking Story
-          </span>
-        </div>
-        <h2 className="text-xl md:text-3xl lg:text-4xl font-black leading-tight text-white group-hover:text-[#FBBF5A] transition-colors mb-3 md:mb-4 line-clamp-3">
-          {displayTitle}
-        </h2>
-        {(() => {
-          const raw = article.ai_meta_description || article.description || '';
-          if (!raw) return null;
-          const plain = raw.replace(/<[^>]*>/g, '').trim();
-          const snippet = plain.length > 160 ? plain.slice(0, 160) + '…' : plain;
-          return snippet ? (
-            <p className="hidden sm:block text-sm text-[#aaa] mb-4 max-w-xl overflow-hidden">{snippet}</p>
-          ) : null;
-        })()}
-        <div className="flex items-center gap-3 text-[11px] text-[#777]">
-          <span className="bg-[#F4A917] text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{classification}</span>
-          <span className="flex items-center gap-1"><Clock size={10} />{formatTimeAgo(article.pubDate)}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-// ─── Secondary Story ──────────────────────────────────────────────────────────
-function SecondaryCard({ article }: { article: Article }) {
-  const displayTitle = article.headline || article.title;
-  const classification = getClassification(article);
-  return (
-    <Link
-      to={getArticleHref(article)}
-      state={{ article }}
-      className="group flex gap-3 p-3 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#111] transition-all items-start"
-    >
-      {article.image_url && (
-        <div className="w-[76px] h-[48px] flex-shrink-0 overflow-hidden rounded-md bg-[#111]">
-          <img
-            src={article.image_url}
-            alt={displayTitle}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1">{classification}</span>
-        <h3 className="text-[13px] font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-1.5">
-          {displayTitle}
-        </h3>
-        <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
-      </div>
-    </Link>
-  );
-}
-
-// ─── Trending Card ────────────────────────────────────────────────────────────
-function TrendingCard({ article, index }: { article: Article; index: number }) {
-  const displayTitle = article.headline || article.title;
-  const classification = getClassification(article);
-  return (
-    <Link
-      to={getArticleHref(article)}
-      state={{ article }}
-      className="group flex gap-3 p-4 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] hover:bg-[#0f0f0f] transition-all h-full"
-    >
-      {article.image_url ? (
-        <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
-          <img
-            src={article.image_url}
-            alt={displayTitle}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
-      ) : (
-        <div className="w-16 h-16 flex-shrink-0 rounded-lg bg-[#111] flex items-center justify-center text-[#222]">
-           <span className="font-black text-xl tracking-tighter opacity-50">WWCS</span>
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1.5">{classification}</span>
-        <h3 className="text-sm font-bold text-[#E0E0E0] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-2">
-          {displayTitle}
-        </h3>
-        <span className="text-[10px] text-[#555] flex items-center gap-1"><Clock size={9} />{formatTimeAgo(article.pubDate)}</span>
-      </div>
-    </Link>
-  );
-}
-
-// ─── Main Feed Card ───────────────────────────────────────────────────────────
-function FeedCard({ article }: { article: Article }) {
-  const displayTitle = article.headline || article.title;
-  const classification = getClassification(article);
-  return (
-    <Link
-      to={getArticleHref(article)}
-      state={{ article }}
-      className="group flex gap-4 sm:gap-5 py-4 sm:py-5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
-    >
-      {article.image_url && (
-        <div className="w-20 h-16 sm:w-28 sm:h-24 flex-shrink-0 overflow-hidden rounded-lg bg-[#111]">
-          <img
-            src={article.image_url}
-            alt={displayTitle}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
-      )}
-      <div className="flex-1 min-w-0 flex flex-col justify-center">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1.5">{classification}</span>
-        <h3 className="text-sm sm:text-base font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug mb-2">
-          {displayTitle}
-        </h3>
-        {article.description && (
-          <p className="hidden sm:block text-[13px] text-[#666] line-clamp-1 mb-2 overflow-hidden">
-            {article.description.replace(/<[^>]*>/g, '').trim().slice(0, 120)}
-          </p>
-        )}
-        <span className="text-[10px] text-[#555] flex items-center gap-1 mt-auto"><Clock size={9} />{formatDate(article.pubDate)}</span>
-      </div>
-    </Link>
-  );
-}
-
-// ─── Sidebar Mini Card ────────────────────────────────────────────────────────
-function SidebarCard({ article, index }: { article: Article; index: number }) {
-  const displayTitle = article.headline || article.title;
-  const classification = getClassification(article);
-  return (
-    <Link
-      to={getArticleHref(article)}
-      state={{ article }}
-      className="group flex gap-3 py-3.5 border-b border-[#131313] last:border-0 hover:bg-[#0a0a0a] -mx-4 px-4 rounded-lg transition-colors"
-    >
-      <span className="text-base font-black text-[#1e1e1e] group-hover:text-[#252525] transition-colors select-none shrink-0 w-5 text-center mt-0.5">
-        {index + 1}
-      </span>
-      <div className="flex-1 min-w-0">
-        <span className="text-[9px] font-black uppercase tracking-widest text-[#F4A917] block mb-1">{classification}</span>
-        <h3 className="text-[13px] font-semibold text-[#D5D5D5] group-hover:text-[#F4A917] transition-colors line-clamp-2 leading-snug">
-          {displayTitle}
-        </h3>
-        <span className="text-[9px] text-[#555] flex items-center gap-1 mt-1"><Clock size={8} />{formatTimeAgo(article.pubDate)}</span>
-      </div>
-    </Link>
-  );
-}
-
-// ─── FAQ Section ─────────────────────────────────────────────────────────────
-const HOME_FAQS = [
-  {
-    q: "What is Wild West Crypto Show?",
-    a: "Wild West Crypto Show is a premier digital asset intelligence and cryptocurrency news platform delivering 24/7 real-time Bitcoin, altcoin, DeFi, and blockchain coverage. Our editorial team curates, verifies, and analyzes market movements from primary sources globally."
-  },
-  {
-    q: "How often is the cryptocurrency news updated?",
-    a: "Our editorial pipeline refreshes every 15 minutes around the clock, delivering the latest Bitcoin spot ETF flows, breaking crypto protocol news, market volatility alerts, and macroeconomic trends."
-  },
-  {
-    q: "Where can I check live Bitcoin and cryptocurrency prices?",
-    a: "Live Bitcoin and altcoin prices are displayed on our Bitcoin page, in the interactive Market Movers ticker across the top of every page, and in the Market Watch sidebar."
-  },
-  {
-    q: "What cryptocurrency categories are covered?",
-    a: "We provide dedicated coverage for Bitcoin (BTC), Altcoins (Ethereum, Solana, XRP and more), Decentralized Finance (DeFi), Web3 & NFTs, Crypto Markets, and Blockchain Technology."
-  },
-  {
-    q: "How does Wild West Crypto Show ensure news accuracy?",
-    a: "Every story is cross-referenced with on-chain data, exchange liquidity metrics, official protocol announcements, and verified press releases before publishing."
-  },
-  {
-    q: "Is all market analysis and cryptocurrency news free to read?",
-    a: "Yes, all articles, live market data feeds, charts, and technical summaries on Wild West Crypto Show are 100% free and open to everyone."
+  if (sportKey === 'football') {
+    // Strictly exclude American football / NFL
+    if (
+      combined.includes('american') ||
+      combined.includes('nfl') ||
+      combined.includes('quarterback') ||
+      combined.includes('touchdown') ||
+      combined.includes('super bowl')
+    ) {
+      return false;
+    }
+    return (
+      combined.includes('foot') ||
+      combined.includes('soccer') ||
+      combined.includes('premier league') ||
+      combined.includes('champions league') ||
+      combined.includes('la liga') ||
+      combined.includes('serie a') ||
+      combined.includes('bundesliga')
+    );
   }
-];
 
-function FAQSection() {
-  return (
-    <section aria-label="Frequently Asked Questions about cryptocurrency news" className="mt-14 mb-8 pt-10 border-t border-zinc-800/80">
-      <div className="flex items-center gap-2 mb-2 text-zinc-400">
-        <HelpCircle size={15} />
-        <span className="text-[11px] font-semibold uppercase tracking-wider">Frequently Asked Questions</span>
-      </div>
-      <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-6">
-        Crypto News &amp; Markets FAQ
-      </h2>
-      <div className="space-y-3">
-        {HOME_FAQS.map((faq, i) => (
-          <details
-            key={i}
-            className="group border border-zinc-800/80 bg-[#0B0B0C] rounded-xl overflow-hidden transition-all duration-300"
-          >
-            <summary className="flex items-center justify-between p-5 cursor-pointer list-none hover:bg-zinc-900/60 transition-colors duration-200 select-none">
-              <h3 className="pr-6 leading-snug font-semibold text-zinc-200 text-sm uppercase tracking-wide">
-                {faq.q}
-              </h3>
-              <div className="relative w-5 h-5 flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-zinc-200">
-                <span className="font-bold text-xl leading-none absolute group-open:opacity-0 transition-opacity">+</span>
-                <span className="font-bold text-xl leading-none absolute opacity-0 group-open:opacity-100 transition-opacity">−</span>
-              </div>
-            </summary>
-            <div className="px-5 pb-5 pt-2 text-zinc-400 text-sm leading-relaxed border-t border-zinc-800/60">
-              <p>{faq.a}</p>
-            </div>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
+  if (sportKey === 'nfl') {
+    return (
+      combined.includes('american') ||
+      combined.includes('nfl') ||
+      combined.includes('quarterback') ||
+      combined.includes('touchdown') ||
+      combined.includes('patriots') ||
+      combined.includes('super bowl')
+    );
+  }
+
+  if (sportKey === 'rugby') {
+    return (
+      combined.includes('rugby') ||
+      combined.includes('six nations') ||
+      combined.includes('springboks') ||
+      combined.includes('all blacks')
+    );
+  }
+
+  if (sportKey === 'basketball') {
+    return (
+      combined.includes('basket') ||
+      combined.includes('nba') ||
+      combined.includes('lakers') ||
+      combined.includes('celtics')
+    );
+  }
+
+  if (sportKey === 'tennis') {
+    return (
+      combined.includes('tennis') ||
+      combined.includes('wimbledon') ||
+      combined.includes('atp') ||
+      combined.includes('wta') ||
+      combined.includes('slam')
+    );
+  }
+
+  if (sportKey === 'formula1') {
+    return (
+      combined.includes('formula') ||
+      combined.includes('f1') ||
+      combined.includes('grand prix') ||
+      combined.includes('verstappen')
+    );
+  }
+
+  return false;
 }
 
 export default function Home({ articles, loading, error }: HomeProps) {
-  const [visibleFeedCount, setVisibleFeedCount] = useState(8);
+  const sortedArticles = useMemo(() => {
+    return [...articles].sort(
+      (a, b) => (new Date(b.pubDate || 0).getTime() || 0) - (new Date(a.pubDate || 0).getTime() || 0)
+    );
+  }, [articles]);
 
-  const sortedArticles = [...articles].sort((a, b) =>
-    (new Date(b.pubDate || 0).getTime() || 0) - (new Date(a.pubDate || 0).getTime() || 0)
+  // Duplicate-event clustering
+  const clusteredArticles = useMemo(() => {
+    return clusterDuplicateArticles(sortedArticles);
+  }, [sortedArticles]);
+
+  // Story selection in one single pass with a shared shownIds Set
+  const {
+    heroArticle,
+    heroSideArticles,
+    latestNewsArticles,
+    mostReadArticles,
+    footballArticles,
+    nflArticles,
+    pairedSportRows
+  } = useMemo(() => {
+    const shownIds = new Set<string>();
+
+    // 1. Hero: 1 story (featured, highest quality score with image, or newest with image)
+    let hero = clusteredArticles.find(a => (a as any).featured && a.image_url);
+    if (!hero) {
+      hero = clusteredArticles.find(a => ((a as any).quality_score || 0) >= 90 && a.image_url);
+    }
+    if (!hero) {
+      hero = clusteredArticles.find(a => Boolean(a.image_url)) || clusteredArticles[0];
+    }
+    if (hero) shownIds.add(hero.article_id);
+
+    // 2. Hero side: next 4 stories not in shownIds
+    const heroSide: typeof clusteredArticles = [];
+    for (const a of clusteredArticles) {
+      if (heroSide.length >= 4) break;
+      if (!shownIds.has(a.article_id)) {
+        heroSide.push(a);
+        shownIds.add(a.article_id);
+      }
+    }
+
+    // 3. Latest news: next 8 stories not in shownIds
+    const latestNews: typeof clusteredArticles = [];
+    for (const a of clusteredArticles) {
+      if (latestNews.length >= 8) break;
+      if (!shownIds.has(a.article_id)) {
+        latestNews.push(a);
+        shownIds.add(a.article_id);
+      }
+    }
+
+    // 4. Most read: top 5 by views/clicks, or top 5 from last 24h NOT in hero zone.
+    // Guaranteed not identical to hero side list.
+    const heroZoneIds = new Set([hero?.article_id, ...heroSide.map(s => s.article_id)].filter(Boolean));
+    const now = Date.now();
+    const last24h = clusteredArticles.filter(a => {
+      if (heroZoneIds.has(a.article_id)) return false;
+      const pub = new Date(a.pubDate || 0).getTime();
+      return now - pub <= 24 * 60 * 60 * 1000;
+    });
+
+    const mostReadCandidates =
+      last24h.length >= 5
+        ? last24h
+        : clusteredArticles.filter(a => !heroZoneIds.has(a.article_id));
+
+    const mostRead = [...mostReadCandidates]
+      .sort((a, b) => ((b as any).views || (b as any).clicks || b.quality_score || 0) - ((a as any).views || (a as any).clicks || a.quality_score || 0))
+      .slice(0, 5);
+
+    // 5. Sport sections: ONLY stories matching that category and not in shownIds.
+    // NEVER pad from another category. If < 3 stories, hide the section entirely.
+
+    // Football (Layout A: feature + list, up to 4 stories)
+    const fbCandidates = clusteredArticles.filter(a => !shownIds.has(a.article_id) && matchesSport(a, 'football'));
+    let football: typeof clusteredArticles = [];
+    if (fbCandidates.length >= 3) {
+      football = fbCandidates.slice(0, 4);
+      football.forEach(a => shownIds.add(a.article_id));
+    }
+
+    // NFL (Layout A: feature + list, up to 4 stories)
+    const nflCandidates = clusteredArticles.filter(a => !shownIds.has(a.article_id) && matchesSport(a, 'nfl'));
+    let nfl: typeof clusteredArticles = [];
+    if (nflCandidates.length >= 3) {
+      nfl = nflCandidates.slice(0, 4);
+      nfl.forEach(a => shownIds.add(a.article_id));
+    }
+
+    // Paired sports: Rugby, Basketball, Tennis, Formula 1 (Layout B: 3 stories each)
+    const pairedConfig = [
+      { key: 'rugby', label: 'Rugby', href: '/news/rugby' },
+      { key: 'basketball', label: 'Basketball', href: '/news/basketball' },
+      { key: 'tennis', label: 'Tennis', href: '/news/tennis' },
+      { key: 'formula1', label: 'Formula 1', href: '/news/formula1' }
+    ];
+
+    const validPairedSections: {
+      key: string;
+      label: string;
+      href: string;
+      stories: typeof clusteredArticles;
+    }[] = [];
+
+    for (const conf of pairedConfig) {
+      const candidates = clusteredArticles.filter(
+        a => !shownIds.has(a.article_id) && matchesSport(a, conf.key)
+      );
+      if (candidates.length >= 3) {
+        const stories = candidates.slice(0, 3);
+        stories.forEach(a => shownIds.add(a.article_id));
+        validPairedSections.push({ ...conf, stories });
+      }
+    }
+
+    // Pair into rows of 2
+    const pairedRows: (typeof validPairedSections)[] = [];
+    for (let i = 0; i < validPairedSections.length; i += 2) {
+      pairedRows.push(validPairedSections.slice(i, i + 2));
+    }
+
+    return {
+      heroArticle: hero,
+      heroSideArticles: heroSide,
+      latestNewsArticles: latestNews,
+      mostReadArticles: mostRead,
+      footballArticles: football,
+      nflArticles: nfl,
+      pairedSportRows: pairedRows
+    };
+  }, [clusteredArticles]);
+
+  const homeSchema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': 'https://sport25.news/#website',
+          url: 'https://sport25.news',
+          name: 'SPORT25 - Live Sports News & Scores',
+          description:
+            'Breaking sports news, football transfers, Champions League, Premier League, NBA, Tennis Grand Slams, Formula 1, and NFL updates.'
+        },
+        {
+          '@type': 'NewsMediaOrganization',
+          '@id': 'https://sport25.news/#organization',
+          name: 'SPORT25',
+          url: 'https://sport25.news',
+          logo: {
+            '@type': 'ImageObject',
+            url: 'https://sport25.news/sport25_logo.svg',
+            width: 240,
+            height: 60
+          }
+        }
+      ]
+    }),
+    []
   );
 
-  const homeSchema = useMemo(() => ({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": "https://wildwestcryptoshow.com/#website",
-        "url": "https://wildwestcryptoshow.com",
-        "name": "Wild West Crypto Show",
-        "description": "Stay updated with the latest cryptocurrency news, bitcoin updates, altcoin markets, blockchain technology, and DeFi insights.",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": {
-            "@type": "EntryPoint",
-            "urlTemplate": "https://wildwestcryptoshow.com/news?q={search_term_string}"
-          },
-          "query-input": "required name=search_term_string"
-        }
-      },
-      {
-        "@type": "NewsMediaOrganization",
-        "@id": "https://wildwestcryptoshow.com/#organization",
-        "name": "Wild West Crypto Show",
-        "alternateName": ["WWCS", "Wild West Crypto"],
-        "url": "https://wildwestcryptoshow.com",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://wildwestcryptoshow.com/wildwest_logo.svg",
-          "width": 240,
-          "height": 60
-        },
-        "description": "Wild West Crypto Show is an AI-powered cryptocurrency news and market intelligence platform delivering real-time Bitcoin updates, altcoin analysis, DeFi reporting, and blockchain insights.",
-        "foundingDate": "2024",
-        "publishingPrinciples": "https://wildwestcryptoshow.com/methodology",
-        "knowsAbout": [
-          "Bitcoin",
-          "Cryptocurrency",
-          "Ethereum",
-          "Altcoins",
-          "Decentralized Finance (DeFi)",
-          "Blockchain Technology",
-          "Web3",
-          "Crypto Trading and Market Analysis"
-        ],
-        "sameAs": [
-          "https://x.com/wildwestcrypto",
-          "https://t.me/wildwestcrypto"
-        ],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "contactType": "editorial",
-          "url": "https://wildwestcryptoshow.com/contact"
-        }
-      },
-      {
-        "@type": "FAQPage",
-        "@id": "https://wildwestcryptoshow.com/#faq",
-        "mainEntity": HOME_FAQS.map(faq => ({
-          "@type": "Question",
-          "name": faq.q,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": faq.a
-          }
-        }))
-      }
-    ]
-  }), []);
-
   if (loading) {
+    // Skeleton holds full viewport height so the browser can restore scroll
+    // position correctly when the user hits Back while data is still loading.
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-10 h-10 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin" />
-        <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#555]">Loading Live Feed...</p>
+      <div className="min-h-screen flex flex-col bg-bg text-ink font-sans" aria-busy="true" aria-label="Loading sports news">
+        {/* Skeleton header bar */}
+        <div className="h-16 bg-ink-900 shrink-0" />
+        {/* Skeleton hero area */}
+        <div className="max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+            <div className="lg:col-span-8 aspect-video bg-bg-soft rounded-card animate-pulse" />
+            <div className="lg:col-span-4 flex flex-col gap-4">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="h-14 bg-bg-soft rounded-card animate-pulse" />
+              ))}
+            </div>
+          </div>
+          {/* Skeleton card row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="flex flex-col gap-3">
+                <div className="aspect-video bg-bg-soft rounded-card animate-pulse" />
+                <div className="h-4 bg-bg-soft rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-bg-soft rounded animate-pulse w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
+
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050505] text-[#F5F5F5] px-4">
-        <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center rounded-xl">
-          <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Error Loading Feed</h2>
-          <p className="text-[#888] mb-6 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#F4A917] text-white px-6 py-3 hover:bg-[#C4830B] rounded transition-colors">
-            Try Again
+      <div className="min-h-screen flex items-center justify-center bg-bg text-ink px-4">
+        <div className="bg-bg-soft p-8 border border-line max-w-lg w-full text-center rounded-card">
+          <h2 className="text-card-lg font-bold font-display text-ink mb-3">Unable to load feed</h2>
+          <p className="text-muted text-sm mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="h-10 px-6 rounded-card bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-colors duration-150"
+          >
+            Try again
           </button>
         </div>
       </div>
     );
   }
 
-  const hero = sortedArticles[0];
-  const secondaryArticles = sortedArticles.slice(1, 4);
-  const trendingArticles = sortedArticles.length > 4 ? sortedArticles.slice(4, 8) : [];
-  const feedArticles = sortedArticles.length > 8 
-    ? sortedArticles.slice(8) 
-    : (sortedArticles.length > 1 ? sortedArticles.slice(1) : sortedArticles);
-  const sidebarArticles = sortedArticles.length > 1 ? sortedArticles.slice(1, 10) : sortedArticles;
-
-  const displayedFeedArticles = feedArticles.slice(0, visibleFeedCount);
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO 
-        title="Crypto News & Bitcoin Markets | Wild West Crypto Show" 
-        description="Stay updated with the latest cryptocurrency news, bitcoin updates, altcoin markets, blockchain technology, and DeFi insights on Wild West Crypto Show."
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans selection:bg-brand selection:text-white">
+      <SEO
+        title="SPORT25 | Live Sports News & Scores"
+        description="Breaking sports news, live football transfers, Champions League, Premier League, NBA, Tennis Grand Slams, Formula 1, and NFL updates."
         schema={homeSchema}
       />
+
+      <h1 className="sr-only">SPORT25 - Live Sports News &amp; Scores</h1>
+
       <Header />
-      <MarketMovers />
-      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-4">
-        <AdPlacement format="billboard" className="mx-auto" />
-      </div>
 
-      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6">
-
-        {/* ── Page H1 Header ── */}
-        <header className="mb-8 pb-5 border-b border-zinc-800/80">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Live 24/7 Digital Asset Intelligence
-              </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-white">
-                Cryptocurrency News &amp; Bitcoin Markets
-              </h1>
-            </div>
-            <p className="text-xs sm:text-[13px] text-zinc-400 max-w-md md:text-right leading-relaxed font-normal">
-              Real-time breaking crypto headlines, on-chain market analytics, Bitcoin ETF flows, and decentralized finance updates.
-            </p>
-          </div>
-        </header>
-
-        {sortedArticles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="text-[#555] text-sm mb-2">No articles available yet.</p>
-            <p className="text-[#333] text-xs">The AI is processing stories. Check back in a few minutes.</p>
+      <main id="main" tabIndex={-1} className="flex-1 w-full">
+        {clusteredArticles.length === 0 ? (
+          <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-24 text-center">
+            <p className="text-muted text-sm">No articles available yet. Check back shortly.</p>
           </div>
         ) : (
-          <>
-            {/* ── Section 1: Hero + Right Column ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-              {/* Hero */}
-              <div className="lg:col-span-2">
-                {hero && <HeroCard article={hero} />}
-              </div>
-              {/* Right secondary cards */}
-              <div className="flex flex-col gap-3">
-                {secondaryArticles.map(a => (
-                  <React.Fragment key={a.article_id}>
-                    <SecondaryCard article={a} />
-                  </React.Fragment>
-                ))}
-              </div>
+          <div>
+            {/* Top Billboard Banner Placement */}
+            <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-6">
+              <AdPlacement format="billboard" />
             </div>
 
-            {/* ── Section 2: Trending Now ── */}
-            {trendingArticles.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={14} className="text-[#F4A917]" />
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#E0E0E0]">Trending Cryptocurrency News &amp; Market Stories</h2>
-                  <div className="flex-1 h-px bg-[#1a1a1a]" />
+            {/* ── 1. HERO ZONE: 1 Big Story (8 cols) + 4 Compact Stories (4 cols) ── */}
+            <section aria-label="Top stories" className="max-w-[1200px] mx-auto px-4 md:px-6 pt-4 pb-12">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                {/* Big Story (8 cols) */}
+                <div className="lg:col-span-8 flex flex-col justify-between">
+                  {heroArticle && (
+                    <Link
+                      to={getArticleHref(heroArticle)}
+                      state={{ article: heroArticle }}
+                      className="group block focus-visible:outline-brand focus-visible:outline-offset-2"
+                    >
+                      <NewsImage
+                        src={heroArticle.image_url}
+                        alt={heroArticle.headline || heroArticle.title}
+                        isHero={true}
+                        className="w-full aspect-video"
+                      />
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {isBreaking(heroArticle) && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-alert text-white text-label font-bold">
+                              Breaking
+                            </span>
+                          )}
+                          <span className="text-label font-bold text-ink">
+                            {getArticleClassification(heroArticle)}
+                          </span>
+                        </div>
+                        <h2 className="text-hero-mobile md:text-hero font-extrabold font-display leading-[1.1] text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3">
+                          {heroArticle.headline || heroArticle.title}
+                        </h2>
+                        {(() => {
+                          const excerpt = formatExcerpt(heroArticle.ai_meta_description || heroArticle.description);
+                          return excerpt ? (
+                            <p className="text-excerpt text-muted font-normal leading-relaxed line-clamp-2 mt-2">
+                              {excerpt}
+                            </p>
+                          ) : null;
+                        })()}
+                        <p className="text-meta font-medium text-subtle mt-2">
+                          {formatSource(heroArticle.source_id)} · {formatArticleTime(heroArticle.pubDate)}
+                          {heroArticle.extraSourceCount && ` · +${heroArticle.extraSourceCount} source${heroArticle.extraSourceCount > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                    </Link>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {trendingArticles.map((a, i) => (
-                    <React.Fragment key={a.article_id}>
-                      <TrendingCard article={a} index={i} />
-                    </React.Fragment>
+
+                {/* Side Column: 4 compact rows — image hidden on mobile, shown on sm+ */}
+                <div className="lg:col-span-4 flex flex-col divide-y divide-line h-full">
+                  {heroSideArticles.map(article => (
+                    <Link
+                      key={article.article_id}
+                      to={getArticleHref(article)}
+                      state={{ article }}
+                      className="flex-1 flex items-center gap-3 py-3 group focus-visible:outline-brand focus-visible:outline-offset-2"
+                    >
+                      {/* Thumbnail: hidden on mobile, visible sm+ */}
+                      <div className="hidden sm:block w-[100px] shrink-0 aspect-video rounded-card overflow-hidden">
+                        <NewsImage src={article.image_url} alt="" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-label font-bold text-ink block">
+                          {getArticleClassification(article)}
+                        </span>
+                        <h3 className="text-list font-semibold font-sans text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3 mt-1 leading-snug">
+                          {article.headline || article.title}
+                        </h3>
+                        <p className="text-meta font-medium text-subtle mt-1">
+                          {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                          {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
+            </section>
+
+            {/* ── 2. LATEST NEWS (8 cols) + STICKY SIDEBAR (4 cols) ── */}
+            <section aria-label="Latest news" className="max-w-[1200px] mx-auto px-4 md:px-6 pb-12">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Sidebar: Most read — order-first on mobile, right column on desktop */}
+                <aside className="lg:col-span-4 lg:sticky lg:top-20 self-start order-first lg:order-last">
+                  <div className="bg-bg-soft rounded-card p-5 border border-line">
+                    <h3 className="text-card font-bold font-display text-ink mb-4">
+                      Most read
+                    </h3>
+                    <div className="divide-y divide-line">
+                      {mostReadArticles.map((article, idx) => (
+                        <Link
+                          key={article.article_id}
+                          to={getArticleHref(article)}
+                          state={{ article }}
+                          className="group flex gap-4 py-3 first:pt-0 last:pb-0 focus-visible:outline-brand focus-visible:outline-offset-2"
+                        >
+                          <span className="text-2xl font-extrabold text-brand leading-none shrink-0 w-6">
+                            {idx + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-list font-semibold font-sans text-ink group-hover:text-brand transition-colors duration-150 line-clamp-2 leading-snug">
+                              {article.headline || article.title}
+                            </h4>
+                            <p className="text-meta font-medium text-subtle mt-1">
+                              {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                              {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sidebar Ad Placement */}
+                  <div className="mt-6">
+                    <AdPlacement format="in-article" />
+                  </div>
+                </aside>
+
+                {/* Main Column: Latest news (8 cols) */}
+                <div className="lg:col-span-8 order-last lg:order-first">
+                  <div className="flex items-center justify-between pb-4 border-b border-line">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-[3px] h-5 bg-brand rounded-full inline-block shrink-0" />
+                      <h2 className="text-title-mobile md:text-title font-bold font-display text-ink">
+                        Latest news
+                      </h2>
+                    </div>
+                    <Link
+                      to="/news"
+                      className="text-sm font-semibold text-brand hover:underline transition-colors duration-150"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  <div className="divide-y divide-line">
+                    {latestNewsArticles.map(article => {
+                      const excerpt = formatExcerpt(article.ai_meta_description || article.description);
+                      return (
+                        <Link
+                          key={article.article_id}
+                          to={getArticleHref(article)}
+                          state={{ article }}
+                          className="group flex gap-3 sm:gap-5 py-4 items-start focus-visible:outline-brand focus-visible:outline-offset-2"
+                        >
+                          {/* Compact thumbnail on mobile, wider on sm+ */}
+                          <div className="w-24 h-16 sm:w-[200px] sm:h-auto sm:aspect-video shrink-0 rounded-card overflow-hidden">
+                            <NewsImage src={article.image_url} alt="" />
+                          </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <span className="text-label font-bold text-ink">
+                              {getArticleClassification(article)}
+                            </span>
+                            <h3 className="text-list sm:text-title-mobile font-bold font-display text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3 mt-1 leading-snug">
+                              {article.headline || article.title}
+                            </h3>
+                            {excerpt && (
+                              <p className="hidden sm:block text-excerpt text-muted font-normal leading-relaxed line-clamp-2 mt-2">
+                                {excerpt}
+                              </p>
+                            )}
+                            <p className="text-meta font-medium text-subtle mt-1.5">
+                              {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                              {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Mid-Feed Native Leaderboard Banner */}
+            <div className="max-w-[1200px] mx-auto px-4 md:px-6 pb-8">
+              <AdPlacement format="native" />
+            </div>
+
+            {/* ── 3. FOOTBALL: Layout A (Feature + List) with alternating bg-bg-soft band ── */}
+            {footballArticles.length >= 3 && (
+              <section aria-label="Football" className="w-full bg-bg-soft py-12">
+                <div className="max-w-[1200px] mx-auto px-4 md:px-6">
+                  <div className="flex items-center justify-between pb-4 border-b border-line mb-6">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-[3px] h-5 bg-brand rounded-full inline-block shrink-0" />
+                      <h2 className="text-title-mobile md:text-title font-bold font-display text-ink">
+                        Football
+                      </h2>
+                    </div>
+                    <Link
+                      to="/football-news"
+                      className="text-sm font-semibold text-brand hover:underline transition-colors duration-150"
+                    >
+                      View all
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    {/* Left: 1 large feature card (7 cols) */}
+                    <div className="lg:col-span-7">
+                      <Link
+                        to={getArticleHref(footballArticles[0])}
+                        state={{ article: footballArticles[0] }}
+                        className="group block focus-visible:outline-brand focus-visible:outline-offset-2"
+                      >
+                        <NewsImage
+                          src={footballArticles[0].image_url}
+                          alt=""
+                          className="w-full aspect-video"
+                        />
+                        <div className="mt-3">
+                          <span className="text-label font-bold text-ink">
+                            {getArticleClassification(footballArticles[0])}
+                          </span>
+                          <h3 className="text-card-lg font-bold font-display text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3 mt-1 leading-snug">
+                            {footballArticles[0].headline || footballArticles[0].title}
+                          </h3>
+                          {(() => {
+                            const excerpt = formatExcerpt(
+                              footballArticles[0].ai_meta_description || footballArticles[0].description
+                            );
+                            return excerpt ? (
+                              <p className="text-excerpt text-muted font-normal leading-relaxed line-clamp-2 mt-2">
+                                {excerpt}
+                              </p>
+                            ) : null;
+                          })()}
+                          <p className="text-meta font-medium text-subtle mt-2">
+                            {formatSource(footballArticles[0].source_id)} · {formatArticleTime(footballArticles[0].pubDate)}
+                            {footballArticles[0].extraSourceCount && ` · +${footballArticles[0].extraSourceCount} source${footballArticles[0].extraSourceCount > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+
+                    {/* Right: 3 list rows (5 cols) */}
+                    <div className="lg:col-span-5 flex flex-col justify-between divide-y divide-line h-full">
+                      {footballArticles.slice(1, 4).map(article => (
+                        <Link
+                          key={article.article_id}
+                          to={getArticleHref(article)}
+                          state={{ article }}
+                          className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 group focus-visible:outline-brand focus-visible:outline-offset-2"
+                        >
+                          <div className="hidden sm:block w-[120px] shrink-0 aspect-video rounded-card overflow-hidden">
+                            <NewsImage src={article.image_url} alt="" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-label font-bold text-ink block">
+                              {getArticleClassification(article)}
+                            </span>
+                            <h4 className="text-list font-semibold font-sans text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-2 mt-1 leading-snug">
+                              {article.headline || article.title}
+                            </h4>
+                            <p className="text-meta font-medium text-subtle mt-1">
+                              {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                              {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
             )}
 
-            {/* ── Section 3: Main Feed + Sidebar ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-
-              {/* Main Feed */}
-              <div className="lg:col-span-2">
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-sm font-black uppercase tracking-widest text-[#E0E0E0]">Latest Cryptocurrency &amp; Bitcoin News</h2>
-                  <div className="flex-1 h-px bg-[#1a1a1a]" />
-                  <Link to="/news" className="text-[10px] font-bold uppercase tracking-widest text-[#F4A917] hover:text-[#FBBF5A] transition-colors">
-                    View All →
+            {/* ── 4. NFL: Layout A (Feature + List) on white bg ── */}
+            {nflArticles.length >= 3 && (
+              <section aria-label="NFL" className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
+                <div className="flex items-center justify-between pb-4 border-b border-line mb-6">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-[3px] h-5 bg-brand rounded-full inline-block shrink-0" />
+                    <h2 className="text-title-mobile md:text-title font-bold font-display text-ink">
+                      NFL
+                    </h2>
+                  </div>
+                  <Link
+                    to="/news/american-football"
+                    className="text-sm font-semibold text-brand hover:underline transition-colors duration-150"
+                  >
+                    View all
                   </Link>
                 </div>
-                <div>
-                  {displayedFeedArticles.map((a, i) => (
-                    <React.Fragment key={a.article_id}>
-                      <FeedCard article={a} />
-                      {i > 0 && i % 3 === 0 && (
-                        <div className="py-4 border-b border-[#131313]">
-                          <AdPlacement format="in-article" className="mx-auto" />
-                        </div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                {feedArticles.length === 0 && (
-                  <p className="text-[#555] text-sm py-8 text-center">No more articles available.</p>
-                )}
 
-                {/* Load More News Button */}
-                {feedArticles.length > visibleFeedCount && (
-                  <button
-                    onClick={() => setVisibleFeedCount(prev => prev + 8)}
-                    className="w-full mt-5 py-3.5 px-4 rounded-xl bg-[#0f0f0f] hover:bg-[#161616] border border-[#222] text-[#CCC] hover:text-[#F4A917] font-bold text-xs uppercase tracking-widest transition-all shadow-md active:translate-y-0.5"
-                  >
-                    Load More Stories ({feedArticles.length - visibleFeedCount} remaining)
-                  </button>
-                )}
-              </div>
-
-              {/* Sidebar */}
-              <aside className="lg:col-span-1 space-y-4">
-                {/* Market Watch Widget */}
-                <MarketWatch />
-
-                {/* Most Read */}
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a]">
-                    <h2 className="text-xs font-black uppercase tracking-widest text-[#DDD]">Most Read Cryptocurrency Articles</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                  {/* Left: 1 feature card (7 cols) */}
+                  <div className="lg:col-span-7">
+                    <Link
+                      to={getArticleHref(nflArticles[0])}
+                      state={{ article: nflArticles[0] }}
+                      className="group block focus-visible:outline-brand focus-visible:outline-offset-2"
+                    >
+                      <NewsImage
+                        src={nflArticles[0].image_url}
+                        alt=""
+                        className="w-full aspect-video"
+                      />
+                      <div className="mt-3">
+                        <span className="text-label font-bold text-ink">
+                          {getArticleClassification(nflArticles[0])}
+                        </span>
+                        <h3 className="text-card-lg font-bold font-display text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3 mt-1 leading-snug">
+                          {nflArticles[0].headline || nflArticles[0].title}
+                        </h3>
+                        {(() => {
+                          const excerpt = formatExcerpt(
+                            nflArticles[0].ai_meta_description || nflArticles[0].description
+                          );
+                          return excerpt ? (
+                            <p className="text-excerpt text-muted font-normal leading-relaxed line-clamp-2 mt-2">
+                              {excerpt}
+                            </p>
+                          ) : null;
+                        })()}
+                        <p className="text-meta font-medium text-subtle mt-2">
+                          {formatSource(nflArticles[0].source_id)} · {formatArticleTime(nflArticles[0].pubDate)}
+                          {nflArticles[0].extraSourceCount && ` · +${nflArticles[0].extraSourceCount} source${nflArticles[0].extraSourceCount > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                    </Link>
                   </div>
-                  <div className="px-4 py-2">
-                    {sidebarArticles.map((a, i) => (
-                      <React.Fragment key={a.article_id}>
-                        <SidebarCard article={a} index={i} />
-                      </React.Fragment>
+
+                  {/* Right: 3 list rows (5 cols) */}
+                  <div className="lg:col-span-5 flex flex-col justify-between divide-y divide-line h-full">
+                    {nflArticles.slice(1, 4).map(article => (
+                      <Link
+                        key={article.article_id}
+                        to={getArticleHref(article)}
+                        state={{ article }}
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 group focus-visible:outline-brand focus-visible:outline-offset-2"
+                      >
+                        <div className="hidden sm:block w-[120px] shrink-0 aspect-video rounded-card overflow-hidden">
+                          <NewsImage src={article.image_url} alt="" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-label font-bold text-ink block">
+                            {getArticleClassification(article)}
+                          </span>
+                          <h4 className="text-list font-semibold font-sans text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-2 mt-1 leading-snug">
+                            {article.headline || article.title}
+                          </h4>
+                          <p className="text-meta font-medium text-subtle mt-1">
+                            {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                            {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 </div>
-                <div className="hidden lg:block mt-6">
-                  <AdPlacement format="skyscraper" className="mx-auto" />
+              </section>
+            )}
+
+            {/* ── 5. PAIRED COLUMNS: Rugby, Basketball, Tennis, F1 (Layout B) ── */}
+            {pairedSportRows.map((pair, rowIdx) => {
+              const isBand = rowIdx % 2 === 0;
+              return (
+                <section
+                  key={rowIdx}
+                  aria-label="Sports coverage"
+                  className={`w-full py-12 ${isBand ? 'bg-bg-soft' : ''}`}
+                >
+                  <div className="max-w-[1200px] mx-auto px-4 md:px-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {pair.map(section => (
+                        <div key={section.key} className="flex flex-col">
+                          {/* Section Header */}
+                          <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-[3px] h-5 bg-brand rounded-full inline-block shrink-0" />
+                              <h3 className="text-title-mobile md:text-title font-bold font-display text-ink">
+                                {section.label}
+                              </h3>
+                            </div>
+                            <Link
+                              to={section.href}
+                              className="text-sm font-semibold text-brand hover:underline transition-colors duration-150"
+                            >
+                              View all
+                            </Link>
+                          </div>
+
+                          {/* 1 Standard Card (16:9 image, 18px headline) */}
+                          {section.stories[0] && (
+                            <ArticleCard article={section.stories[0]} />
+                          )}
+
+                          {/* 2 Text-only rows (headline + meta, hairline separated) */}
+                          {section.stories.length > 1 && (
+                            <div className="mt-4 pt-3 border-t border-line divide-y divide-line">
+                              {section.stories.slice(1, 3).map(article => (
+                                <Link
+                                  key={article.article_id}
+                                  to={getArticleHref(article)}
+                                  state={{ article }}
+                                  className="block py-3 first:pt-0 last:pb-0 group focus-visible:outline-brand focus-visible:outline-offset-2"
+                                >
+                                  <h4 className="text-list font-semibold font-sans text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-2 leading-snug">
+                                    {article.headline || article.title}
+                                  </h4>
+                                  <p className="text-meta font-medium text-subtle mt-1">
+                                    {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+                                    {article.extraSourceCount && ` · +${article.extraSourceCount} source${article.extraSourceCount > 1 ? 's' : ''}`}
+                                  </p>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              );
+            })}
+
+            {/* ── 6. REWRITTEN ABOUT SPORT25 STRIP (Plain words) ── */}
+            <section aria-label="About SPORT25" className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
+              <div className="bg-bg-soft rounded-card p-6 md:p-8 border border-line">
+                <div className="max-w-2xl">
+                  <h2 className="text-card font-bold font-display text-ink mb-2">
+                    About SPORT25
+                  </h2>
+                  <p className="text-excerpt text-muted leading-relaxed font-normal">
+                    SPORT25 brings together the day&apos;s sports news from BBC Sport, The Guardian, Sky Sports and CBS Sports, with a link to the original report on every story. How we select and summarise stories is explained on our{' '}
+                    <Link to="/methodology" className="text-brand hover:underline font-semibold">
+                      How we work page
+                    </Link>
+                    .
+                  </p>
                 </div>
-              </aside>
-            </div>
-
-            {/* ── Section 4: Comprehensive In-Depth SEO Blog Article ── */}
-            <SeoEditorialBlog category="home" />
-
-            {/* ── Section 5: Frequently Asked Questions ── */}
-            <FAQSection />
-          </>
+              </div>
+            </section>
+          </div>
         )}
-      </div>
+      </main>
 
       <Footer />
     </div>

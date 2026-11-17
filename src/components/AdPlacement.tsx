@@ -1,107 +1,143 @@
 import React, { useState, useEffect } from 'react';
+import { ExternalLink, Sparkles } from 'lucide-react';
+import { useAdInteraction } from '../utils/adInteraction';
 
 interface AdPlacementProps {
   format: 'billboard' | 'native' | 'sticky-bottom' | 'in-article' | 'skyscraper';
   className?: string;
 }
 
-// Simple global cache to prevent spamming the API on page load
+let lastFetchTime = 0;
 let cachedAds: any[] | null = null;
-let fetchingAds: Promise<any[]> | null = null;
 
 export default function AdPlacement({ format, className = '' }: AdPlacementProps) {
-  const [shouldShowAd, setShouldShowAd] = useState(false);
+  const hasInteracted = useAdInteraction();
   const [adData, setAdData] = useState<any>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    // 1. Fetch Ad Content
-    const getAd = async () => {
+    let isMounted = true;
+
+    const fetchAdsList = async () => {
       try {
-        let adsList = cachedAds;
-        if (!adsList) {
-          if (!fetchingAds) {
-            fetchingAds = fetch('/api/ads').then(res => res.json()).then(data => data.ads || []);
-          }
-          adsList = await fetchingAds;
-          cachedAds = adsList;
+        const now = Date.now();
+        // Re-fetch if cache is older than 5 seconds to ensure newly published ads appear promptly
+        if (!cachedAds || now - lastFetchTime > 5000) {
+          const res = await fetch('/api/ads');
+          const data = await res.json();
+          cachedAds = Array.isArray(data?.ads) ? data.ads : [];
+          lastFetchTime = now;
         }
-        
-        // Find an active ad matching the format
-        if (adsList) {
-           const match = adsList.find(a => a.format === format && a.active);
-           if (match) setAdData(match);
-        }
+
+        if (!isMounted || !cachedAds) return;
+
+        // Strict format matching: only display an ad if its format exactly matches this placement
+        const match = cachedAds.find((a: any) => a.format === format && a.active);
+        setAdData(match || null);
       } catch (err) {
-        console.error("Error loading ad:", err);
+        console.error('Error fetching ads for placement:', err);
       }
     };
-    getAd();
 
-    // 2. Bot Detection via User-Agent
-    const isBot = () => {
-      const ua = navigator.userAgent.toLowerCase();
-      const botIdentifiers = [
-        'facebookexternalhit', 'facebot', 
-        'googlebot', 'adsbot-google', 'mediapartners-google', 
-        'twitterbot', 'bot', 'crawler', 'spider', 'ping'
-      ];
-      return botIdentifiers.some(bot => ua.includes(bot));
-    };
-
-    if (isBot()) {
-      return; 
-    }
-
-    // 3. Interaction Check
-    const handleInteraction = () => {
-      setShouldShowAd(true);
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-    };
-
-    window.addEventListener('scroll', handleInteraction, { once: true, passive: true });
-    window.addEventListener('mousemove', handleInteraction, { once: true, passive: true });
-    window.addEventListener('touchstart', handleInteraction, { once: true, passive: true });
-    window.addEventListener('keydown', handleInteraction, { once: true, passive: true });
+    fetchAdsList();
 
     return () => {
-      window.removeEventListener('scroll', handleInteraction);
-      window.removeEventListener('mousemove', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
+      isMounted = false;
     };
   }, [format]);
 
-  // If we haven't interacted OR we don't have ad data for this format, render nothing.
-  if (!shouldShowAd || !adData) {
+  // Bot detection
+  const isBot = () => {
+    if (typeof window === 'undefined') return true;
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const botIdentifiers = [
+      'facebookexternalhit', 'facebot',
+      'googlebot', 'adsbot-google', 'mediapartners-google',
+      'twitterbot', 'spider', 'ping'
+    ];
+    return botIdentifiers.some(bot => ua.includes(bot));
+  };
+
+  if (!hasInteracted || isBot() || !adData) {
     return null;
   }
 
-  const sizeStyles = {
-    // All formats: full width on mobile, capped at standard IAB max-width on desktop
-    // Auto height so the uploaded image always shows complete — never cut
-    'billboard':     'w-full max-w-[970px] mx-auto block',
-    'native':        'w-full max-w-[970px] mx-auto block',
-    'sticky-bottom': 'w-full max-w-[728px] mx-auto block',
-    'in-article':    'w-full max-w-[300px] mx-auto block',
-    'skyscraper':    'hidden lg:block w-[160px] mx-auto'
+  const sizeStyles: Record<string, string> = {
+    'billboard': 'w-full max-w-[1200px] mx-auto block',
+    'native': 'w-full max-w-[1200px] mx-auto block',
+    'sticky-bottom': 'w-full max-w-2xl mx-auto block',
+    'in-article': 'w-full max-w-[340px] md:max-w-[400px] mx-auto block',
+    'skyscraper': 'w-[160px] mx-auto block'
   };
 
-  return (
-    <a 
-      href={adData.target_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`block relative group ${sizeStyles[format]} ${className}`}
-    >
-      <span className="text-[9px] text-white/50 absolute top-1 right-1 z-10 bg-black/50 px-1 rounded">Ad</span>
-      <img 
-        src={adData.image_url} 
-        alt="Advertisement"
-        className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-300 block"
-      />
-    </a>
-  );
+  // If ad has a valid image, render banner image
+  if (adData.image_url && !imageError) {
+    return (
+      <div className={`relative group my-4 ${sizeStyles[format] || 'w-full'} ${className}`}>
+        <span className="text-[10px] uppercase font-bold tracking-wider text-muted/70 block mb-1 text-center">
+          Advertisement
+        </span>
+        <a
+          href={adData.target_url || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block relative overflow-hidden rounded-card border border-line/30 bg-bg-soft hover:opacity-95 transition-opacity"
+        >
+          <img
+            src={adData.image_url}
+            alt={adData.cta_text || 'Sponsored advertisement'}
+            onError={() => setImageError(true)}
+            className="w-full h-auto object-contain block mx-auto rounded-card"
+          />
+          {adData.cta_text && (format === 'native' || format === 'in-article') && (
+            <div className="p-3 bg-bg-soft border-t border-line/20 flex items-center justify-between">
+              <span className="text-xs text-ink font-semibold truncate mr-2">Sponsored Partner</span>
+              <span className="text-xs font-bold text-brand group-hover:underline shrink-0">
+                {adData.cta_text} →
+              </span>
+            </div>
+          )}
+        </a>
+      </div>
+    );
+  }
+
+  // Fallback: If image is missing or failed to load, render styled text sponsor card
+  if (adData.target_url && (adData.cta_text || adData.format)) {
+    return (
+      <div className={`relative group my-4 ${sizeStyles[format] || 'w-full'} ${className}`}>
+        <span className="text-[10px] uppercase font-bold tracking-wider text-muted/70 block mb-1 text-center">
+          Advertisement
+        </span>
+        <a
+          href={adData.target_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block p-4 sm:p-5 rounded-card bg-gradient-to-r from-ink-900 to-ink-800 border border-brand/40 text-white shadow-md hover:border-brand transition-all"
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center shrink-0">
+                <Sparkles size={18} className="text-brand" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-brand block">
+                  Official Sponsor
+                </span>
+                <span className="text-sm font-bold text-white block">
+                  {adData.cta_text || 'Exclusive Sports Promotion'}
+                </span>
+              </div>
+            </div>
+            <div className="h-9 px-4 rounded-card bg-brand hover:bg-brand-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-colors">
+              <span>{adData.cta_text || 'Visit Sponsor'}</span>
+              <ExternalLink size={13} />
+            </div>
+          </div>
+        </a>
+      </div>
+    );
+  }
+
+  return null;
 }

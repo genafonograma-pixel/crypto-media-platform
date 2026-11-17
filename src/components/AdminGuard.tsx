@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const PASSCODE_KEY = 'wwcs_admin_auth';
+const PASSCODE_KEY = 'sport25_admin_auth';
 
 function checkPasscode(input: string): boolean {
   return input === 'Yumaryumar25';
@@ -36,27 +36,27 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (authed) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg px-4">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-10">
-          <img src="/wildwest_icon.svg" alt="Wild West Crypto Show" className="w-8 h-8 opacity-80" />
-          <span className="text-[11px] font-black uppercase tracking-[0.25em] text-zinc-500">
-            Admin Access
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <img src="/sport25_icon.svg" alt="SPORT25" className="w-8 h-8 opacity-80" />
+          <span className="text-sm font-semibold text-muted">
+            Admin access
           </span>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-2xl"
+          className="bg-bg-soft border border-line rounded-card p-8 shadow-sm"
         >
-          <h1 className="text-xl font-black text-white mb-1 tracking-tight">
-            Protected Area
+          <h1 className="text-card-lg font-bold font-display text-ink mb-1">
+            Protected area
           </h1>
-          <p className="text-xs text-zinc-500 mb-7">
+          <p className="text-sm text-muted mb-6">
             Enter your passcode to continue.
           </p>
 
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">
+          <label className="block text-label font-bold text-ink mb-2">
             Passcode
           </label>
           <div className="relative mb-5">
@@ -67,14 +67,14 @@ export default function AdminGuard({ children }: AdminGuardProps) {
               autoFocus
               autoComplete="current-password"
               placeholder="••••••••••••"
-              className={`w-full bg-zinc-800 border ${
-                error ? 'border-red-500' : 'border-zinc-700'
-              } rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-amber-500 transition-colors pr-12`}
+              className={`w-full bg-white border ${
+                error ? 'border-alert' : 'border-line'
+              } rounded-card px-4 py-2.5 text-ink text-sm outline-none focus:border-brand transition-colors duration-150 pr-12`}
             />
             <button
               type="button"
               onClick={() => setShow(s => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-ink text-xs transition-colors duration-150"
               tabIndex={-1}
             >
               {show ? 'Hide' : 'Show'}
@@ -82,21 +82,21 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           </div>
 
           {error && (
-            <p className="text-red-400 text-xs mb-4 font-medium">
+            <p className="text-alert text-xs mb-4 font-medium">
               Incorrect passcode. Try again.
             </p>
           )}
 
           <button
             type="submit"
-            className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm py-3 rounded-lg transition-colors"
+            className="w-full bg-brand hover:bg-brand-600 text-white font-semibold text-sm h-10 rounded-card transition-colors duration-150"
           >
             Unlock
           </button>
         </form>
 
-        <p className="text-center text-[10px] text-zinc-700 mt-6 uppercase tracking-widest">
-          Wild West Crypto Show · Admin
+        <p className="text-center text-xs text-subtle mt-6">
+          SPORT25 · Admin
         </p>
       </div>
     </div>

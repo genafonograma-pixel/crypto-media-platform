@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://wildwestcryptoshow.com/sitemap.xml
+Sitemap: https://sport25.news/sitemap.xml

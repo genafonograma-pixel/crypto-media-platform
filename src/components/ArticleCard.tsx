@@ -1,69 +1,49 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Article } from '../types';
-import { generateSlug } from '../utils';
+import { generateSlug, formatArticleTime, formatSource, getArticleClassification, formatExcerpt } from '../utils';
+import NewsImage from './NewsImage';
 
-interface Props {
+export interface ArticleCardProps {
   article: Article;
+  key?: React.Key;
   compact?: boolean;
+  showExcerpt?: boolean;
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric'
-  }).format(date);
-}
-
-const ArticleCard: React.FC<Props> = ({ article, compact = false }) => {
+export default function ArticleCard({ article, showExcerpt = false }: ArticleCardProps) {
   const displayTitle = article.headline || article.title;
+  const classification = getArticleClassification(article);
+  const extraSources = (article as any).extraSourceCount || (article.related_sources?.length || 0);
+  const excerpt = formatExcerpt(article.ai_meta_description || article.description || '');
+
   return (
-    <Link to={`/article/${generateSlug(displayTitle)}`} state={{ article }} className="block group cursor-pointer flex flex-col h-full">
-      {!compact && (
-        <div className="relative overflow-hidden aspect-[2/1] bg-[#111] border border-[#222] mb-4">
-          {article.image_url ? (
-            <img 
-              src={article.image_url} 
-              alt={displayTitle}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#111] to-[#F4A917]/20"></div>
-          )}
-        </div>
-      )}
-      
-      <div className="flex-1 flex flex-col">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-bold text-[#888] uppercase tracking-widest">
-            {(article as any).classification || article.category?.[0] || 'News'}
-          </span>
-          <span className="w-1 h-1 bg-[#444] rounded-full" />
-          <time className="text-[10px] font-mono text-[#555]">
-            {formatDate(article.pubDate)}
-          </time>
-        </div>
-        
-        <h2 className={`font-bold leading-tight group-hover:text-[#F4A917] transition-colors text-[#F5F5F5] ${compact ? 'text-sm mb-2' : 'text-xl mb-3 uppercase tracking-tight'} line-clamp-3`}>
+    <Link
+      to={`/article/${generateSlug(displayTitle)}`}
+      state={{ article }}
+      className="group flex flex-col h-full focus-visible:outline-brand focus-visible:outline-offset-2"
+    >
+      <NewsImage
+        src={article.image_url}
+        alt=""
+      />
+      <div className="flex flex-col flex-1 pt-3">
+        <span className="text-label font-bold text-ink">
+          {classification}
+        </span>
+        <h3 className="text-card font-bold font-display text-ink group-hover:text-brand transition-colors duration-150 text-balance line-clamp-3 mt-1.5 leading-snug">
           {displayTitle}
-        </h2>
-        
-        {!compact && article.description && (
-          <p className="text-sm text-[#888] leading-relaxed mb-4 line-clamp-2 flex-1 overflow-hidden">
-            {article.description.replace(/<[^>]*>/g, '').trim().slice(0, 200)}
+        </h3>
+        {showExcerpt && excerpt && (
+          <p className="text-excerpt text-muted font-normal leading-relaxed line-clamp-2 mt-2">
+            {excerpt}
           </p>
         )}
-        
-        <div className={`mt-auto text-[10px] font-bold text-[#555] uppercase tracking-widest ${compact ? 'hidden' : 'block'}`}>
-          Jordan Cole
-        </div>
+        <p className="text-meta font-medium text-subtle mt-2">
+          {formatSource(article.source_id)} · {formatArticleTime(article.pubDate)}
+          {extraSources > 0 && ` · +${extraSources} source${extraSources > 1 ? 's' : ''}`}
+        </p>
       </div>
     </Link>
   );
 }
-
-export default ArticleCard;

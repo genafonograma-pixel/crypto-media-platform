@@ -31,7 +31,7 @@ if (supabase) {
 
 // ─── IndexNow & SEO Configuration ───────────────────────────────────────────
 const INDEXNOW_KEY = (process.env.INDEXNOW_KEY || "c748956be9c240979a7853fd9e472691").trim();
-const SITE_URL = (process.env.SITE_URL || "https://wildwestcryptoshow.com").trim().replace(/\/+$/, "");
+const SITE_URL = (process.env.SITE_URL || "https://sport25.news").trim().replace(/\/+$/, "");
 
 export function generateSlug(title: string): string {
   if (!title) return "";
@@ -58,7 +58,7 @@ export async function submitToIndexNow(urls: string | string[]): Promise<{ succe
       return { success: true, message: "No URLs to submit" };
     }
 
-    let host = "wildwestcryptoshow.com";
+    let host = "sport25.news";
     try {
       const parsed = new URL(SITE_URL);
       host = parsed.host;
@@ -127,15 +127,17 @@ export async function postArticleToX(
 
   const url = `${SITE_URL}/article/${slug}`;
 
-  // Map classification to meaningful crypto hashtags
+  // Map classification to meaningful sports hashtags
   const classificationHashtagMap: Record<string, string> = {
-    bitcoin:  "#Bitcoin #BTC #Crypto",
-    altcoins: "#Altcoins #Crypto #Web3",
-    defi:     "#DeFi #Crypto #Web3",
-    web3:     "#Web3 #NFT #Crypto",
+    football: "#Football #Soccer #PremierLeague",
+    basketball: "#Basketball #NBA #Hoops",
+    tennis: "#Tennis #ATP #WTA",
+    "formula 1": "#F1 #Formula1 #Motorsport",
+    "american football": "#NFL #Football #SuperBowl",
+    "general sports": "#Sports #BreakingNews #SportsNews",
   };
   const cls = (article.classification || "").toLowerCase();
-  const hashtags = classificationHashtagMap[cls] ?? "#Crypto #Bitcoin #Web3";
+  const hashtags = classificationHashtagMap[cls] ?? "#Sports #Football #SportsNews";
 
   // Pull the "What happened" summary sentence for tweet body
   const whatHappened = article.summary?.find((s) => s.label?.toLowerCase().includes("what happened"))?.text?.trim() ?? "";
@@ -234,7 +236,7 @@ export async function postArticleToX(
     const result: any = await res.json();
     const post = result?.data?.createPost?.post;
     if (post) {
-      console.log(`🐦 [X / Buffer] Successfully published tweet for: "${safeTitle.slice(0, 50)}..." (Post ID: ${post.id})`);
+      console.log(`🐦 [X / Buffer] Successfully published tweet for: "${headline.slice(0, 50)}..." (Post ID: ${post.id})`);
       return { success: true, postId: post.id };
     } else {
       const errDetail = result?.data?.createPost?.message || result?.errors?.[0]?.message || JSON.stringify(result);
@@ -478,15 +480,15 @@ async function processArticleWithAI(
 
 
   // STEP 1: RESEARCH & FACT EXTRACTION
-  const researchPrompt = `You are a senior crypto intelligence researcher. Your task is to analyze the source material and build a strict factual Research Object.
+  const researchPrompt = `You are a senior sports researcher and journalist. Your task is to analyze the source material and build a strict factual Research Object.
 SOURCE OUTLET: ${sourceName}
 RAW SOURCE CONTENT:
 ${textContent}
 
 INSTRUCTIONS:
-1. Classify the event into EXACTLY ONE of these categories: "Bitcoin", "Altcoins", "DeFi", "Web3", "Irrelevant". If the article is primarily about traditional markets or general tech (not crypto), classify it as "Irrelevant". Do not use any other category names.
-2. Extract all verifiable facts, numbers, dates, people, and organizations.
-3. If you can calculate a useful metric (e.g., percentage change), do so and log it in calculations. Do NOT invent numbers.
+1. Classify the event into EXACTLY ONE of these categories: "Football", "Basketball", "Tennis", "Formula 1", "American Football", "General Sports", "Irrelevant". If the article is not about sports, classify it as "Irrelevant". Do not use any other category names.
+2. Extract all verifiable facts, numbers, dates, people, teams, scores, and organizations.
+3. If you can calculate a useful metric (e.g., points difference, win percentage), do so and log it in calculations. Do NOT invent numbers.
 4. Return ONLY a JSON object:
 {
   "classification": "string",
@@ -505,48 +507,43 @@ INSTRUCTIONS:
       seo_title: null,
     };
 
-  let minWords = 600;
-  let targetWords = "700-1,200";
+  let minWords = 500;
+  let targetWords = "600-1,000";
   const c = (researchData.classification || "").toLowerCase();
   if (c.includes("breaking") || c.includes("brief")) {
-    minWords = 350;
-    targetWords = "400-700";
+    minWords = 300;
+    targetWords = "350-600";
   } else if (
-    c.includes("company") ||
-    c.includes("earnings") ||
-    c.includes("financial") ||
-    c.includes("regulation") ||
-    c.includes("legal") ||
-    c.includes("hack") ||
-    c.includes("security")
+    c.includes("transfer") ||
+    c.includes("match") ||
+    c.includes("derby") ||
+    c.includes("final") ||
+    c.includes("championship")
   ) {
-    minWords = 700;
-    targetWords = "800-1,500";
-  } else if (c.includes("deep") || c.includes("research")) {
-    minWords = 1000;
-    targetWords = "1,000-2,000+";
+    minWords = 600;
+    targetWords = "700-1,200";
   }
 
   // STEP 1.5: CONTEXT ENRICHMENT
-  const enrichmentPrompt = `You are a Crypto Historian/Analyst. Analyze the following Research Object regarding a recent news event.
+  const enrichmentPrompt = `You are a Sports Analyst and Historian. Analyze the following Research Object regarding a recent sports news event.
 RESEARCH DATA:
 ${JSON.stringify(researchData)}
 
 INSTRUCTIONS:
-1. Identify the key entities (people, companies, protocols, tokens) and concepts mentioned.
-2. Provide dense, accurate historical context, background information, market history, and broader implications of these entities/events using your training data.
+1. Identify the key entities (teams, players, managers, tournaments, leagues) and concepts mentioned.
+2. Provide dense, accurate historical context, head-to-head records, season background, and broader tournament/league implications of these entities/events using your knowledge.
 3. This information will be used to enrich a short news brief into a comprehensive article. Ensure facts are highly accurate and directly relevant.
 4. Return ONLY a JSON object:
 {
-  "historical_context": "Deep background on the protocols, people, or companies involved.",
-  "market_implications": "Broader market context and what this type of event usually means.",
-  "technical_details": "Definitions of any complex crypto concepts mentioned."
+  "historical_context": "Deep background on the teams, players, or managers involved.",
+  "market_implications": "Broader championship/league implications and what this result or news means.",
+  "technical_details": "Tactical or rules context regarding the sport."
 }`;
   const enrichmentData = await runAIPrompt(enrichmentPrompt);
   const contextBlock = enrichmentData ? `ENRICHED BACKGROUND CONTEXT:\n${JSON.stringify(enrichmentData)}\n` : "";
 
   // STEP 2: ARTICLE GENERATION
-  const generatePrompt = `You are a senior editor at a crypto intelligence platform. Write a news article based STRICTLY on this Research Object, the Enriched Background Context, and the RAW SOURCE CONTENT.
+  const generatePrompt = `You are a senior sports editor at a sports news platform. Write a sports news article based STRICTLY on this Research Object, the Enriched Background Context, and the RAW SOURCE CONTENT.
 SOURCE OUTLET: ${sourceName}
 RAW SOURCE CONTENT:
 ${textContent}
@@ -556,10 +553,10 @@ ${JSON.stringify(researchData)}
 
 ${contextBlock}
 ABSOLUTE EDITORIAL RULES:
-1. FACT VS ANALYSIS: Distinguish fact from analysis. Do not present subjective editorial judgment as fact. Use precise language (e.g., "suggests" rather than "proves").
+1. FACT VS ANALYSIS: Distinguish fact from analysis. Do not present subjective editorial judgment as fact. Use precise language.
 2. IMAGES & MEDIA: If the RAW SOURCE CONTENT contains <img> tags, naturally embed those exact <img> tags (with their original src) into the rewritten_content where contextually relevant.
-3. SOURCE LINKING: If the content references external sources like X posts or official announcements, embed those links natively using <a href="..."> tags. However, NEVER link to the domain where the content was scraped from (${sourceName}).
-4. SEO & STRUCTURE: Optimize the article for SEO. Use semantic heading structures (<h2>, <h3>), naturally incorporate relevant LSI keywords, and bold key terms or phrases to improve readability.
+3. SOURCE LINKING: If the content references external sources like official team announcements or athlete statements, embed those links natively using <a href="..."> tags. However, NEVER link to the domain where the content was scraped from (${sourceName}).
+4. SEO & STRUCTURE: Optimize the article for SEO. Use semantic heading structures (<h2>, <h3>), naturally incorporate relevant sports keywords, and bold key terms or player/team names to improve readability.
 5. FAQ SECTION: At the bottom of the article, append a "Frequently Asked Questions" section. Use an <h2> tag for the section title, followed by <h3> tags for each question (always ending with a question mark), and <p> tags for the answers. Do not wrap them in custom divs, just output semantic tags.
 6. NO SEMANTIC REPETITION: Every paragraph and section must add NEW information. Do not repeat the same idea multiple ways. Do not blindly follow the source article's narrative flow; independently structure the facts.
 7. BAN LIST (CRITICAL): Never use the following phrases or concepts: "According to our research", "The AI found", "undefined", "[SOURCE]", "Quality score", "Visit the official site for details", "Written by". Do NOT expose any internal template variables in the text.
@@ -568,13 +565,13 @@ ABSOLUTE EDITORIAL RULES:
 
 Return ONLY a JSON object:
 {
-  "headline": "Strong, accurate headline",
-  "seo_title": "SEO optimized title",
+  "headline": "Strong, accurate sports headline",
+  "seo_title": "SEO optimized sports title",
   "meta_description": "150-160 char summary",
   "summary": [
     {"label": "What happened", "text": "1-2 sentences."},
     {"label": "Why it matters", "text": "1-2 sentences."},
-    {"label": "What to watch", "text": "1 sentence specific event."}
+    {"label": "What to watch", "text": "1 sentence specific upcoming event/match."}
   ],
   "rewritten_content": "<p><strong>[Lead core fact]</strong></p><h2>[Dynamic Heading 1]</h2><p>[Text]</p>"
 }`;
@@ -599,7 +596,7 @@ Return ONLY a JSON object:
   // STEP 3: SIMPLE WORD-COUNT QUALITY GATE
   // Replaces AI validation which was over-rejecting good articles.
   // The research + generation steps already enforce factual accuracy.
-  let rawClassification = researchData.classification || category || "Crypto News";
+  let rawClassification = researchData.classification || category || "Football";
   
   if (rawClassification.toLowerCase().includes("irrelevant")) {
     console.log(`Article classified as irrelevant (${rawClassification}). Skipping.`);
@@ -614,8 +611,8 @@ Return ONLY a JSON object:
     };
   }
 
-  const allowedCategories = ["Bitcoin", "Altcoins", "DeFi", "Web3"];
-  let finalClassification = "Altcoins"; // Fallback
+  const allowedCategories = ["Football", "Basketball", "Tennis", "Formula 1", "American Football", "General Sports"];
+  let finalClassification = "Football"; // Fallback
   for (const allowed of allowedCategories) {
     if (rawClassification.toLowerCase().includes(allowed.toLowerCase())) {
       finalClassification = allowed;
@@ -655,14 +652,14 @@ Return ONLY a JSON object:
 async function buildDynamicThumbnailPrompt(article: { headline?: string | null; title?: string; classification?: string | null }): Promise<string> {
   const title = article.headline || article.title || "";
 
-  const aiPrompt = `You are an expert art director for a crypto news site. 
-Write a creative image generation prompt for the following headline: "${title}"
-Classification: "${article.classification || 'News'}"
+  const aiPrompt = `You are an expert art director for a sports news site. 
+Write a creative image generation prompt for the following sports headline: "${title}"
+Classification: "${article.classification || 'Sports'}"
 
 INSTRUCTIONS:
-1. Describe a scene that matches the news. You MUST describe it as authentic, flat 2D retro pixel art.
+1. Describe a dynamic sports scene that matches the news. You MUST describe it as authentic, flat 2D retro pixel art.
 2. DO NOT include any text, words, or typography in the image. The image must be completely text-free.
-3. Use keywords like: AUTHENTIC 8-BIT PIXEL ART, flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette, indie game aesthetic.
+3. Use keywords like: AUTHENTIC 8-BIT PIXEL ART, flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette, sports arena aesthetic.
 4. Return ONLY a JSON object:
 {
   "image_prompt": "string"
@@ -678,9 +675,9 @@ INSTRUCTIONS:
   }
 
   // Fallback
-  const c = article.classification || "Crypto";
+  const c = article.classification || "Sports";
   const topic = (title || c).slice(0, 80);
-  return `AUTHENTIC 8-BIT PIXEL ART scene representing ${topic}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words, NO typography.`;
+  return `AUTHENTIC 8-BIT PIXEL ART sports scene representing ${topic}. Flat 2D pixel art, retro SNES style graphics, low resolution, visible square pixels, limited color palette. Completely text-free, NO words, NO typography.`;
 }
 
 
@@ -878,66 +875,42 @@ async function uploadThumbnailToImgBB(buffer: Buffer, articleId: string): Promis
  */
 // Pixel art .webp category files served statically from /public/backup_thumbnails/
 const PIXEL_ART_CATEGORIES: Record<string, string[]> = {
-  bitcoin:        ["bitcoin", "btc", "satoshi", "lightning network", "ordinals", "inscriptions"],
-  ethereum:       ["ethereum", "eth", "vitalik", "eip", "merge", "shapella"],
-  altcoins:       ["altcoin", "solana", "sol", "cardano", "ada", "avalanche", "avax", "polkadot", "dot", "chainlink", "link", "xrp", "ripple", "bnb", "binance coin"],
-  defi:           ["defi", "decentralized finance", "yield", "liquidity", "amm", "lending", "borrowing", "tvl", "protocol", "aave", "compound", "uniswap", "curve"],
-  web3_nfts:      ["nft", "non-fungible", "web3", "metaverse", "opensea", "blur", "collection", "mint"],
-  stablecoins:    ["stablecoin", "usdt", "usdc", "dai", "tether", "circle", "peg", "depeg"],
-  exchange_cex:   ["exchange", "cex", "coinbase", "binance", "kraken", "bybit", "okx", "trading volume", "listing"],
-  dex:            ["dex", "decentralized exchange", "swap", "uniswap", "dydx", "perp", "orderbook"],
-  legal_regulation: ["regulation", "sec", "cftc", "lawsuit", "ban", "legal", "court", "compliance", "kyc", "aml", "government", "congress", "law"],
-  security_hacks: ["hack", "exploit", "breach", "stolen", "vulnerability", "attack", "phishing", "scam", "rug pull", "fraud"],
-  market_bull:    ["bull", "rally", "surge", "ath", "all-time high", "moon", "pump", "breakout", "bullish"],
-  market_bear:    ["bear", "crash", "dump", "drop", "correction", "selloff", "bearish", "decline", "plunge"],
-  institutions:   ["institution", "etf", "fund", "blackrock", "fidelity", "grayscale", "wall street", "corporate", "treasury", "microstrategy"],
-  macro_fed:      ["fed", "federal reserve", "inflation", "interest rate", "macro", "dollar", "economy", "gdp", "cpi", "fomc"],
-  mining:         ["mining", "miner", "hashrate", "asic", "proof of work", "pow", "difficulty", "block reward", "halving"],
-  staking:        ["staking", "stake", "validator", "proof of stake", "pos", "delegation", "slashing", "rewards", "apy"],
-  layer2:         ["layer 2", "l2", "rollup", "arbitrum", "optimism", "polygon", "zksync", "base", "scaling", "sidechain"],
-  cbdc:           ["cbdc", "central bank digital currency", "digital dollar", "digital euro", "digital yuan"],
-  privacy:        ["privacy", "zero knowledge", "zk", "monero", "xmr", "zcash", "mixer", "tornado cash"],
-  smart_contracts: ["smart contract", "solidity", "evm", "bytecode", "audit", "bug bounty"],
-  gamefi:         ["gamefi", "game", "gaming", "play-to-earn", "p2e", "axie", "gala", "sandbox"],
-  memecoins:      ["memecoin", "meme", "doge", "dogecoin", "shiba", "pepe", "floki", "bonk"],
-  funding:        ["funding", "venture", "vc", "raise", "investment", "seed", "series", "a16z", "andreessen"],
-  adoption:       ["adoption", "payment", "merchant", "accept", "el salvador", "real world", "use case"],
-  tokenomics:     ["token", "tokenomics", "supply", "burn", "vesting", "unlock", "emission"],
-  wallets:        ["wallet", "hardware wallet", "ledger", "trezor", "metamask", "seed phrase", "custody"],
-  nodes:          ["node", "full node", "rpc", "peer", "network", "decentralization"],
-  hardware:       ["hardware", "chip", "gpu", "cpu", "rig", "equipment"],
-  airdrops:       ["airdrop", "snapshot", "claim", "distribution", "retroactive"],
-  ai_crypto:      ["ai", "artificial intelligence", "machine learning", "gpt", "llm", "robot", "automation"],
+  football:          ["football", "soccer", "premier league", "champions league", "la liga", "serie a", "bundesliga", "goal", "striker", "fifa", "uefa"],
+  basketball:        ["basketball", "nba", "hoops", "lakers", "celtics", "warriors", "lebron", "curry"],
+  tennis:            ["tennis", "wimbledon", "atp", "wta", "djokovic", "alcaraz", "sinner", "grand slam"],
+  formula1:          ["formula 1", "f1", "grand prix", "verstappen", "hamilton", "racing", "ferrari", "mercedes", "red bull"],
+  american_football: ["nfl", "touchdown", "quarterback", "super bowl", "chiefs", "eagles", "mahomes"],
+  general_sports:    ["sport", "athlete", "championship", "tournament", "olympics", "coach", "manager"],
 };
+
+// Map sports categories to available backup static .webp files
+const SPORTS_FILE_MAP: Record<string, string> = {
+  football: "altcoins",
+  basketball: "ethereum",
+  tennis: "bitcoin",
+  formula1: "layer2",
+  american_football: "market_bull",
+  general_sports: "adoption",
+};
+
+export function getCategoryFallbackImage(category?: string | null): string {
+  const cat = (category || "").toLowerCase();
+  if (cat.includes("foot") || cat.includes("soccer")) return "/images/sports/football.svg";
+  if (cat.includes("basket") || cat.includes("nba")) return "/images/sports/basketball.svg";
+  if (cat.includes("tennis")) return "/images/sports/tennis.svg";
+  if (cat.includes("formula") || cat.includes("f1")) return "/images/sports/formula1.svg";
+  if (cat.includes("american") || cat.includes("nfl")) return "/images/sports/american_football.svg";
+  return "/images/sports/general_sports.svg";
+}
 
 async function getFallbackThumbnail(
   title?: string | null,
   headline?: string | null,
   classification?: string | null
 ): Promise<string> {
-  const matchText = `${title || ""} ${headline || ""} ${classification || ""}`.toLowerCase();
-
-  // Try to match a pixel art category by keywords
-  for (const [key, tags] of Object.entries(PIXEL_ART_CATEGORIES)) {
-    if (tags.some((tag) => matchText.includes(tag))) {
-      const url = `${SITE_URL}/backup_thumbnails/${key}.webp`;
-      console.log(`ℹ️ Selected pixel art fallback: "${key}" → ${url}`);
-      return url;
-    }
-  }
-
-  // Deterministic hash-based selection across all 30 pixel art categories
-  const keys = Object.keys(PIXEL_ART_CATEGORIES);
-  const str = title || headline || "crypto";
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  const selectedKey = keys[Math.abs(hash) % keys.length];
-  const url = `${SITE_URL}/backup_thumbnails/${selectedKey}.webp`;
-  console.log(`ℹ️ Selected hash-distributed pixel art fallback: "${selectedKey}" → ${url}`);
-  return url;
+  const fallback = getCategoryFallbackImage(classification || title);
+  console.log(`ℹ️ Selected sports fallback: "${classification}" → ${fallback}`);
+  return fallback;
 }
 
 /**
@@ -986,13 +959,32 @@ async function getProcessedIds(): Promise<Set<string>> {
       return new Set();
     }
   }
-  const { data, error } = await supabase.from("articles").select("id");
+  const { data, error } = await supabase.from("articles").select("id, title");
   if (error) {
     console.error("Supabase getProcessedIds error:", error.message);
     return new Set();
   }
-  return new Set((data || []).map((r: any) => r.id));
+  // Include both article IDs and normalized titles so near-duplicate titles are caught
+  const ids = new Set<string>();
+  for (const r of data || []) {
+    ids.add(r.id);
+    // Add normalized title as a dedupe key (lowercase, stripped punctuation)
+    if (r.title) {
+      const normalizedTitle = r.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+      ids.add(`title::${normalizedTitle}`);
+    }
+  }
+  return ids;
 }
+
+const SPORTS_CLASSIFICATIONS = [
+  "Football",
+  "Basketball",
+  "Tennis",
+  "Formula 1",
+  "American Football",
+  "General Sports"
+];
 
 async function getPublishedArticles(): Promise<any[]> {
   if (!supabase) {
@@ -1004,7 +996,7 @@ async function getPublishedArticles(): Promise<any[]> {
       );
       const cache = JSON.parse(raw);
       return Object.values(cache).filter(
-        (a: any) => a.quality_score && a.quality_score >= 70
+        (a: any) => a.quality_score && a.quality_score >= 70 && SPORTS_CLASSIFICATIONS.includes(a.classification)
       );
     } catch {
       return [];
@@ -1013,32 +1005,43 @@ async function getPublishedArticles(): Promise<any[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
+    .in("classification", SPORTS_CLASSIFICATIONS)
     .gte("quality_score", 70)
     .order("pub_date", { ascending: false })
-    .limit(100);
+    .limit(500);
   if (error) {
     console.error("Supabase getPublishedArticles error:", error.message);
     return [];
   }
-  // Normalize field names to match what the frontend expects
-  return (data || []).map((row: any) => ({
-    article_id: row.id,
-    title: row.title,
-    link: row.link,
-    description: row.description,
-    pubDate: row.pub_date,
-    image_url: row.image_url,
-    source_id: row.source_id,
-    headline: row.headline,
-    seo_title: row.seo_title,
-    ai_meta_description: row.ai_meta_description,
-    rewritten_content: row.rewritten_content,
-    ai_summary: row.ai_summary,
-    classification: row.classification,
-    quality_score: row.quality_score,
-    related_sources: row.related_sources,
-    category: row.category || ["News"],
-  }));
+  // Filter for substantive full articles only and upgrade image resolution
+  return (data || [])
+    .filter((row: any) => {
+      // Must have substantive full article text
+      const text = (row.rewritten_content || "").replace(/<[^>]*>?/gm, " ").trim();
+      if (text.length < 400) return false;
+      // Must have a real image (not null, empty, or SVG fallback)
+      const img = (row.image_url || "").trim();
+      if (!img || img.startsWith("/images/sports/")) return false;
+      return true;
+    })
+    .map((row: any) => ({
+      article_id: row.id,
+      title: row.title,
+      link: row.link,
+      description: row.description,
+      pubDate: row.pub_date,
+      image_url: upgradeImageUrl(row.image_url, row.classification) || getCategoryFallbackImage(row.classification),
+      source_id: row.source_id,
+      headline: row.headline,
+      seo_title: row.seo_title,
+      ai_meta_description: row.ai_meta_description,
+      rewritten_content: row.rewritten_content,
+      ai_summary: row.ai_summary,
+      classification: row.classification,
+      quality_score: row.quality_score,
+      related_sources: row.related_sources,
+      category: row.category || ["News"],
+    }));
 }
 
 async function saveArticleToDB(article: any): Promise<void> {
@@ -1130,34 +1133,53 @@ async function saveQuotaInfo(date: string, count: number): Promise<void> {
 const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT || "50", 10);
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const parser = new Parser({ timeout: 15000,
+const parser = new Parser({
+  timeout: 15000,
+  headers: {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+  },
   customFields: {
     item: [
-      ["media:content", "mediaContent"],
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
       ["content:encoded", "contentEncoded"],
     ],
   },
 });
 
 const RSS_SOURCES = [
-  { id: "cryptopotato", name: "CryptoPotato", url: "https://cryptopotato.com/feed/" },
-  { id: "decrypt", name: "Decrypt", url: "https://decrypt.co/feed" },
-  { id: "cointelegraph", name: "CoinTelegraph", url: "https://cointelegraph.com/rss" },
-  { id: "coindesk", name: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss?outputType=xml" },
-  { id: "bitcoinist", name: "Bitcoinist", url: "https://bitcoinist.com/feed/" },
-  { id: "beincrypto", name: "BeInCrypto", url: "https://beincrypto.com/feed/" },
-  { id: "cryptoslate", name: "CryptoSlate", url: "https://cryptoslate.com/feed/" },
-  { id: "newsbtc", name: "NewsBTC", url: "https://www.newsbtc.com/feed/" },
-  { id: "ambcrypto", name: "AMBCrypto", url: "https://ambcrypto.com/feed/" },
-  { id: "utoday", name: "U.Today", url: "https://u.today/rss.php" },
-  { id: "dailyhodl", name: "The Daily Hodl", url: "https://dailyhodl.com/feed/" },
-  { id: "thedefiant", name: "The Defiant", url: "https://thedefiant.io/api/feed" },
-  { id: "blockworks", name: "Blockworks", url: "https://blockworks.com/feed" },
-  { id: "cryptonews", name: "CryptoNews", url: "https://cryptonews.com/feed/" },
-  { id: "theblock", name: "The Block", url: "https://www.theblock.co/rss.xml" },
-  { id: "cryptobriefing", name: "CryptoBriefing", url: "https://cryptobriefing.com/feed/" },
-  { id: "cryptoglobe", name: "CryptoGlobe", url: "https://www.cryptoglobe.com/latest/feed/" },
-  { id: "bitcoinmagazine", name: "Bitcoin Magazine", url: "https://bitcoinmagazine.com/.rss/full/" },
+  // ── Football / Soccer ──
+  { id: "bbc_football", name: "BBC Football", url: "https://feeds.bbci.co.uk/sport/football/rss.xml" },
+  { id: "guardian_football", name: "The Guardian Football", url: "https://www.theguardian.com/football/rss" },
+  { id: "skysports_football", name: "Sky Sports Football", url: "https://www.skysports.com/rss/11095" },
+  { id: "skysports_pl", name: "Sky Sports Premier League", url: "https://www.skysports.com/rss/11661" },
+  { id: "skysports_transfer", name: "Sky Sports Transfer News", url: "https://www.skysports.com/rss/12010" },
+  { id: "marca_en", name: "Marca Football", url: "https://e00-marca.uecdn.es/rss/en/football.xml" },
+  { id: "cbs_soccer", name: "CBS Sports Soccer", url: "https://www.cbssports.com/rss/headlines/soccer/" },
+  { id: "espn_soccer", name: "ESPN Soccer", url: "https://www.espn.com/espn/rss/soccer/news" },
+
+  // ── Basketball / NBA ──
+  { id: "espn_nba", name: "ESPN NBA", url: "https://www.espn.com/espn/rss/nba/news" },
+  { id: "cbs_nba", name: "CBS Sports NBA", url: "https://www.cbssports.com/rss/headlines/nba/" },
+
+  // ── Formula 1 ──
+  { id: "skysports_f1", name: "Sky Sports F1", url: "https://www.skysports.com/rss/12433" },
+  { id: "espn_f1", name: "ESPN F1", url: "https://www.espn.com/espn/rss/f1/news" },
+  { id: "bbc_formula1", name: "BBC Formula 1", url: "https://feeds.bbci.co.uk/sport/formula1/rss.xml" },
+  { id: "guardian_f1", name: "The Guardian F1", url: "https://www.theguardian.com/sport/formulaone/rss" },
+
+  // ── Tennis ──
+  { id: "skysports_tennis", name: "Sky Sports Tennis", url: "https://www.skysports.com/rss/12110" },
+  { id: "espn_tennis", name: "ESPN Tennis", url: "https://www.espn.com/espn/rss/tennis/news" },
+  { id: "bbc_tennis", name: "BBC Tennis", url: "https://feeds.bbci.co.uk/sport/tennis/rss.xml" },
+  { id: "guardian_tennis", name: "The Guardian Tennis", url: "https://www.theguardian.com/sport/tennis/rss" },
+
+  // ── American Football (NFL) ──
+  { id: "cbs_nfl", name: "CBS Sports NFL", url: "https://www.cbssports.com/rss/headlines/nfl/" },
+
+  // ── General Sports ──
+  { id: "bbc_sport", name: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/rss.xml" },
+  { id: "guardian_sport", name: "The Guardian Sport", url: "https://www.theguardian.com/sport/rss" },
 ];
 
 // ─── RSS Fetching (no AI — pure data collection) ─────────────────────────────
@@ -1166,23 +1188,95 @@ export async function fetchRSSArticles(): Promise<any[]> {
 
   for (const source of RSS_SOURCES) {
     try {
-      const feed = await parser.parseURL(source.url);
+      let feed: any;
+      try {
+        const resp = await fetch(source.url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          }
+        });
+        if (!resp.ok) continue;
+        const xml = await resp.text();
+        feed = await parser.parseString(xml);
+      } catch {
+        feed = await parser.parseURL(source.url);
+      }
+      if (!feed || !feed.items) continue;
       
       for (const item of feed.items) {
         // Yield to the event loop between articles so Express can handle requests
         await new Promise(r => setImmediate(r));
 
+        const cleanTitle = (item.title || "").replace(/\s+/g, " ").trim();
+        if (!cleanTitle || cleanTitle.length < 5) continue;
+
+        const itemLink = String(item.link || "").trim();
+        const lowerLink = itemLink.toLowerCase();
+        const lowerTitle = cleanTitle.toLowerCase();
+
+        // 1. Skip Live Blogs (they are fragmented timestamp updates, not standard articles)
+        const isLiveBlog = 
+          lowerTitle.endsWith(" live!") ||
+          lowerTitle.endsWith(" live") ||
+          lowerTitle.includes("– live") ||
+          lowerTitle.includes("- live") ||
+          lowerTitle.includes("live updates") ||
+          lowerTitle.includes("live score") ||
+          lowerLink.includes("/live/") ||
+          lowerLink.includes("/live-blog/") ||
+          lowerLink.includes("/live-updates/");
+        if (isLiveBlog) continue;
+
         let imageUrl: string | null = null;
-        if (item.mediaContent && (item.mediaContent as any)["$"] && (item.mediaContent as any)["$"].url) {
-          imageUrl = (item.mediaContent as any)["$"].url;
-        } else if (item.enclosure && item.enclosure.url) {
-          imageUrl = item.enclosure.url;
-        } else if ((item as any).contentEncoded) {
-          const imgMatch = (item as any).contentEncoded.match(/<img[^>]+src="([^">]+)"/);
-          if (imgMatch) imageUrl = imgMatch[1];
-        } else if (item.content) {
-          const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
-          if (imgMatch) imageUrl = imgMatch[1];
+        const mediaList: any[] = [];
+        if (Array.isArray(item.mediaContent)) mediaList.push(...item.mediaContent);
+        else if (item.mediaContent) mediaList.push(item.mediaContent);
+
+        if (Array.isArray((item as any).mediaThumbnail)) mediaList.push(...(item as any).mediaThumbnail);
+        else if ((item as any).mediaThumbnail) mediaList.push((item as any).mediaThumbnail);
+
+        if (mediaList.length > 0) {
+          // Guardian: choose media:content with width ~460-1000 without logo overlay
+          if (source.id.includes("guardian") || itemLink.includes("theguardian.com")) {
+            const gMatch = mediaList.find((m) => {
+              const w = parseInt(m?.$?.width || "0", 10);
+              return w >= 460 && w <= 1000;
+            });
+            if (gMatch?.$?.url) imageUrl = gMatch.$.url;
+          }
+
+          // Pick largest width available
+          if (!imageUrl) {
+            let maxWidth = -1;
+            for (const m of mediaList) {
+              const url = m?.$?.url;
+              const w = parseInt(m?.$?.width || "0", 10);
+              if (url && w > maxWidth) {
+                maxWidth = w;
+                imageUrl = url;
+              }
+            }
+            if (!imageUrl && mediaList[0]?.$?.url) {
+              imageUrl = mediaList[0].$.url;
+            }
+          }
+        }
+
+        if (!imageUrl) {
+          if (item.enclosure && item.enclosure.url) {
+            imageUrl = item.enclosure.url;
+          } else if ((item as any).image && (item as any).image.url) {
+            imageUrl = (item as any).image.url;
+          } else if ((item as any).contentEncoded) {
+            const imgMatch = (item as any).contentEncoded.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch) imageUrl = imgMatch[1];
+          } else if (item.content) {
+            const imgMatch = item.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch) imageUrl = imgMatch[1];
+          } else if ((item as any).description) {
+            const imgMatch = String((item as any).description).match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch) imageUrl = imgMatch[1];
+          }
         }
 
         let rawDescription = String(
@@ -1191,18 +1285,17 @@ export async function fetchRSSArticles(): Promise<any[]> {
             (item as any).description ||
             ""
         );
-        let cleanDescription = rawDescription.replace(/<[^>]*>?/gm, "");
+        let cleanDescription = rawDescription.replace(/<\/?[^>]+(>|$)/g, " ");
         cleanDescription = cleanDescription
-          .replace(/The post.*?appeared first on.*?CryptoPotato\.?/gi, "")
+          .replace(/The post.*?appeared first on.*?\.?/gi, "")
+          .replace(/([a-z])([A-Z])/g, "$1 $2")
+          .replace(/\s+/g, " ")
           .trim();
 
         let rawContent = String((item as any).contentEncoded || item.content || "");
         rawContent = rawContent
           .replace(/<p>The post[\s\S]*?appeared first on[\s\S]*?<\/p>/gi, "")
           .trim();
-
-        // Use RSS content directly — full-page scraping was too slow (up to 180 sequential fetches).
-        // The AI generates well from RSS content alone.
 
         if (rawContent) {
           rawContent = rawContent.replace(/<p><i>Morning Minute is a daily newsletter.*?<\/i><\/p>/gi, "");
@@ -1221,22 +1314,29 @@ export async function fetchRSSArticles(): Promise<any[]> {
           });
         }
 
-        const cryptoKeywords = ["crypto", "cryptocurrency", "bitcoin", "btc", "ethereum", "eth", "blockchain", "web3", "nft", "defi", "altcoin", "binance", "coinbase", "solana", "xrp", "ripple", "cardano", "dogecoin", "doge", "satoshi", "tether", "usdt", "usdc", "polkadot", "avalanche", "avax", "chainlink", "polygon", "matic", "shiba", "shib", "litecoin", "ltc", "uniswap", "aave"];
-        const excludeKeywords = ["federal reserve", "interest rates", "nasdaq", "s&p 500", "inflation", "cpi data"];
-        const textToCheck = (item.title + " " + cleanDescription).toLowerCase();
+        // 2. Strict Exclusion Filter: Crypto & Betting/Gambling content
+        const excludeKeywords = [
+          // Crypto / blockchain
+          "cryptocurrency", "bitcoin", "ethereum", "defi", "altcoin", "nft", "blockchain",
+          "tokenomics", "binance", "coinbase", "satoshi",
+          // Betting / gambling / picks / promos
+          "fanduel", "draftkings", "betmgm", "kalshi", "caesars", "pointsbet", "betrivers",
+          "promo code", "bonus bets", "free bets", "deposit bonus", "sportsbook",
+          "sports betting", "betting odds", "moneyline", "point spread", "over/under",
+          "parlay", "teaser bet", "prop bet", "best bets", "picks and predictions",
+          "picks:", "odds, picks", "betting preview", "gambling", "online casino",
+          "legal betting", "betting promos", "banned for betting", "betting on"
+        ];
+        const textToCheck = (lowerTitle + " " + cleanDescription.toLowerCase() + " " + lowerLink);
         const isExcluded = excludeKeywords.some((kw) => textToCheck.includes(kw));
-        const isCryptoRelated = cryptoKeywords.some((kw) =>
-          new RegExp(`\\b${kw}\\b`, "i").test(textToCheck)
-        );
+        if (isExcluded) continue;
 
-        if (!isCryptoRelated || isExcluded) continue;
-
-        // Strict 12-hour age cutoff: completely ignore older news
+        // 72-hour cutoff so fresh sports stories are fetched immediately
         const rawPubDate = item.isoDate || item.pubDate;
         const pubDateMs = new Date(rawPubDate).getTime();
-        const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
-        if (!pubDateMs || isNaN(pubDateMs) || pubDateMs < twelveHoursAgo) {
-          continue; // Discard articles older than 12 hours
+        const cutoffTime = Date.now() - 72 * 60 * 60 * 1000;
+        if (!pubDateMs || isNaN(pubDateMs) || pubDateMs < cutoffTime) {
+          continue;
         }
         if (pubDateMs > Date.now() + 10 * 60 * 1000) {
           continue; // Discard invalid future timestamps
@@ -1244,12 +1344,10 @@ export async function fetchRSSArticles(): Promise<any[]> {
 
         allArticles.push({
           article_id: Buffer.from(
-            // Always prefer the full article URL as the unique ID - it is guaranteed unique.
-            // item.guid is often a short, truncated query string that collides across articles.
-            String(item.link || item.guid || `${source.id}-${item.title || ""}`)
+            String(itemLink || item.guid || `${source.id}-${cleanTitle}`)
           ).toString("base64"),
-          title: item.title,
-          link: item.link,
+          title: cleanTitle,
+          link: itemLink,
           description: cleanDescription,
           content: rawContent,
           pubDate: rawPubDate,
@@ -1334,7 +1432,312 @@ export async function fetchRSSArticles(): Promise<any[]> {
   });
 }
 
-// ─── AI Processing Pipeline (called by POST /api/process) ────────────────────
+function upgradeImageUrl(url: string | null | undefined, classification?: string): string | null {
+  if (!url) return null;
+  let upgraded = url.trim();
+
+  // If already a local SVG fallback, return as is
+  if (upgraded.startsWith("/images/sports/")) return upgraded;
+
+  // The Guardian: Fastly CDN uses signed HMAC hashes (&s=...).
+  // NEVER modify ANY query parameter on i.guim.co.uk URLs — doing so invalidates the signature and causes 401 Unauthorized!
+  if (upgraded.includes("i.guim.co.uk")) {
+    if (upgraded.includes("height=630") && upgraded.includes("width=140")) {
+      upgraded = upgraded.replace("width=140", "width=1200");
+    }
+    return upgraded;
+  }
+
+  // BBC Sport: replace /standard/240/ with /standard/976/ (supported high-res resolution)
+  if (upgraded.includes("ichef.bbci.co.uk")) {
+    // If it was previously corrupted with branded_sport/1200/cpsprodpb/1200, fix it
+    if (upgraded.includes("/branded_sport/1200/cpsprodpb/1200/")) {
+      upgraded = upgraded.replace("/branded_sport/1200/cpsprodpb/1200/", "/standard/976/cpsprodpb/");
+    }
+    upgraded = upgraded.replace(/\/standard\/\d+\//, "/standard/976/");
+    return upgraded;
+  }
+
+  // Sky Sports: upgrade resolution to 1920x1080
+  if (upgraded.includes("365dm.com")) {
+    upgraded = upgraded.replace(/\/\d+x\d+\//, "/1920x1080/");
+  }
+
+  // ESPN: upgrade width & height
+  if (upgraded.includes("espncdn.com") || upgraded.includes("espn.com")) {
+    upgraded = upgraded.replace(/w=\d+/, "w=1200").replace(/h=\d+/, "h=675");
+  }
+
+  // CBS Sports: upgrade thumbnail resolution to 1200x675
+  if (upgraded.includes("cbsistatic.com")) {
+    upgraded = upgraded.replace(/thumbnail\/\d+x\d+\//, "thumbnail/1200x675/");
+  }
+
+  return upgraded;
+}
+
+async function scrapeFullArticle(url: string): Promise<{ contentHtml: string; words: number; highResImage: string | null } | null> {
+  try {
+    const cleanUrl = url.trim();
+    if (!cleanUrl.startsWith("http")) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(cleanUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      }
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const html = await resp.text();
+    const dom = new JSDOM(html, { url: cleanUrl });
+    const doc = dom.window.document;
+
+    // High-resolution image extraction from OpenGraph / Twitter meta tags
+    const ogImg = doc.querySelector("meta[property=\"og:image\"]")?.getAttribute("content")
+      || doc.querySelector("meta[name=\"twitter:image\"]")?.getAttribute("content")
+      || doc.querySelector("meta[property=\"twitter:image\"]")?.getAttribute("content");
+
+    // Remove video players, interactive widgets, social buttons, ad containers before Readability
+    const selectorsToRemove = [
+      "script", "style", "noscript", "iframe", "svg",
+      ".ad", ".ads", ".advertisement", ".sponsored",
+      ".social-share", ".share-bar", ".newsletter-signup",
+      ".video-player", ".video-container", ".embedded-video",
+      ".related-links", ".more-on-this-story", ".inline-ad",
+      "[id*='EmailSignup']", "[href*='EmailSignup']", "[href*='privacy-options']",
+      "aside", "header", "footer", "nav"
+    ];
+    selectorsToRemove.forEach((sel) => {
+      doc.querySelectorAll(sel).forEach((el) => el.remove());
+    });
+
+    const reader = new Readability(doc);
+    const parsed = reader.parse();
+    if (!parsed || !parsed.content) return null;
+
+    const words = parsed.textContent ? parsed.textContent.split(/\s+/).filter(Boolean).length : 0;
+    if (words < 70) return null;
+
+    let cleanHtml = sanitizeHtml(parsed.content, {
+      allowedTags: ["p", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "strong", "b", "em", "i", "blockquote", "br", "img", "figure", "figcaption", "table", "thead", "tbody", "tr", "th", "td"],
+      allowedAttributes: {
+        img: ["src", "alt", "width", "height", "loading"]
+      },
+      exclusiveFilter: (frame) => frame.tag === "p" && !frame.text.trim()
+    });
+
+    // ── Normalization: Standardize headings across sources ──
+    // Replace <h1> with <h2> so there is only one H1 on the page (the article headline)
+    cleanHtml = cleanHtml.replace(/<h1\b[^>]*>/gi, "<h2>").replace(/<\/h1>/gi, "</h2>");
+    cleanHtml = cleanHtml.replace(/<h[456]\b[^>]*>/gi, "<h3>").replace(/<\/h[456]>/gi, "</h3>");
+
+    // Remove source-specific promo lines & boilerplate
+    const promoPhrases = [
+      /Follow live text commentary.*?(?:<\/p>|$)/gi,
+      /Download the (?:BBC Sport|Sky Sports|CBS Sports) app.*?(?:<\/p>|$)/gi,
+      /Listen (?:to the latest|on BBC Sounds).*?(?:<\/p>|$)/gi,
+      /Sign up to (?:our|the) (?:daily |weekly )?sports? newsletter.*?(?:<\/p>|$)/gi,
+      /Watch live on (?:Sky Sports|TNT Sports).*?(?:<\/p>|$)/gi,
+      /Stream on Paramount\+.*?(?:<\/p>|$)/gi,
+      /Get Sky Sports or stream with NOW.*?(?:<\/p>|$)/gi,
+      /Join our (?:WhatsApp|Telegram) channel.*?(?:<\/p>|$)/gi
+    ];
+    for (const phrase of promoPhrases) {
+      cleanHtml = cleanHtml.replace(phrase, "");
+    }
+
+    // Upgrade inline image resolution
+    cleanHtml = cleanHtml.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi, (match, src) => {
+      const upgraded = upgradeImageUrl(src);
+      return upgraded ? match.replace(src, upgraded) : match;
+    });
+
+    // Remove empty paragraphs & collapse excessive whitespace
+    cleanHtml = cleanHtml.replace(/<p>\s*(&nbsp;|<br\s*\/?>)*\s*<\/p>/gi, "");
+    cleanHtml = cleanHtml.replace(/\n\s*\n/g, "\n");
+    cleanHtml = cleanHtml.trim();
+
+    return {
+      contentHtml: cleanHtml,
+      words,
+      highResImage: upgradeImageUrl(ogImg)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function inferSportsCategory(
+  sourceId: string,
+  title: string,
+  description: string,
+  categories: string[] = []
+): string {
+  const src = sourceId.toLowerCase();
+  const combined = `${title} ${description} ${categories.join(" ")}`.toLowerCase();
+
+  // ── STEP 1: Rugby (union and league) ──
+  const isRugby =
+    combined.includes("rugby union") || combined.includes("rugby league") || combined.includes("six nations") ||
+    combined.includes("springboks") || combined.includes("all blacks") || combined.includes("lions tour") ||
+    combined.includes("nations championship") || combined.includes("rugby world cup") ||
+    (combined.includes("rugby") && !combined.includes("rugby player arrested"));
+  if (isRugby) return "Rugby";
+
+  // ── STEP 1b: Horse Racing ──
+  const isHorseRacing =
+    combined.includes("jockey") || combined.includes("horse racing") || combined.includes("plumpton") ||
+    combined.includes("cheltenham") || combined.includes("grand national") || combined.includes("ascot") ||
+    combined.includes("de boinville");
+  if (isHorseRacing) return "Horse Racing";
+
+  // ── STEP 1c: Other General Sports ──
+  const isOtherSport =
+    combined.includes("cricket") || combined.includes(" ipl ") || combined.includes("test match") ||
+    combined.includes("ashes ") || combined.includes("county cricket") ||
+    combined.includes("pga tour") || combined.includes(" golf ") || combined.includes("tiger woods") ||
+    combined.includes("the masters") || combined.includes("open championship") || combined.includes("ryder cup") ||
+    combined.includes("boxing") || combined.includes(" ufc ") || combined.includes(" mma ") ||
+    combined.includes("vitality roses") || combined.includes("netball") || combined.includes("darts") ||
+    combined.includes("snooker") || combined.includes("olympic") || combined.includes("triathlon");
+  if (isOtherSport) return "General Sports";
+
+  // ── STEP 2: American Football — keyword match BEFORE source-pin to prevent NFL in NBA feed ──
+  const isNFL =
+    combined.includes(" nfl ") || combined.includes("nfl draft") || combined.includes("nfl week") ||
+    combined.includes("nfl playoff") || combined.includes("nfl season") || combined.includes("nfl mock") ||
+    combined.includes("nfl schedule") || combined.includes("nfl trade") || combined.includes("nfl power ranking") ||
+    combined.includes("nfl coaching") || combined.includes("nfl pick") || combined.includes("nfl grade") ||
+    combined.includes("super bowl") || combined.includes("monday night football") || combined.includes("sunday night football") ||
+    combined.includes("college football") || combined.includes("quarterback") ||
+    combined.includes("wide receiver") || combined.includes("tight end") ||
+    combined.includes("running back") || combined.includes("linebacker") || combined.includes("cornerback") ||
+    (combined.includes("touchdown") && !combined.includes("premier league") && !combined.includes("soccer")) ||
+    // NFL-specific player names
+    combined.includes("patrick mahomes") || combined.includes("lamar jackson") ||
+    combined.includes("joe burrow") || combined.includes("josh allen") || combined.includes("travis kelce") ||
+    combined.includes("justin jefferson") || combined.includes("brock purdy") ||
+    combined.includes("dak prescott") || combined.includes("jalen hurts") || combined.includes("tua tagovailoa") ||
+    combined.includes("derrick henry") || combined.includes("aidan hutchinson") || combined.includes("sam darnold") ||
+    combined.includes("drew lock") || combined.includes("ben earl") ||
+    // NFL-specific team references (avoid ambiguous words like "chiefs" alone)
+    combined.includes("49ers") || combined.includes("seahawks") || combined.includes("bengals") ||
+    combined.includes("steelers") || combined.includes("packers") || combined.includes("buccaneers") ||
+    combined.includes("chargers ") || combined.includes("ravens ") || combined.includes("bills ") ||
+    combined.includes("cowboys ") || combined.includes("colts ") || combined.includes("texans ") ||
+    combined.includes("jaguars") || combined.includes("titans ") || combined.includes("raiders ") ||
+    combined.includes("eagles ") || combined.includes("giants ") || combined.includes("jets ") ||
+    combined.includes("lions ") || combined.includes("bears ") || combined.includes("vikings ") ||
+    combined.includes("rams ") || combined.includes("cardinals ") || combined.includes("falcons ") ||
+    combined.includes("panthers ") || combined.includes("saints ") || combined.includes("broncos ");
+  if (isNFL) return "American Football";
+
+  // ── STEP 3: Formula 1 — BEFORE generic source-pin; "hamilton" alone is NOT safe (Lamar Jackson) ──
+  const isF1 =
+    combined.includes("formula 1") || combined.includes("formula1") ||
+    (combined.includes(" f1 ") && !combined.includes("nfl")) ||
+    combined.includes("grand prix") || combined.includes("las vegas gp") || combined.includes("monaco gp") ||
+    combined.includes("verstappen") || combined.includes("max verstappen") ||
+    combined.includes("lewis hamilton") || combined.includes("george russell") ||
+    combined.includes("lando norris") || combined.includes("charles leclerc") ||
+    combined.includes("carlos sainz") || combined.includes("sergio perez") ||
+    combined.includes("mclaren f1") || combined.includes("red bull racing") ||
+    combined.includes("mercedes amg") || combined.includes("haas f1") || combined.includes("alpine f1") ||
+    combined.includes("aston martin f1") || combined.includes("williams f1") ||
+    combined.includes("pit stop") || combined.includes("pole position") || combined.includes("fastest lap") ||
+    combined.includes("safety car") || combined.includes("power unit") ||
+    combined.includes("fia ") || combined.includes("race steward") || combined.includes("race director");
+  if (isF1) return "Formula 1";
+
+  // Source-pin for dedicated F1 feeds (only reached if no other sport detected)
+  if (src.includes("sky sports f1") || src.includes("espn f1") || src.includes("bbc formula") ||
+      src.includes("guardian f1") || src.includes("espn_f1") || src.includes("bbc_formula1") ||
+      src.includes("skysports_f1") || src.includes("guardian_f1")) return "Formula 1";
+
+  // ── STEP 4: Tennis ──
+  const isTennis =
+    combined.includes("tennis") || combined.includes("wimbledon") ||
+    combined.includes(" atp ") || combined.includes(" wta ") ||
+    combined.includes("roland garros") || combined.includes("us open tennis") ||
+    combined.includes("australian open") || combined.includes("grand slam") ||
+    combined.includes("alcaraz") || combined.includes("jannik sinner") ||
+    combined.includes("djokovic") || combined.includes("novak djokovic") ||
+    combined.includes("serena williams") || combined.includes("rafael nadal") ||
+    combined.includes("roger federer") || combined.includes("andy murray") ||
+    combined.includes("emma raducanu") || combined.includes("iga swiatek") ||
+    combined.includes("aryna sabalenka") || combined.includes("coco gauff") ||
+    combined.includes("atp finals") || combined.includes("wta finals") || combined.includes("davis cup");
+  if (isTennis) return "Tennis";
+
+  // Source-pin for dedicated Tennis feeds
+  if (src.includes("espn tennis") || src.includes("bbc tennis") || src.includes("sky sports tennis") ||
+      src.includes("guardian tennis") || src.includes("espn_tennis") || src.includes("bbc_tennis") ||
+      src.includes("skysports_tennis") || src.includes("guardian_tennis")) return "Tennis";
+
+  // ── STEP 5: Basketball — keyword match BEFORE source-pin to prevent NFL in NBA source ──
+  const isBasketball =
+    combined.includes(" nba ") || combined.includes("basketball") ||
+    combined.includes("nba draft") || combined.includes("nba finals") ||
+    combined.includes("nba playoff") || combined.includes("nba season") ||
+    combined.includes("nba trade") || combined.includes("nba rookie") || combined.includes("nba rankings") ||
+    combined.includes("lakers") || combined.includes("celtics ") ||
+    combined.includes("golden state warriors") || combined.includes("miami heat nba") ||
+    combined.includes("new york knicks") || combined.includes("chicago bulls") ||
+    combined.includes("lebron james") || combined.includes("stephen curry") ||
+    combined.includes("kevin durant") || combined.includes("giannis") ||
+    combined.includes("jayson tatum") || combined.includes("luka doncic") ||
+    combined.includes("nikola jokic") || combined.includes("trae young") ||
+    combined.includes("jaylen brown") || combined.includes("bam adebayo") ||
+    combined.includes("three-pointer") || combined.includes("free throw") ||
+    combined.includes("point guard") || combined.includes("power forward");
+  if (isBasketball) return "Basketball";
+
+  // Source-pin for dedicated NBA feeds (only after keyword checks)
+  if (src.includes("espn nba") || src.includes("cbs sports nba") || src.includes("cbs_nba") ||
+      src.includes("espn_nba")) return "Basketball";
+
+  // ── STEP 6: American Football — source-pin fallback ──
+  if (src.includes("cbs sports nfl") || src.includes("cbs_nfl")) return "American Football";
+
+  // ── STEP 7: Football (Soccer) ──
+  const isFootball =
+    combined.includes("premier league") || combined.includes("champions league") ||
+    combined.includes("la liga") || combined.includes("serie a") ||
+    combined.includes("bundesliga") || combined.includes("ligue 1") ||
+    combined.includes("uefa ") || combined.includes(" fifa ") ||
+    combined.includes("soccer") || combined.includes("nwsl") ||
+    combined.includes("usmnt") || combined.includes("uswnt") ||
+    combined.includes("transfer window") || combined.includes("transfer fee") ||
+    combined.includes("world cup qualifier") || combined.includes("afcon") ||
+    combined.includes("arsenal") || combined.includes("liverpool") ||
+    combined.includes("manchester united") || combined.includes("man utd") ||
+    combined.includes("manchester city") || combined.includes("man city") ||
+    combined.includes("chelsea fc") || combined.includes("tottenham") ||
+    combined.includes("real madrid") || combined.includes("barcelona") ||
+    combined.includes("atletico madrid") || combined.includes("juventus") ||
+    combined.includes("inter milan") || combined.includes("ac milan") ||
+    combined.includes("borussia dortmund") || combined.includes("bayern munich") ||
+    combined.includes("psg ") || combined.includes("paris saint-germain");
+
+  const isFootballSource =
+    src.includes("bbc football") || src.includes("guardian football") ||
+    src.includes("sky sports football") || src.includes("sky sports premier league") ||
+    src.includes("sky sports transfer") || src.includes("marca") ||
+    src.includes("cbs sports soccer") || src.includes("espn soccer") ||
+    src.includes("bbc_football") || src.includes("guardian_football") ||
+    src.includes("skysports_football") || src.includes("skysports_pl") ||
+    src.includes("skysports_transfer") || src.includes("cbs_soccer") ||
+    src.includes("espn_soccer") || src.includes("marca_en");
+
+  if (isFootball || isFootballSource) return "Football";
+
+  return "General Sports";
+}
+
+// ─── Direct Ingestion Pipeline (called by POST /api/process and startup) ────
 let processingInProgress = false;
 
 export async function runAIPipeline(): Promise<{
@@ -1343,161 +1746,151 @@ export async function runAIPipeline(): Promise<{
   quota: number;
 }> {
   if (processingInProgress) {
-    console.log("AI pipeline already running, skipping.");
+    console.log("Pipeline already running, skipping.");
     return { processed: 0, skipped: 0, quota: 0 };
   }
 
   processingInProgress = true;
   let processed = 0;
   let skipped = 0;
-  const MAX_ARTICLES_PER_RUN = 5;
+  const MAX_ARTICLES_PER_RUN = 100;
 
   try {
-    console.log("🔄 Starting AI pipeline...");
-    // Clear dynamic rate limit block at the beginning of each run so keys get a fresh retry
-    exhaustedKeys.clear();
-
+    console.log("🔄 Starting sports news pipeline (direct ingestion from source)...");
     const articles = await fetchRSSArticles();
     const processedIds = await getProcessedIds();
-    let quotaInfo = await getQuotaInfo();
 
-    // Sync quota with actual DB count for today to prevent stale quota drift
-    const today = new Date().toISOString().split("T")[0];
-    if (supabase) {
-      const { count } = await supabase
-        .from("articles")
-        .select("*", { count: "exact", head: true })
-        .gte("pub_date", today);
-      const realCount = count ?? 0;
-      if (realCount < quotaInfo.count) {
-        console.log(`🔄 Syncing quota: DB has ${realCount} articles today, quota said ${quotaInfo.count}. Resetting to ${realCount}.`);
-        quotaInfo.count = realCount;
-        await saveQuotaInfo(today, realCount);
-      }
-    }
+    console.log(`📰 ${articles.length} sports articles fetched. ${processedIds.size} already in DB.`);
 
-    console.log(`📰 ${articles.length} events fetched. ${processedIds.size} already in DB. Quota: ${quotaInfo.count}/${DAILY_LIMIT}`);
+    const unreadArticles = articles.filter((a) => {
+      if (processedIds.has(a.article_id)) return false;
+      // Also check by normalized title to catch cross-feed duplicates
+      const normalizedTitle = (a.title || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+      if (normalizedTitle && processedIds.has(`title::${normalizedTitle}`)) return false;
+      return true;
+    });
+    console.log(`✨ ${unreadArticles.length} candidate new articles to process.`);
 
-    for (const article of articles) {
-      if (processed >= MAX_ARTICLES_PER_RUN) {
-        console.log(`🛑 Reached limit of ${MAX_ARTICLES_PER_RUN} article per pipeline run. Stopping.`);
-        break;
-      }
-      if (processedIds.has(article.article_id)) {
-        skipped++;
-        continue;
-      }
-      if (quotaInfo.count >= DAILY_LIMIT) {
-        console.log("Daily AI quota reached. Stopping.");
-        break;
-      }
-      if (!process.env.OPENROUTER_API_KEY && GEMINI_KEYS.length === 0) {
-        console.error("❌ FATAL: No AI keys configured (OPENROUTER_API_KEY and all GEMINI_API_KEY_* are missing). Pipeline cannot continue.");
-        break;
-      }
 
-      console.log(`🤖 AI processing: "${article.title?.slice(0, 50)}..." (Quota: ${quotaInfo.count + 1}/${DAILY_LIMIT})`);
+    // Process candidate articles in concurrent batches of 4 for 4x faster ingestion speed
+    const CONCURRENCY = 4;
+    for (let i = 0; i < unreadArticles.length && processed < MAX_ARTICLES_PER_RUN; i += CONCURRENCY) {
+      const batch = unreadArticles.slice(i, i + CONCURRENCY);
+      
+      await Promise.all(
+        batch.map(async (article) => {
+          if (processed >= MAX_ARTICLES_PER_RUN) return;
 
-      try {
-        const aiResult = await processArticleWithAI(
-          article.title || "",
-          article._combined_content,
-          article.source_id || "multiple sources",
-          article.category?.[0]
-        );
+          try {
+            const sportsCategory = inferSportsCategory(
+              article.source_id || "",
+              article.title || "",
+              article.description || "",
+              article.category || []
+            );
 
-        // Only save if AI actually ran. If quality_score is null it means
-        // the AI failed completely (rate limit, timeout, etc.) — skip saving so
-        // the article can be retried on the next pipeline run.
-        if (aiResult.quality_score === null && aiResult.rewritten_content === null) {
-          console.error(`⚠️ AI returned null for "${article.title?.slice(0, 50)}" — skipping, will retry next run.`);
-          continue;
-        }
+            const headline = (article.title || "Sports News Update").trim();
+            const seoTitle = `${headline} | Live Sports News`;
+            const metaDesc = (article.description || article.title || "").slice(0, 160);
 
-        // Drop articles the AI classified as off-topic — no DB save, no thumbnail, no X post.
-        if ((aiResult.classification || "").toLowerCase() === "irrelevant") {
-          console.log(`🚫 Irrelevant article dropped: "${article.title?.slice(0, 60)}"`);
-          processedIds.add(article.article_id); // mark so we never process it again this session
-          skipped++;
-          continue;
-        }
+            // Fetch complete full-text article directly from source link
+            let contentHtml = "";
+            let highResImage: string | null = null;
+            if (article.link) {
+              const scraped = await scrapeFullArticle(article.link);
+              if (scraped) {
+                contentHtml = scraped.contentHtml;
+                highResImage = scraped.highResImage;
+              }
+            }
 
-        // Generate thumbnail via Cloudflare AI
-        const thumbnailUrl = await generateAndStoreThumbnail({
-          article_id: article.article_id,
-          headline: aiResult.headline,
-          title: article.title,
-          classification: aiResult.classification,
-        });
+            // STRICT REQUIREMENT: Article MUST have full content inside!
+            const plainTextLen = contentHtml.replace(/<[^>]*>?/gm, "").trim().length;
+            if (plainTextLen < 400) {
+              console.log(`⏩ Dropped article without full text: "${headline.slice(0, 50)}" (${plainTextLen} chars)`);
+              processedIds.add(article.article_id);
+              skipped++;
+              return;
+            }
 
-        // NEVER use scraped original images. If AI generation completely fails (due to quota/timeout), use a generic pixel art fallback.
-        let finalImageUrl = thumbnailUrl;
-        if (!finalImageUrl) {
-          finalImageUrl = await getFallbackThumbnail(
-            article.title,
-            aiResult.headline,
-            aiResult.classification
-          );
-        }
+            if (article.source_id) {
+              contentHtml += `<p class="mt-8 pt-4 border-t border-zinc-800 text-xs text-zinc-400">Originally reported by <span class="text-amber-400 font-medium">${article.source_id}</span>.</p>`;
+            }
 
-        // Save to DB
-        await saveArticleToDB({
-          ...article,
-          image_url: finalImageUrl,
-          headline: aiResult.headline,
-          seo_title: aiResult.seo_title,
-          ai_meta_description: aiResult.ai_meta_description,
-          rewritten_content: aiResult.rewritten_content,
-          ai_summary: aiResult.summary,
-          classification: aiResult.classification,
-          quality_score: aiResult.quality_score,
-          research_data: aiResult.research_data,
-        });
+            // Key takeaways summary (instant, directly from description and source)
+            const summary = [
+              { label: "Overview", text: article.description || headline },
+              { label: "Source", text: `Reported by ${article.source_id || "Sports News Desk"}` },
+              { label: "Category", text: sportsCategory }
+            ];
 
-        quotaInfo.count++;
-        await saveQuotaInfo(quotaInfo.date, quotaInfo.count);
-        processed++;
-        // Invalidate the in-memory news cache so /api/news immediately reflects the new article
-        lastFetchTime = 0;
-        console.log(`✅ Saved: "${article.title?.slice(0, 50)}" (score: ${aiResult.quality_score})`);
+            // Feed image (media:content / media:thumbnail without burned-in overlays) preferred over scraped og:image
+            let finalImageUrl = upgradeImageUrl(article.image_url) || highResImage;
 
-        // Trigger IndexNow ping for Bing/Yandex immediately (non-blocking)
-        const articleSlug = generateSlug(aiResult.headline || article.title || "");
-        if (articleSlug) {
-          const articleUrl = `${SITE_URL}/article/${articleSlug}`;
-          submitToIndexNow([articleUrl, `${SITE_URL}/`, `${SITE_URL}/bitcoin-news`]).catch((err) => {
-            console.error("IndexNow ping failed:", err.message);
-          });
+            // STRICT REQUIREMENT: Article MUST have a real image (not an SVG placeholder)
+            // SVG fallbacks are only used by the UI renderer — never stored in the DB
+            if (!finalImageUrl || finalImageUrl.startsWith("/images/sports/")) {
+              console.log(`⏩ Dropped article without real image: "${headline.slice(0, 50)}"`);
+              processedIds.add(article.article_id);
+              const normTitleDrop = headline.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+              if (normTitleDrop) processedIds.add(`title::${normTitleDrop}`);
+              skipped++;
+              return;
+            }
 
-          // Auto-post new article to X (Twitter) via Buffer (non-blocking)
-          postArticleToX(
-            {
-              headline: aiResult.headline,
-              title: article.title,
-              classification: aiResult.classification,
+            // Save directly to DB
+            await saveArticleToDB({
+              ...article,
               image_url: finalImageUrl,
-              summary: aiResult.summary,
-            },
-            articleSlug
-          ).catch((err) => {
-            console.error("X auto-post failed:", err.message);
-          });
-        }
-      } catch (articleErr: any) {
-        console.error(`❌ Unexpected error processing "${article.title?.slice(0, 50)}": ${articleErr.message}`);
-        // Continue to next article — don't let one bad article kill the pipeline
-      }
+              headline: headline,
+              seo_title: seoTitle,
+              ai_meta_description: metaDesc,
+              rewritten_content: contentHtml,
+              ai_summary: summary,
+              classification: sportsCategory,
+              quality_score: 95,
+              research_data: null,
+            });
 
-      // gemini-flash-latest: 2 calls per article (research + generate).
-      // 8 second delay keeps us well under the per-minute rate limit.
-      await delay(8000);
+            processedIds.add(article.article_id);
+            // Also track normalized title to prevent within-run cross-feed duplicates
+            const normalizedTitle = headline.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+            if (normalizedTitle) processedIds.add(`title::${normalizedTitle}`);
+            processed++;
+            lastFetchTime = 0; // invalidate cache so visitors see new articles immediately
+            console.log(`✅ Saved sports article: "${headline.slice(0, 50)}" [${sportsCategory}]`);
+
+
+            // Trigger IndexNow ping for Bing/Yandex (non-blocking)
+            const articleSlug = generateSlug(headline);
+            if (articleSlug) {
+              const articleUrl = `${SITE_URL}/article/${articleSlug}`;
+              submitToIndexNow([articleUrl, `${SITE_URL}/`, `${SITE_URL}/football-news`]).catch(() => {});
+
+              // Auto-post to X (Twitter) via Buffer (non-blocking)
+              postArticleToX(
+                {
+                  headline: headline,
+                  title: article.title,
+                  classification: sportsCategory,
+                  image_url: finalImageUrl,
+                  summary: summary,
+                },
+                articleSlug
+              ).catch(() => {});
+            }
+          } catch (err: any) {
+            console.error(`Error saving article "${article.title?.slice(0, 40)}":`, err.message);
+          }
+        })
+      );
     }
 
     // Invalidate in-memory cache so next /api/news request re-reads from DB
     lastFetchTime = 0;
 
-    console.log(`✅ Pipeline complete. Processed: ${processed}, Skipped: ${skipped}, Quota used: ${quotaInfo.count}/${DAILY_LIMIT}`);
-    return { processed, skipped, quota: quotaInfo.count };
+    console.log(`✅ Pipeline complete. Processed: ${processed}, Skipped: ${skipped}`);
+    return { processed, skipped, quota: processed };
   } finally {
     processingInProgress = false;
   }
@@ -1506,7 +1899,7 @@ export async function runAIPipeline(): Promise<{
 // ─── In-Memory Cache (short-term, for /api/news performance) ────────────────
 let cachedNews: any[] = [];
 let lastFetchTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes for rapid news freshness
 
 // ─── Price & Fear/Greed Cache ────────────────────────────────────────────────
 let cachedPrices: any = null;
@@ -1519,39 +1912,45 @@ const FEAR_GREED_CACHE_TTL = 60 * 60 * 1000;
 
 // ─── Express Server ──────────────────────────────────────────────────────────
 
-// ─── Bitcoin Intelligence Pipeline ───────────────────────────────────────────
-let btcIntelligenceInProgress = false;
+// ─── Football & Sports Pipeline ─────────────────────────────────────────────
+let footballIntelligenceInProgress = false;
 
-async function getBitcoinArticles() {
+async function getFootballArticles() {
   if (!supabase) return [];
-  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   
   const { data, error } = await supabase
     .from("articles")
     .select("*")
-    .eq("classification", "Bitcoin")
-    .gte("pub_date", oneDayAgo)
+    .eq("classification", "Football")
+    .gte("pub_date", twoDaysAgo)
     .order("pub_date", { ascending: false });
     
   if (error) {
-    console.error("Error fetching Bitcoin articles:", error.message);
+    console.error("Error fetching football articles:", error.message);
     return [];
   }
   
-  const rawArticles = data.map((row: any) => ({
-    article_id: row.id,
-    title: row.title,
-    headline: row.headline,
-    link: row.link,
-    source_id: row.source_id,
-    pubDate: row.pub_date,
-    image_url: row.image_url,
-    description: row.description,
-    ai_summary: row.ai_summary,
-    classification: row.classification,
-    related_sources: row.related_sources || [],
-    category: row.category || ["News"]
-  }));
+  const rawArticles = (data || [])
+    .filter((row: any) => {
+      const text = (row.rewritten_content || "").replace(/<[^>]*>?/gm, " ").trim();
+      return text.length >= 400;
+    })
+    .map((row: any) => ({
+      article_id: row.id,
+      title: row.title,
+      headline: row.headline,
+      link: row.link,
+      source_id: row.source_id,
+      pubDate: row.pub_date,
+      image_url: upgradeImageUrl(row.image_url, row.classification) || getCategoryFallbackImage(row.classification),
+      description: row.description,
+      rewritten_content: row.rewritten_content,
+      ai_summary: row.ai_summary,
+      classification: row.classification,
+      related_sources: row.related_sources || [],
+      category: row.category || ["News"]
+    }));
 
   // Deduplication / Event clustering
   const getWords = (text: string) => new Set(text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 3));
@@ -1568,7 +1967,6 @@ async function getBitcoinArticles() {
     let foundGroup = false;
     for (const group of clustered) {
       if (calculateSimilarity(article.headline || article.title, group.headline || group.title) > 0.35) {
-        // Only push unique sources
         const sourceExists = group.related_sources?.some((rs: any) => rs.source_id === article.source_id);
         if (!sourceExists && group.source_id !== article.source_id) {
           if (!group.related_sources) group.related_sources = [];
@@ -1588,7 +1986,9 @@ async function getBitcoinArticles() {
   return clustered;
 }
 
-function rankBitcoinArticleImportance(article: any) {
+const getBitcoinArticles = getFootballArticles;
+
+function rankFootballArticleImportance(article: any) {
   let score = 0;
   
   // Recency
@@ -1603,264 +2003,24 @@ function rankBitcoinArticleImportance(article: any) {
   
   // Keyword signals
   const text = ((article.headline || article.title) + " " + (article.description || "")).toLowerCase();
-  if (text.includes("etf") || text.includes("sec") || text.includes("approve") || text.includes("reject")) score += 4;
-  if (text.includes("hack") || text.includes("exploit") || text.includes("stolen")) score += 3;
-  if (text.includes("buy") || text.includes("sell") || text.includes("institutional") || text.includes("microstrategy")) score += 3;
-  if (text.includes("halving") || text.includes("hashrate") || text.includes("miner")) score += 2;
+  if (text.includes("final") || text.includes("champions league") || text.includes("transfer") || text.includes("derby")) score += 4;
+  if (text.includes("goal") || text.includes("striker") || text.includes("injury")) score += 3;
+  if (text.includes("manager") || text.includes("trophy") || text.includes("title")) score += 2;
   
   if (score >= 10) return "High";
   if (score >= 6) return "Medium";
   return "Low";
 }
 
-async function generateBitcoinIntelligence(articles: any[], btcPrice: any, btcChange: any) {
-  // ── QA Gate: determine whether a real synthesis is possible ─────────────────
-  const causalKeywords = ["amid", "following", "after", "driven by", "as ", "on news", "due to",
-    "following", "triggered by", "boosted by", "weighed by", "pressured by", "buoyed by",
-    "supported by", "ETF", "inflow", "outflow", "regulation", "approval", "rejected", "hack",
-    "treasury", "institutional", "fed ", "interest rate", "inflation"];
-
-  const hasSignalArticle = articles.some((a: any) =>
-    a.importance === "High" || a.importance === "Medium"
-  );
-  const hasCausalKeyword = articles.some((a: any) => {
-    const text = ((a.headline || a.title) + " " + (a.description || "")).toLowerCase();
-    return causalKeywords.some(kw => text.includes(kw));
-  });
-  const priceAbsChange = Math.abs(parseFloat(btcChange) || 0);
-  const genuinelyQuiet = !hasSignalArticle && !hasCausalKeyword && priceAbsChange < 1.5;
-
-  if (articles.length === 0 || genuinelyQuiet) {
-    const priceDesc = btcPrice
-      ? `Bitcoin is currently trading at $${Number(btcPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}, ${parseFloat(btcChange) >= 0 ? "up" : "down"} ${priceAbsChange.toFixed(2)}% over the past 24 hours.`
-      : "";
-    return {
-      situation_text: `Bitcoin markets are relatively quiet at the moment. No single major catalyst has emerged in the latest verified reporting. ${priceDesc}`,
-      why_moving_text: "There is no single confirmed catalyst currently explaining Bitcoin's move. Price action appears to be driven by broader market conditions rather than a specific news event.",
-      quiet_market: true,
-      etf_text: null,
-      regulation_text: null,
-      institutional_text: null,
-      network_text: null,
-      macro_text: null,
-      key_levels_text: null,
-      etf_flows_text: null,
-      events_today_text: null,
-      events_week_text: null,
-      source_metrics: { reports: articles.length, sources: new Set(articles.map((a: any) => a.source_id)).size }
-    };
-  }
-
-  // ── Build context ────────────────────────────────────────────────────────────
-  const totalReports = articles.reduce((sum: number, a: any) => sum + 1 + (a.related_sources?.length || 0), 0);
-  const uniqueSources = new Set(articles.flatMap((a: any) => [a.source_id, ...(a.related_sources?.map((rs: any) => rs.source_id) || [])]));
-
-  // Sort so High articles appear first in context
-  const sortedArticles = [...articles].sort((a: any, b: any) => {
-    const rank = { High: 0, Medium: 1, Low: 2 };
-    return (rank[a.importance as keyof typeof rank] ?? 2) - (rank[b.importance as keyof typeof rank] ?? 2);
-  });
-
-  const articlesContext = sortedArticles.map((a: any) =>
-    `[${a.importance}] Headline: ${a.headline || a.title}\nSummary: ${a.description || ""}\nSources: ${(a.related_sources?.length || 0) + 1}`
-  ).join("\n\n");
-
-  const changeDir = parseFloat(btcChange) >= 0 ? "up" : "down";
-  const priceStr = `$${Number(btcPrice).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (${changeDir} ${priceAbsChange.toFixed(2)}% in 24h)`;
-
-  // ── Prompt 1: Situation + Why + Categories ───────────────────────────────────
-  const call1Prompt = `You are a senior crypto market analyst writing for a professional financial news platform. Analyze the Bitcoin news and market data below.
-
-CURRENT MARKET DATA:
-BTC Price: ${priceStr}
-
-LATEST NEWS (sorted by importance):
-${articlesContext}
-
-GENERATE THE FOLLOWING — respond ONLY with a valid JSON object:
-
-1. "situation_text": 2-4 sentences. State the current price and direction first. Then name the dominant catalyst(s) based on the [High] articles. If multiple catalysts exist, mention the top 1-2. Be factual and present-tense. DO NOT say "no clear catalyst" if any [High] or [Medium] article names a specific driver. Template: "Bitcoin is trading at [price] ([change]), [driven by / following / amid] [catalyst from top source]. [Optional 1 sentence of context.]"
-
-2. "why_moving_text": 1-3 sentences explaining the causal driver of today's price move. Pull from [High]-relevance articles first; use [Medium] if no High exists. Name specific factors (e.g. "spot ETF net inflows of $X," "a weaker Dollar Index," "Treasury buyback activity") rather than vague phrases like "positive sentiment." If sources disagree, say so: "Multiple factors are cited: X and Y." Only use "There is no single confirmed catalyst" if ALL articles are [Low] importance AND price change is under 1.5% — which is NOT the case here.
-
-3. "quiet_market": false (since we have signal articles)
-
-4. Category flags (set to true if strong evidence exists in the articles):
-   "has_etf_news", "has_regulation_news", "has_institutional_news", "has_network_news", "has_macro_news", "has_key_levels", "has_etf_flows", "has_events"
-
-IMPORTANT RULES:
-- Do NOT invent quotes, statistics, prices, or ETF flows not present in the source text
-- Do NOT use filler phrases: "continues to attract attention," "remains dynamic," "future remains uncertain"
-- Do NOT give financial advice or price predictions
-- Cite what sources say, synthesize in your own words
-
-JSON format:
-{
-  "situation_text": "...",
-  "why_moving_text": "...",
-  "quiet_market": false,
-  "has_etf_news": boolean,
-  "has_regulation_news": boolean,
-  "has_institutional_news": boolean,
-  "has_network_news": boolean,
-  "has_macro_news": boolean,
-  "has_key_levels": boolean,
-  "has_etf_flows": boolean,
-  "has_events": boolean
-}`;
-
-  const state1 = await runAIPrompt(call1Prompt);
-
-  // ── QA check: block fallback if we have signal articles ─────────────────────
-  let situationText = state1?.situation_text;
-  let whyMovingText = state1?.why_moving_text;
-
-  if (hasSignalArticle) {
-    // If AI still returned a fallback-style response despite signal articles, regenerate inline
-    const fallbackPhrases = ["no single confirmed catalyst", "relatively quiet", "no major catalyst", "no clear catalyst"];
-    if (whyMovingText && fallbackPhrases.some(p => whyMovingText.toLowerCase().includes(p))) {
-      const topArticle = sortedArticles[0];
-      whyMovingText = `Bitcoin is ${changeDir} ${priceAbsChange.toFixed(2)}% today. According to ${topArticle.source_id}, ${topArticle.description || topArticle.headline || topArticle.title}. Note: this summary is sourced directly from the most prominent available report.`;
-    }
-  }
-
-  let result: any = {
-    situation_text: situationText || `Bitcoin is currently trading at ${priceStr}. See the market snapshot for current levels.`,
-    why_moving_text: whyMovingText || `Bitcoin is ${changeDir} ${priceAbsChange.toFixed(2)}% over 24 hours. Refer to the news section below for the latest reported catalysts.`,
-    quiet_market: false,
-    etf_text: null,
-    regulation_text: null,
-    institutional_text: null,
-    network_text: null,
-    macro_text: null,
-    key_levels_text: null,
-    etf_flows_text: null,
-    events_today_text: null,
-    events_week_text: null,
-    source_metrics: { reports: totalReports, sources: uniqueSources.size }
-  };
-
-  // ── Prompt 2: Category deep-dives ───────────────────────────────────────────
-  const categoriesToGenerate: string[] = [];
-  if (state1?.has_etf_news) categoriesToGenerate.push("ETF");
-  if (state1?.has_regulation_news) categoriesToGenerate.push("Regulation");
-  if (state1?.has_institutional_news) categoriesToGenerate.push("Institutional");
-  if (state1?.has_network_news) categoriesToGenerate.push("Network");
-  if (state1?.has_macro_news) categoriesToGenerate.push("Macro");
-  if (state1?.has_key_levels) categoriesToGenerate.push("KeyLevels");
-  if (state1?.has_etf_flows) categoriesToGenerate.push("ETFFlows");
-  if (state1?.has_events) categoriesToGenerate.push("Events");
-
-  if (categoriesToGenerate.length > 0) {
-    const call2Prompt = `You are a senior crypto market analyst. Based on the following Bitcoin news, write a short factual summary (1-3 sentences each) for only the categories requested.
-
-REQUESTED CATEGORIES: ${categoriesToGenerate.join(", ")}
-
-LATEST NEWS:
-${articlesContext}
-
-RULES:
-- Extract only what is actually stated in the source articles
-- Do NOT invent numbers, quotes, or flow figures
-- For KeyLevels: only include price levels explicitly named in the articles (e.g. "$65,000 resistance")
-- For ETFFlows: only include flow figures explicitly stated (e.g. "$300M net inflow")
-- For Events: split into events_today_text (today) and events_week_text (rest of week) if dates are mentioned
-- Map each category to null if there isn't enough verified information
-
-Respond ONLY with a JSON object:
-{
-  "etf_text": string | null,
-  "regulation_text": string | null,
-  "institutional_text": string | null,
-  "network_text": string | null,
-  "macro_text": string | null,
-  "key_levels_text": string | null,
-  "etf_flows_text": string | null,
-  "events_today_text": string | null,
-  "events_week_text": string | null
-}`;
-
-    const state2 = await runAIPrompt(call2Prompt);
-    if (state2) {
-      result.etf_text = state2.etf_text || null;
-      result.regulation_text = state2.regulation_text || null;
-      result.institutional_text = state2.institutional_text || null;
-      result.network_text = state2.network_text || null;
-      result.macro_text = state2.macro_text || null;
-      result.key_levels_text = state2.key_levels_text || null;
-      result.etf_flows_text = state2.etf_flows_text || null;
-      result.events_today_text = state2.events_today_text || null;
-      result.events_week_text = state2.events_week_text || null;
-    }
-  }
-
-  return result;
-}
+const rankBitcoinArticleImportance = rankFootballArticleImportance;
 
 async function refreshBitcoinIntelligence() {
-  if (btcIntelligenceInProgress) return;
-  if (!supabase) return;
-  
-  btcIntelligenceInProgress = true;
-  try {
-    console.log("🔄 Starting Bitcoin Intelligence refresh...");
-    
-    // Check if we need to refresh (based on time)
-    const { data: existingData } = await supabase.from("bitcoin_intelligence").select("last_updated").eq("id", "singleton").single();
-    if (existingData && existingData.last_updated) {
-      const msSinceUpdate = Date.now() - new Date(existingData.last_updated).getTime();
-      if (msSinceUpdate < 15 * 60 * 1000) { // 15 min buffer
-        console.log("⏳ Skipping Bitcoin intelligence refresh, updated recently.");
-        return;
-      }
-    }
-
-    const articles = await getBitcoinArticles();
-    const articlesWithImportance = articles.map((a: any) => ({
-      ...a,
-      importance: rankBitcoinArticleImportance(a)
-    }));
-
-    // Fetch BTC price
-    let btcPrice = 0, btcChange = 0;
-    try {
-      const res = await fetch('https://api.kucoin.com/api/v1/market/allTickers');
-      if (res.ok) {
-        const json = await res.json();
-        const btcData = json.data?.ticker?.find((t: any) => t.symbol === 'BTC-USDT');
-        if (btcData) {
-          btcPrice = parseFloat(btcData.last);
-          btcChange = parseFloat(btcData.changeRate || '0') * 100;
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to fetch BTC price for intelligence:", e);
-    }
-
-    const aiState = await generateBitcoinIntelligence(articlesWithImportance, btcPrice, btcChange);
-
-    const record = {
-      id: "singleton",
-      ...aiState,
-      btc_price_at_update: btcPrice,
-      btc_change_at_update: btcChange,
-      last_updated: new Date().toISOString()
-    };
-
-    const { error } = await supabase.from("bitcoin_intelligence").upsert(record);
-    if (error) {
-      console.error("Error saving Bitcoin Intelligence:", error.message);
-    } else {
-      // Invalidate memory cache
-      cachedBtcNews = [];
-      cachedBtcIntelligence = null;
-      console.log("✅ Bitcoin Intelligence refreshed successfully.");
-    }
-  } catch (err: any) {
-    console.error("❌ Bitcoin Intelligence refresh failed:", err.message);
-  } finally {
-    btcIntelligenceInProgress = false;
-  }
+  cachedBtcNews = [];
+  cachedBtcIntelligence = {
+    quiet_market: true,
+    situation_text: "Sports media coverage is live.",
+    last_updated: new Date().toISOString()
+  };
 }
 
 // ─── Bitcoin API Caches ──────────────────────────────────────────────────────
@@ -1907,50 +2067,51 @@ app.get("/api/logs", (req, res) => {
 
   // ── GET /api/news — Read published articles from DB ──────────────────────
   
-  // ── GET /api/bitcoin-news ─────────────────────────────────────────────────
-  app.get("/api/bitcoin-news", async (req, res) => {
+  // ── GET /api/football-news ────────────────────────────────────────────────
+  app.get("/api/football-news", async (req, res) => {
     try {
       const now = Date.now();
       if (now - cachedBtcNewsTime > CACHE_TTL || cachedBtcNews.length === 0) {
-        const articles = await getBitcoinArticles();
+        const articles = await getFootballArticles();
         cachedBtcNews = articles.map((a: any) => ({
           ...a,
-          importance: rankBitcoinArticleImportance(a)
+          importance: rankFootballArticleImportance(a)
         })).sort((a: any, b: any) => {
-          // Sort by importance, then by date
-          const impScore = { High: 3, Medium: 2, Low: 1 };
-          const aScore = impScore[a.importance as keyof typeof impScore] || 0;
-          const bScore = impScore[b.importance as keyof typeof impScore] || 0;
-          if (aScore !== bScore) return bScore - aScore;
           return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
         });
         cachedBtcNewsTime = now;
       }
       res.json({ status: "success", results: cachedBtcNews });
     } catch (error) {
-      console.error("Error fetching bitcoin news:", error);
-      res.status(500).json({ error: "Failed to fetch bitcoin news" });
+      console.error("Error fetching football news:", error);
+      res.status(500).json({ error: "Failed to fetch football news" });
+    }
+  });
+
+  // ── GET /api/bitcoin-news (Redirect/alias to football-news) ─────────────────
+  app.get("/api/bitcoin-news", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (now - cachedBtcNewsTime > CACHE_TTL || cachedBtcNews.length === 0) {
+        const articles = await getFootballArticles();
+        cachedBtcNews = articles.map((a: any) => ({
+          ...a,
+          importance: rankFootballArticleImportance(a)
+        })).sort((a: any, b: any) => {
+          return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+        });
+        cachedBtcNewsTime = now;
+      }
+      res.json({ status: "success", results: cachedBtcNews });
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      res.status(500).json({ error: "Failed to fetch news" });
     }
   });
 
   // ── GET /api/bitcoin-intelligence ─────────────────────────────────────────
   app.get("/api/bitcoin-intelligence", async (req, res) => {
-    try {
-      const now = Date.now();
-      if (now - cachedBtcIntelligenceTime > CACHE_TTL || !cachedBtcIntelligence) {
-        if (supabase) {
-          const { data } = await supabase.from("bitcoin_intelligence").select("*").eq("id", "singleton").single();
-          if (data) {
-            cachedBtcIntelligence = data;
-            cachedBtcIntelligenceTime = now;
-          }
-        }
-      }
-      res.json(cachedBtcIntelligence || { quiet_market: true, situation_text: "Data temporarily unavailable." });
-    } catch (error) {
-      console.error("Error fetching bitcoin intelligence:", error);
-      res.status(500).json({ error: "Failed to fetch bitcoin intelligence" });
-    }
+    res.json(cachedBtcIntelligence || { quiet_market: true, situation_text: "Sports media coverage is live." });
   });
 
   // ── POST /api/bitcoin-intelligence/refresh ────────────────────────────────
@@ -1960,48 +2121,12 @@ app.get("/api/logs", (req, res) => {
     if (secret && authHeader !== `Bearer ${secret}`) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    res.json({ status: "started", message: "Bitcoin intelligence refresh triggered." });
-    refreshBitcoinIntelligence().catch(console.error);
+    res.json({ status: "success", message: "Refreshed." });
   });
 
   // ── GET /api/btc-extended ──────────────────────────────────────────────────
   app.get("/api/btc-extended", async (req, res) => {
-    try {
-      const now = Date.now();
-      if (now - cachedBtcExtendedTime > CACHE_TTL || !cachedBtcExtended) {
-        // Proxy CoinGecko free API (rate limited to ~30/min, we only call every 5 min)
-        const response = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false");
-        if (response.ok) {
-          const data = await response.json();
-          cachedBtcExtended = {
-            market_cap: data.market_data.market_cap.usd,
-            total_volume: data.market_data.total_volume.usd,
-            high_24h: data.market_data.high_24h.usd,
-            low_24h: data.market_data.low_24h.usd,
-            market_cap_dominance: data.market_data.market_cap_change_percentage_24h // fallback for dominance if missing, actual cg global api is better but requires another call
-          };
-          
-          // Better dominance fetch
-          try {
-            const globalRes = await fetch("https://api.coingecko.com/api/v3/global");
-            if (globalRes.ok) {
-              const globalData = await globalRes.json();
-              if (globalData?.data?.market_cap_percentage?.btc) {
-                cachedBtcExtended.dominance = globalData.data.market_cap_percentage.btc;
-              }
-            }
-          } catch(e) {}
-          
-          cachedBtcExtendedTime = now;
-        } else {
-          throw new Error("CoinGecko API error");
-        }
-      }
-      res.json(cachedBtcExtended || {});
-    } catch (error) {
-      console.error("Error fetching extended btc data:", error);
-      res.json(cachedBtcExtended || {}); // return stale if error
-    }
+    res.json({});
   });
 
   app.get("/api/news", async (req, res) => {
@@ -2112,13 +2237,44 @@ app.get("/api/logs", (req, res) => {
 
   // ── GET /api/prices ───────────────────────────────────────────────────────
   
+  // Helper to upload base64 to Catbox
+  async function uploadBase64Image(base64Image: string): Promise<string> {
+    const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new Error('Invalid base64 format');
+    }
+    const mimeType = matches[1];
+    const imageBuffer = Buffer.from(matches[2], 'base64');
+    const blob = new Blob([imageBuffer], { type: mimeType });
+
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', blob, 'upload.png');
+
+    const response = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData
+    });
+    const text = await response.text();
+    if (text.startsWith('https://')) {
+      return text.trim();
+    }
+    throw new Error('Upload provider error: ' + text);
+  }
+
+  // Fallback in-memory ads store if DB is disconnected
+  let localAdsStore: any[] = [];
+
   // --- AD MANAGEMENT API ---
   app.get('/api/ads', async (req, res) => {
     try {
-      const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      res.json({ status: 'success', ads: data });
-    } catch (err) {
+      if (supabase) {
+        const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        return res.json({ status: 'success', ads: data || [] });
+      }
+      return res.json({ status: 'success', ads: localAdsStore });
+    } catch (err: any) {
       console.error('Error fetching ads:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
@@ -2126,40 +2282,95 @@ app.get("/api/logs", (req, res) => {
 
   app.post('/api/ads', async (req, res) => {
     try {
-      const { format, image_url, target_url, cta_text, active, button_color } = req.body;
-      const { data, error } = await supabase.from('ads').insert([
-        { format, image_url, target_url, cta_text, active, button_color }
-      ]).select().single();
-      if (error) throw error;
-      res.json({ status: 'success', ad: data });
-    } catch (err) {
+      let { format, image_url, target_url, cta_text, active, button_color, image_base64 } = req.body;
+      if (active === undefined) active = true;
+
+      if (!image_url && image_base64) {
+        try {
+          image_url = await uploadBase64Image(image_base64);
+        } catch (uploadErr) {
+          console.warn('Failed to upload image to Catbox, falling back to base64 data URI:', uploadErr);
+          image_url = image_base64;
+        }
+      }
+
+      const newAd = {
+        format: format || 'billboard',
+        image_url: image_url || null,
+        target_url: target_url || '',
+        cta_text: cta_text || null,
+        active: active !== false,
+        button_color: button_color || 'brand'
+      };
+
+      if (supabase) {
+        const { data, error } = await supabase.from('ads').insert([newAd]).select().single();
+        if (error) throw error;
+        return res.json({ status: 'success', ad: data });
+      }
+
+      const memoryAd = { id: 'mem_' + Date.now(), created_at: new Date().toISOString(), ...newAd };
+      localAdsStore.unshift(memoryAd);
+      res.json({ status: 'success', ad: memoryAd });
+    } catch (err: any) {
       console.error('Error creating ad:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
   });
 
-  app.put('/api/ads/:id', async (req, res) => {
+  const handleUpdateAd = async (req: any, res: any) => {
     try {
       const { id } = req.params;
-      const { format, image_url, target_url, cta_text, active, button_color } = req.body;
-      const { data, error } = await supabase.from('ads').update(
-        { format, image_url, target_url, cta_text, active, button_color }
-      ).eq('id', id).select().single();
-      if (error) throw error;
-      res.json({ status: 'success', ad: data });
-    } catch (err) {
+      let { format, image_url, target_url, cta_text, active, button_color, image_base64 } = req.body;
+
+      if (!image_url && image_base64) {
+        try {
+          image_url = await uploadBase64Image(image_base64);
+        } catch (uploadErr) {
+          image_url = image_base64;
+        }
+      }
+
+      const updateData: Record<string, any> = {};
+      if (format !== undefined) updateData.format = format;
+      if (image_url !== undefined) updateData.image_url = image_url;
+      if (target_url !== undefined) updateData.target_url = target_url;
+      if (cta_text !== undefined) updateData.cta_text = cta_text;
+      if (active !== undefined) updateData.active = active;
+      if (button_color !== undefined) updateData.button_color = button_color;
+
+      if (supabase) {
+        const { data, error } = await supabase.from('ads').update(updateData).eq('id', id).select().single();
+        if (error) throw error;
+        return res.json({ status: 'success', ad: data });
+      }
+
+      const index = localAdsStore.findIndex(a => a.id === id);
+      if (index !== -1) {
+        localAdsStore[index] = { ...localAdsStore[index], ...updateData };
+        return res.json({ status: 'success', ad: localAdsStore[index] });
+      }
+      res.status(404).json({ status: 'error', message: 'Ad not found' });
+    } catch (err: any) {
       console.error('Error updating ad:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
-  });
+  };
+
+  app.put('/api/ads/:id', handleUpdateAd);
+  app.patch('/api/ads/:id', handleUpdateAd);
 
   app.delete('/api/ads/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { error } = await supabase.from('ads').delete().eq('id', id);
-      if (error) throw error;
+      if (supabase) {
+        const { error } = await supabase.from('ads').delete().eq('id', id);
+        if (error) throw error;
+        return res.json({ status: 'success', message: 'Ad deleted' });
+      }
+      localAdsStore = localAdsStore.filter(a => a.id !== id);
       res.json({ status: 'success', message: 'Ad deleted' });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting ad:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
@@ -2173,32 +2384,9 @@ app.get("/api/logs", (req, res) => {
         return res.status(400).json({ status: 'error', message: 'No image provided' });
       }
 
-      // Format: data:image/png;base64,iVBORw0KGgo...
-      const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (!matches || matches.length !== 3) {
-         return res.status(400).json({ status: 'error', message: 'Invalid base64 format' });
-      }
-
-      const mimeType = matches[1];
-      const imageBuffer = Buffer.from(matches[2], 'base64');
-      const blob = new Blob([imageBuffer], { type: mimeType });
-
-      const formData = new FormData();
-      formData.append('reqtype', 'fileupload');
-      formData.append('fileToUpload', blob, 'upload.png');
-
-      const response = await fetch('https://catbox.moe/user/api.php', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const text = await response.text();
-      if (text.startsWith('https://')) {
-        res.json({ status: 'success', url: text });
-      } else {
-        throw new Error(text);
-      }
-    } catch (err) {
+      const url = await uploadBase64Image(base64Image);
+      res.json({ status: 'success', url });
+    } catch (err: any) {
       console.error('Error uploading image:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
@@ -2206,47 +2394,7 @@ app.get("/api/logs", (req, res) => {
   // --- END AD MANAGEMENT API ---
 
   app.get("/api/prices", async (req, res) => {
-    try {
-      const now = Date.now();
-      if (now - lastPriceFetchTime > PRICE_CACHE_TTL || !cachedPrices) {
-        // Use KuCoin API which works reliably on Render
-        const response = await fetch(
-          'https://api.kucoin.com/api/v1/market/allTickers'
-        );
-        if (!response.ok) throw new Error(`KuCoin API: ${response.status}`);
-        
-        const json = await response.json();
-        const data = json.data?.ticker || [];
-        
-        const symbolMap: Record<string, string> = {
-          'BTC-USDT': 'bitcoin',
-          'ETH-USDT': 'ethereum',
-          'SOL-USDT': 'solana',
-          'BNB-USDT': 'binancecoin',
-          'XRP-USDT': 'ripple',
-          'DOGE-USDT': 'dogecoin'
-        };
-        
-        const formatted: Record<string, any> = {};
-        for (const item of data) {
-          const id = symbolMap[item.symbol];
-          if (id) {
-            formatted[id] = {
-              usd: parseFloat(item.last),
-              usd_24h_change: parseFloat(item.changeRate || '0') * 100 // KuCoin gives decimal e.g. 0.05 for 5%
-            };
-          }
-        }
-        
-        cachedPrices = formatted;
-        lastPriceFetchTime = now;
-      }
-      res.json(cachedPrices);
-    } catch (error) {
-      console.error("Error fetching prices:", error);
-      if (cachedPrices) return res.json(cachedPrices);
-      res.status(500).json({ error: "Failed to fetch prices" });
-    }
+    res.json({});
   });
 
   // ── GET /api/debug — diagnose environment variable state ─────────────────
@@ -2396,21 +2544,7 @@ app.get("/api/logs", (req, res) => {
 
   // ── GET /api/fear-greed ───────────────────────────────────────────────────
   app.get("/api/fear-greed", async (req, res) => {
-    try {
-      const now = Date.now();
-      if (now - lastFearGreedFetchTime > FEAR_GREED_CACHE_TTL || !cachedFearGreed) {
-        const response = await fetch("https://api.alternative.me/fng/?limit=1");
-        if (!response.ok) throw new Error(`Fear & Greed API: ${response.status}`);
-        const json = await response.json();
-        cachedFearGreed = json.data?.[0] || null;
-        lastFearGreedFetchTime = now;
-      }
-      res.json(cachedFearGreed || { value: null, value_classification: "Unknown" });
-    } catch (error) {
-      console.error("Error fetching Fear & Greed index:", error);
-      if (cachedFearGreed) return res.json(cachedFearGreed);
-      res.status(500).json({ error: "Failed to fetch Fear & Greed index" });
-    }
+    res.json({ value: null, value_classification: "Unknown" });
   });
 
   // ── GET /sitemap.xml ──────────────────────────────────────────────────────
@@ -2430,8 +2564,12 @@ app.get("/api/logs", (req, res) => {
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
       xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>hourly</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
 
-      // Add bitcoin-news to sitemap
-      xml += `  <url>\n    <loc>${baseUrl}/bitcoin-news</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      // Add sports categories to sitemap
+      xml += `  <url>\n    <loc>${baseUrl}/football-news</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${baseUrl}/news/football</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${baseUrl}/news/basketball</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${baseUrl}/news/tennis</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${baseUrl}/news/formula1</loc>\n    <changefreq>hourly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
 
       for (const article of cachedNews) {
         const slug = generateSlug(article.headline || article.title);
@@ -2478,9 +2616,9 @@ app.get("/api/logs", (req, res) => {
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">\n`;
       xml += `  <channel>\n`;
-      xml += `    <title>Wild West Crypto Show | Crypto News &amp; Bitcoin Intelligence</title>\n`;
+      xml += `    <title>Sports News | Football, Basketball, F1 &amp; Live Sports Coverage</title>\n`;
       xml += `    <link>${baseUrl}</link>\n`;
-      xml += `    <description>Latest cryptocurrency news, Bitcoin updates, altcoin markets, and DeFi insights.</description>\n`;
+      xml += `    <description>Latest breaking sports news, football headlines, match updates, transfers, and in-depth analysis.</description>\n`;
       xml += `    <language>en-us</language>\n`;
       xml += `    <lastBuildDate>${buildDate}</lastBuildDate>\n`;
       xml += `    <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml"/>\n`;
@@ -2566,13 +2704,17 @@ app.get("/api/logs", (req, res) => {
         const articles = await getPublishedArticles();
         targetUrls = [
           `${SITE_URL}/`,
-          `${SITE_URL}/bitcoin-news`,
+          `${SITE_URL}/football-news`,
+          `${SITE_URL}/news/football`,
+          `${SITE_URL}/news/basketball`,
+          `${SITE_URL}/news/tennis`,
+          `${SITE_URL}/news/formula1`,
           ...articles.slice(0, 100).map((a) => `${SITE_URL}/article/${generateSlug(a.headline || a.title || "")}`)
         ];
       } else if (Array.isArray(urls) && urls.length > 0) {
         targetUrls = urls;
       } else {
-        targetUrls = [`${SITE_URL}/`, `${SITE_URL}/bitcoin-news`];
+        targetUrls = [`${SITE_URL}/`, `${SITE_URL}/football-news`];
       }
 
       const result = await submitToIndexNow(targetUrls);
@@ -2596,12 +2738,19 @@ app.get("/api/logs", (req, res) => {
     "/terms",
     "/methodology",
     "/news",
+    "/football-news",
     "/bitcoin-news",
     "/author/jordan-cole",
     "/admin",
   ]);
 
   const VALID_CATEGORIES = new Set([
+    "football",
+    "basketball",
+    "tennis",
+    "formula1",
+    "american-football",
+    "general-sports",
     "bitcoin",
     "altcoins",
     "defi",
@@ -2717,8 +2866,8 @@ app.get("/api/logs", (req, res) => {
     return null;
   }
 
-  const SITE_URL_BASE = "https://wildwestcryptoshow.com";
-  const DEFAULT_OG_IMAGE = `${SITE_URL_BASE}/wildwest_logo.svg`;
+  const SITE_URL_BASE = (process.env.SITE_URL || "https://sport25.news").trim().replace(/\/+$/, "");
+  const DEFAULT_OG_IMAGE = `${SITE_URL_BASE}/sport25_logo.svg`;
 
   /** Replace static OG/Twitter meta tags in index.html with article-specific values. */
   function injectArticleOG(html: string, article: any, slug: string): string {
@@ -2878,19 +3027,29 @@ app.get("/api/logs", (req, res) => {
     });
   }
 
-  
-  // Start Bitcoin intelligence cron (every 20 mins)
-  setTimeout(() => {
-    refreshBitcoinIntelligence().catch(console.error);
-    setInterval(() => refreshBitcoinIntelligence().catch(console.error), 20 * 60 * 1000);
-  }, 30000); // 30s delay on startup
 
-  // Start AI pipeline cron (on startup after 5s, and every 15 mins)
+
+  // ── Pre-warm article cache on server boot for instant first page loads ────
+  console.log("⚡ Pre-warming article cache from database...");
+  try {
+    cachedNews = await getPublishedArticles();
+    const football = await getFootballArticles();
+    cachedBtcNews = football.map((a: any) => ({
+      ...a,
+      importance: rankFootballArticleImportance(a)
+    })).sort((a: any, b: any) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+    lastFetchTime = Date.now();
+    cachedBtcNewsTime = Date.now();
+    console.log(`⚡ Cache pre-warmed: ${cachedNews.length} published articles, ${cachedBtcNews.length} football articles ready.`);
+  } catch (err: any) {
+    console.error("Cache pre-warm error:", err.message);
+  }
+
+  // Start sports pipeline cron (on startup after 5s, and every 8 mins)
   setTimeout(() => {
     runAIPipeline().catch(console.error);
-    setInterval(() => runAIPipeline().catch(console.error), 15 * 60 * 1000);
+    setInterval(() => runAIPipeline().catch(console.error), 8 * 60 * 1000);
   }, 5000); // 5s delay on startup
-
 
   app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);

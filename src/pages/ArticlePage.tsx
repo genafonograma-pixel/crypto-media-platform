@@ -5,9 +5,9 @@ import Footer from '../components/Footer';
 import AdPlacement from '../components/AdPlacement';
 import ArticleCard from '../components/ArticleCard';
 import SEO from '../components/SEO';
-import { AUTHOR } from '../data/author';
+import BackToTop from '../components/BackToTop';
 import type { Article } from '../types';
-import { generateSlug } from '../utils';
+import { generateSlug, getCategoryFallbackImage } from '../utils';
 
 interface ArticlePageProps {
   articles: Article[];
@@ -92,20 +92,20 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       : '';
     const description = related.description ? related.description.replace(/<[^>]*>/g, '').substring(0, 120) + '...' : '';
     return `
-<div class="not-prose my-10">
-  <a href="${href}" class="group flex flex-col md:flex-row items-stretch rounded-2xl bg-[#0c0c0c] border border-[#1f1f1f] no-underline transition-all duration-300 ease-out overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)] hover:border-[#2a2a2a] hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+<div class="not-prose my-8">
+  <a href="${href}" class="group flex flex-col md:flex-row items-stretch rounded-card bg-bg-soft border border-line no-underline transition-colors duration-150 overflow-hidden hover:border-brand">
     ${related.image_url ? `
-    <div class="w-full md:w-[260px] md:min-w-[260px] h-[180px] md:h-auto shrink-0 flex relative">
+    <div class="w-full md:w-56 shrink-0 aspect-video md:aspect-auto overflow-hidden bg-bg">
       <img src="${related.image_url}" alt="${title.replace(/"/g, '&quot;')}" class="w-full h-full object-cover block !m-0 !rounded-none" onerror="this.parentElement.style.display='none'" />
     </div>` : ''}
-    <div class="flex flex-col justify-center flex-1 min-w-0 p-4 md:p-6 gap-0">
-      <div class="flex items-center gap-2 mb-2.5">
-        <span class="inline-block text-[9px] font-black tracking-[0.18em] uppercase text-[#F4A917] bg-[#F4A917]/10 px-2 py-0.5 rounded">${classification}</span>
-        <span class="text-[9px] font-bold tracking-[0.12em] uppercase text-[#444]">Related Reading</span>
+    <div class="flex flex-col justify-center flex-1 min-w-0 p-4 gap-1">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="inline-block text-xs font-semibold text-brand">${classification}</span>
+        <span class="text-xs text-subtle font-medium">Related reading</span>
       </div>
-      <span class="block text-[15px] md:text-base font-extrabold text-[#F0F0F0] leading-snug mb-2.5 tracking-tight group-hover:text-[#F4A917] transition-colors">${title}</span>
-      ${description ? `<span class="block text-xs text-[#666] leading-relaxed mb-3.5 overflow-hidden line-clamp-2">${description}</span>` : ''}
-      <span class="text-[10px] text-[#444] tracking-wider uppercase font-semibold">${date}</span>
+      <span class="block text-base font-bold text-ink leading-snug tracking-tight group-hover:text-brand transition-colors duration-150">${title}</span>
+      ${description ? `<span class="block text-xs text-subtle leading-relaxed overflow-hidden line-clamp-2">${description}</span>` : ''}
+      <span class="text-xs text-subtle font-medium">${date}</span>
     </div>
   </a>
 </div>
@@ -134,13 +134,43 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
-      // Make all external links open in a new tab
+      // Remove in-article links that go outside of the website/page.
+      // Only keep internal links (e.g., /article/..., internal routes, or anchors).
       const links = doc.querySelectorAll('a');
+      const currentHost = typeof window !== 'undefined' ? window.location.host : '';
       links.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-          link.setAttribute('target', '_blank');
-          link.setAttribute('rel', 'noopener noreferrer');
+        const href = (link.getAttribute('href') || '').trim();
+        let isInternal = false;
+
+        if (!href) {
+          isInternal = false;
+        } else if (href.startsWith('/') && !href.startsWith('//')) {
+          isInternal = true;
+        } else if (href.startsWith('#')) {
+          isInternal = true;
+        } else if (href.startsWith('http://') || href.startsWith('https://')) {
+          try {
+            const parsedUrl = new URL(href);
+            if (
+              (currentHost && parsedUrl.host === currentHost) ||
+              parsedUrl.hostname === 'sport25.news' ||
+              parsedUrl.hostname.endsWith('.sport25.news')
+            ) {
+              link.setAttribute('href', parsedUrl.pathname + parsedUrl.search + parsedUrl.hash);
+              isInternal = true;
+            }
+          } catch {
+            isInternal = false;
+          }
+        }
+
+        if (!isInternal) {
+          // Unwrap the external <a> tag: keep inner text and formatting, remove external link
+          const fragment = doc.createDocumentFragment();
+          while (link.firstChild) {
+            fragment.appendChild(link.firstChild);
+          }
+          link.parentNode?.replaceChild(fragment, link);
         }
       });
       
@@ -154,9 +184,9 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       headers.forEach(faqHeader => {
         // Style the FAQ header
         const wrapper = doc.createElement('div');
-        wrapper.className = 'border-l-4 border-[#F4A917] pl-4 mb-8 mt-16 not-prose';
+        wrapper.className = 'border-l-4 border-brand pl-4 mb-6 mt-12 not-prose';
         const newHeader = doc.createElement('h2');
-        newHeader.className = 'text-2xl font-black uppercase tracking-tight text-[#F5F5F5] m-0';
+        newHeader.className = 'text-2xl font-bold tracking-tight text-ink m-0';
         newHeader.textContent = 'Frequently Asked Questions';
         wrapper.appendChild(newHeader);
         
@@ -221,25 +251,25 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
              
              if (answerNodes.length > 0) {
                 const details = doc.createElement('details');
-                details.className = 'group mb-4 border border-[#1a1a1a] bg-[#080808] rounded-xl overflow-hidden transition-all duration-300 not-prose';
+                details.className = 'group mb-3 border border-line bg-bg-soft rounded-card overflow-hidden transition-colors not-prose';
                 
                 const summary = doc.createElement('summary');
-                summary.className = 'flex items-center justify-between p-5 cursor-pointer list-none font-bold text-[#E5E5E5] text-[13px] uppercase tracking-wider hover:bg-[#111] transition-colors duration-200 select-none';
+                summary.className = 'flex items-center justify-between p-4 cursor-pointer list-none font-semibold text-ink text-sm hover:bg-bg transition-colors duration-150 select-none';
                 summary.style.listStyle = 'none';
                 
                 const qSpan = doc.createElement('span');
                 qSpan.textContent = questionText;
-                qSpan.className = 'pr-6 leading-snug transition-colors duration-200';
+                qSpan.className = 'pr-6 leading-snug transition-colors duration-150';
                 
                 const iconWrapper = doc.createElement('div');
                 iconWrapper.className = 'relative w-5 h-5 flex items-center justify-center shrink-0';
                 
                 const iconPlus = doc.createElement('span');
-                iconPlus.className = 'text-[#F4A917] font-bold text-xl transition-all duration-200 leading-none absolute';
+                iconPlus.className = 'text-brand font-bold text-lg transition-all duration-150 leading-none absolute';
                 iconPlus.innerHTML = '&#43;'; // +
                 
                 const iconMinus = doc.createElement('span');
-                iconMinus.className = 'text-[#F4A917] font-bold text-xl transition-all duration-200 leading-none absolute opacity-0';
+                iconMinus.className = 'text-brand font-bold text-lg transition-all duration-150 leading-none absolute opacity-0';
                 iconMinus.innerHTML = '&#8722;'; // −
                 
                 iconWrapper.appendChild(iconPlus);
@@ -249,7 +279,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
                 summary.appendChild(iconWrapper);
                 
                 const contentDiv = doc.createElement('div');
-                contentDiv.className = 'px-5 pb-5 pt-2 text-[#aaa] text-sm leading-relaxed border-t border-[#1a1a1a]';
+                contentDiv.className = 'px-4 pb-4 pt-2 text-subtle text-sm leading-relaxed border-t border-line';
                 
                 answerNodes.forEach(node => {
                   contentDiv.appendChild(node.cloneNode(true));
@@ -273,8 +303,8 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       const style = doc.createElement('style');
       style.innerHTML = `
         details > summary::-webkit-details-marker { display: none; }
-        details[open] { border-color: rgba(59, 130, 246, 0.4) !important; background-color: #0b0e14 !important; }
-        details[open] summary span { color: #F4A917 !important; }
+        details[open] { border-color: var(--color-brand) !important; }
+        details[open] summary span { color: var(--color-brand) !important; }
         details[open] summary div span:first-child { opacity: 0 !important; }
         details[open] summary div span:last-child { opacity: 1 !important; }
       `;
@@ -292,7 +322,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
     const displayTitle = article.headline || article.title;
     const seoDescription = article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`;
     const classification = (article as any).classification || article.category?.[0] || 'News';
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://wildwestcryptoshow.com';
+    const origin = (((import.meta as any).env?.VITE_SITE_URL as string) || 'https://sport25.news').replace(/\/+$/, '');
     const categoryUrl = `${origin}/news/${classification.toLowerCase()}`;
     const articleUrl = `${origin}${location.pathname}`;
 
@@ -331,17 +361,17 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
         "datePublished": article.pubDate,
         "dateModified": article.pubDate,
         "author": {
-          "@type": "Person",
-          "name": AUTHOR.name,
-          "url": `${origin}/author/jordan-cole`
+          "@type": "Organization",
+          "name": "SPORT25",
+          "url": origin
         },
         "publisher": {
           "@type": "NewsMediaOrganization",
-          "name": "Wild West Crypto Show",
+          "name": "SPORT25",
           "url": origin,
           "logo": {
             "@type": "ImageObject",
-            "url": `${origin}/wildwest_logo.svg`,
+            "url": `${origin}/sport25_logo.svg`,
             "width": 240,
             "height": 60
           }
@@ -400,9 +430,9 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
   if (!article && (loading || fetchLoading || !fetchAttempted)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-12 h-12 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin"></div>
-        <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#888]">Loading Article...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-ink">
+        <div className="w-10 h-10 border-4 border-line border-t-brand rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-semibold text-subtle">Loading article...</p>
       </div>
     );
   }
@@ -414,7 +444,7 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
   if (!article) return null;
 
   const displayTitle = article.headline || article.title;
-  const BRAND = ' | Wild West Crypto Show';
+  const BRAND = ' | SPORT25';
   const MAX = 60;
   const rawSeoTitle = article.seo_title || `${displayTitle}${BRAND}`;
   // Clamp: if already short enough use it; otherwise truncate displayTitle to leave room for brand
@@ -430,9 +460,8 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       })();
   const seoDescription = article.ai_meta_description || (Array.isArray(article.ai_summary) ? article.ai_summary.map((s: any) => s.text).join(' ') : article.ai_summary as string) || article.description || `Read about ${displayTitle}`;
 
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans pb-[70px] md:pb-[90px]">
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans">
       <SEO 
         title={displaySeoTitle}
         description={seoDescription}
@@ -442,208 +471,200 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
       />
       <Header />
       
-      <div className="flex-1 max-w-7xl w-full mx-auto flex justify-center gap-4 lg:gap-6 px-2 sm:px-4 py-4 md:py-6 min-w-0">
-        {/* Left Skyscraper Ad */}
-        <aside className="hidden lg:block w-[160px] xl:w-[200px] shrink-0">
-          <div className="sticky top-[72px]">
-            <AdPlacement format="skyscraper" />
-          </div>
+      <div className="flex-1 max-w-[1400px] w-full mx-auto px-4 md:px-6 py-6 flex justify-center gap-6 items-start relative">
+        {/* Left Skyscraper Banner (Article Page Gutter) */}
+        <aside className="hidden xl:block w-[160px] shrink-0 sticky top-20 self-start" aria-label="Left advertisement">
+          <AdPlacement format="skyscraper" />
         </aside>
-        
+
         {/* Main Article Content */}
-        <main className="flex-1 min-w-0 max-w-3xl w-full">
+        <main id="main" tabIndex={-1} className="max-w-3xl w-full min-w-0">
           {/* Billboard banner OUTSIDE the bordered card so it's never clipped */}
-          <div className="mb-3">
+          <div className="mb-4">
             <AdPlacement format="billboard" />
           </div>
 
-          <div className="border border-[#222] bg-[#050505] rounded-sm">
-            <div className="p-6 md:p-10">
-              <nav aria-label="Breadcrumb" className="mb-6 md:mb-8">
-              <ol className="flex items-center flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666]">
+        <div className="border border-line bg-bg rounded-card">
+          <div className="p-6 md:p-8">
+            <nav aria-label="Breadcrumb" className="mb-6">
+              <ol className="flex items-center flex-wrap gap-2 text-xs font-medium text-subtle">
                 <li>
-                  <Link to="/" className="hover:text-[#F5F5F5] transition-colors">Home</Link>
+                  <Link to="/" className="hover:text-ink transition-colors duration-150">Home</Link>
                 </li>
                 <li className="select-none">/</li>
                 <li>
-                  <Link to={`/news/${((article as any).classification || article.category?.[0] || 'news').toLowerCase()}`} className="hover:text-[#F5F5F5] transition-colors text-[#888]">
+                  <Link to={`/news/${((article as any).classification || article.category?.[0] || 'news').toLowerCase()}`} className="hover:text-ink transition-colors duration-150 text-subtle">
                     {(article as any).classification || article.category?.[0] || 'News'}
                   </Link>
                 </li>
                 <li className="select-none">/</li>
-                <li className="text-[#F4A917] truncate max-w-[200px] sm:max-w-[360px]" aria-current="page">
+                <li className="text-brand font-semibold truncate max-w-[160px] xs:max-w-[240px] sm:max-w-[400px] lg:max-w-none" aria-current="page">
                   {displayTitle}
                 </li>
               </ol>
             </nav>
 
             <article>
-              <div className="flex items-center gap-2 mb-6">
-                <span className="bg-[#F4A917] text-white text-[10px] font-black px-2 py-0.5 uppercase">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-semibold text-brand">
                   {(article as any).classification || article.category?.[0] || 'News'}
                 </span>
-                <span className="text-[10px] text-[#666] font-mono uppercase">
+                <span className="text-xs text-subtle">
                   {new Date(article.pubDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
 
-              <h1 className="text-2xl md:text-5xl font-extrabold leading-[1.1] tracking-tighter mb-6 md:mb-8 uppercase text-[#F5F5F5]">
+              <h1 className="text-2xl md:text-4xl font-bold leading-tight mb-6 text-ink">
                 {displayTitle}
               </h1>
 
-              <div className="flex items-center gap-6 mb-10 py-4 border-y border-[#222]">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-[#555] uppercase tracking-widest mb-1">Author</span>
-                  <Link
-                    to="/author/jordan-cole"
-                    className="text-sm font-semibold text-[#F5F5F5] hover:text-[#F4A917] transition-colors"
-                  >
-                    {AUTHOR.name}
-                  </Link>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-8 py-3 border-y border-line text-xs text-subtle">
+                {article.source_id && (
+                  <span>
+                    Source: <span className="font-semibold text-brand">{article.source_id}</span>
+                  </span>
+                )}
+                {article.source_id && article.pubDate && <span aria-hidden="true">·</span>}
+                {article.pubDate && (
+                  <span>
+                    Published: {new Date(article.pubDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                )}
               </div>
 
-              {article.image_url && (
-                <div className="w-full relative overflow-hidden aspect-video bg-[#111] border border-[#222] mb-12">
-                  <img 
-                    src={article.image_url} 
-                    alt={article.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Market Brief Section */}
-              {article.ai_summary && (() => {
-                // Handle JSON array format: [{label, text}, ...]
-                let items: { label: string; text: string }[] = [];
-                try {
-                  const parsed = typeof article.ai_summary === 'string'
-                    ? JSON.parse(article.ai_summary)
-                    : article.ai_summary;
-                  if (Array.isArray(parsed)) {
-                    items = parsed;
-                  }
-                } catch {
-                  // Legacy fallback
-                  const lines = (article.ai_summary as string)
-                    .split(/\\n|\n/)
-                    .map((l: string) => l.trim())
-                    .filter(Boolean);
-                  items = lines.map((line: string) => {
-                    const match = line.match(/^\*\*([^*]+)\*\*[:\s]*(.*)/);
-                    return match
-                      ? { label: match[1].trim(), text: match[2].trim() }
-                      : { label: '', text: line };
-                  });
-                }
-
-                return (
-                  <div className="my-8 bg-gradient-to-br from-[#0d1b2e] to-[#0a0a0a] border border-[#1d3a5c] rounded-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#F4A917] to-[#C4830B]"></div>
-                    <div className="pl-5 pr-5 pt-4 pb-1">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#F4A917] mb-3">
-                        Market Brief
-                      </p>
-                    </div>
-                    <div className="divide-y divide-[#1d3a5c]/50">
-                      {items.map((item, i) => (
-                        <div key={i} className="flex gap-3 px-5 py-4">
-                          <div className="w-1 shrink-0 mt-1.5 h-1 rounded-full bg-[#F4A917]" />
-                          <div>
-                            {item.label && (
-                              <span className="text-[10px] font-black uppercase tracking-wider text-[#F4A917] block mb-1">
-                                {item.label}
-                              </span>
-                            )}
-                            <span className="text-sm text-[#C9D8E8] leading-relaxed font-light">{item.text}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <AdPlacement format="in-article" />
-
-              <div className="w-full overflow-hidden break-words">
                 {(() => {
-                  const proseClasses = "prose prose-invert prose-lg md:prose-xl max-w-none text-[#E5E5E5] prose-p:leading-relaxed prose-p:mb-8 prose-headings:text-white prose-headings:font-bold prose-headings:mt-12 prose-headings:mb-6 prose-a:text-[#F4A917] prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-img:my-10 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto";
-                  const rawContent = article.rewritten_content || article.content || article.description || null;
-
-                  if (!rawContent) {
-                    return <div className="text-lg leading-relaxed text-[#CCC] italic">No content available for this article.</div>;
-                  }
-
-                  let finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
-                  finalHTML = transformArticleContent(finalHTML);
-
+                  const classification = (article as any).classification || article.category?.[0] || 'General Sports';
+                  const fallbackImg = getCategoryFallbackImage(classification);
                   return (
-                    <div className={article.rewritten_content ? 'font-light' : ''}>
-                      <div
-                        ref={articleContentRef}
-                        className={proseClasses}
-                        dangerouslySetInnerHTML={{ __html: finalHTML }}
-                        onClick={(e) => {
-                          const target = (e.target as HTMLElement).closest('a');
-                          if (target) {
-                            const href = target.getAttribute('href');
-                            if (href && href.startsWith('/') && !href.startsWith('//')) {
-                              e.preventDefault();
-                              navigate(href);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
+                    <div className="w-full relative overflow-hidden aspect-video bg-bg-soft border border-line rounded-card mb-8">
+                      <img 
+                        src={article.image_url || fallbackImg} 
+                        alt={article.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target.src !== fallbackImg && !target.src.endsWith(fallbackImg)) {
+                            target.src = fallbackImg;
                           }
                         }}
                       />
-                      {article.rewritten_content && (
-                        <div className="flex items-center justify-between mt-12 pt-8 border-t border-[#222]">
-                          <div>
-                            <p className="text-xs text-[#555] uppercase tracking-widest font-bold mb-1">Written by</p>
-                            <Link to="/author/jordan-cole" className="text-sm font-semibold text-[#F5F5F5] hover:text-[#F4A917] transition-colors">
-                              {AUTHOR.name}
-                            </Link>
-                            <span className="text-[#555] text-sm"> · {AUTHOR.title}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
-              </div>
 
-              <AdPlacement format="native" className="mt-12" />
-            </article>
-            
-            {/* Related Articles Section */}
-            {relatedArticles.length > 0 && (
-              <div className="mt-16 pt-10 border-t border-[#222]">
-                <h3 className="text-xl font-bold tracking-tight mb-8">Related Articles</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {relatedArticles.map((relArticle, idx) => (
-                    <div key={relArticle.article_id || idx}>
-                      <ArticleCard article={relArticle} />
+                {/* Key Takeaways Section */}
+                {article.ai_summary && (() => {
+                  // Handle JSON array format: [{label, text}, ...]
+                  let items: { label: string; text: string }[] = [];
+                  try {
+                    const parsed = typeof article.ai_summary === 'string'
+                      ? JSON.parse(article.ai_summary)
+                      : article.ai_summary;
+                    if (Array.isArray(parsed)) {
+                      items = parsed;
+                    }
+                  } catch {
+                    // Legacy fallback
+                    const lines = (article.ai_summary as string)
+                      .split(/\\n|\n/)
+                      .map((l: string) => l.trim())
+                      .filter(Boolean);
+                    items = lines.map((line: string) => {
+                      const match = line.match(/^\*\*([^*]+)\*\*[:\s]*(.*)/);
+                      return match
+                        ? { label: match[1].trim(), text: match[2].trim() }
+                        : { label: '', text: line };
+                    });
+                  }
+
+                  return (
+                    <div className="my-8 bg-bg-soft border border-line border-l-4 border-l-brand rounded-card p-5">
+                      <p className="text-xs font-bold text-brand mb-3">
+                        Key Takeaways
+                      </p>
+                      <div className="space-y-3">
+                        {items.map((item, i) => (
+                          <div key={i} className="flex gap-3 items-start">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand mt-2 shrink-0" />
+                            <div className="text-sm text-ink leading-relaxed">
+                              {item.label && (
+                                <span className="font-semibold text-ink mr-1.5">
+                                  {item.label}:
+                                </span>
+                              )}
+                              <span>{item.text}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  );
+                })()}
+
+                <AdPlacement format="in-article" />
+
+                <div className="w-full overflow-hidden break-words">
+                  {(() => {
+                    const proseClasses = "prose prose-lg max-w-none text-ink prose-p:leading-relaxed prose-p:mb-6 prose-headings:text-ink prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4 prose-a:text-brand prose-a:underline hover:prose-a:opacity-80 prose-img:rounded-card prose-img:my-8 [&_*]:!max-w-full [&_img]:!h-auto [&_img]:object-contain overflow-x-auto";
+                    const rawContent = article.rewritten_content || article.content || article.description || null;
+
+                    if (!rawContent) {
+                      return <div className="text-base leading-relaxed text-subtle italic">No content available for this article.</div>;
+                    }
+
+                    let finalHTML = relatedArticles.length > 0 ? injectRelatedReading(rawContent, relatedArticles) : rawContent;
+                    finalHTML = transformArticleContent(finalHTML);
+
+                    return (
+                      <div>
+                        <div
+                          ref={articleContentRef}
+                          className={proseClasses}
+                          dangerouslySetInnerHTML={{ __html: finalHTML }}
+                          onClick={(e) => {
+                            const target = (e.target as HTMLElement).closest('a');
+                            if (target) {
+                              const href = target.getAttribute('href');
+                              if (href && href.startsWith('/') && !href.startsWith('//')) {
+                                e.preventDefault();
+                                navigate(href);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
-              </div>
-            )}
-          </div>
+
+                <AdPlacement format="native" className="mt-10" />
+              </article>
+              
+              {/* Related Articles Section */}
+              {relatedArticles.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-line">
+                  <h3 className="text-xl font-bold tracking-tight text-ink mb-6">Related articles</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {relatedArticles.map((relArticle, idx) => (
+                      <div key={relArticle.article_id || idx}>
+                        <ArticleCard article={relArticle} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>{/* end border wrapper */}
         </main>
-        
-        {/* Right Skyscraper Ad */}
-        <aside className="hidden xl:block w-[160px] xl:w-[200px] shrink-0">
-          <div className="sticky top-[72px]">
-            <AdPlacement format="skyscraper" />
-          </div>
+
+        {/* Right Skyscraper Banner (Article Page Gutter) */}
+        <aside className="hidden xl:block w-[160px] shrink-0 sticky top-20 self-start" aria-label="Right advertisement">
+          <AdPlacement format="skyscraper" />
         </aside>
       </div>
 
+      <BackToTop />
       <Footer />
       <AdPlacement format="sticky-bottom" />
     </div>

@@ -6,27 +6,27 @@ import SEO from '../components/SEO';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO title="Privacy Policy | Wild West Crypto Show" description="Wild West Crypto Show Privacy Policy — how we collect, use, and protect your data." />
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans">
+      <SEO title="Privacy Policy | SPORT25" description="SPORT25 Privacy Policy — how we collect, use, and protect your data." />
       <Header />
-      <main className="flex-1 max-w-[800px] w-full mx-auto px-4 py-12">
-        <nav className="flex items-center gap-2 text-xs text-[#555] mb-8">
-          <Link to="/" className="hover:text-white transition-colors">Home</Link>
+      <main id="main" tabIndex={-1} className="flex-1 max-w-[1200px] w-full mx-auto px-4 md:px-6 py-12">
+        <nav className="flex items-center gap-2 text-sm text-subtle mb-8">
+          <Link to="/" className="text-brand hover:underline">Home</Link>
           <span>/</span>
-          <span className="text-[#888]">Privacy Policy</span>
+          <span>Privacy policy</span>
         </nav>
-        <h1 className="text-4xl font-black mb-6 text-white">Privacy Policy</h1>
-        <p className="text-[#555] text-sm mb-8">Last updated: {new Date().getFullYear()}</p>
-        <div className="prose prose-invert prose-p:text-[#CCC] prose-p:leading-relaxed max-w-none">
-          <p>This Privacy Policy describes how Wild West Crypto Show ("we", "us", or "our") collects, uses, and protects information when you use our website.</p>
-          <h3>Information We Collect</h3>
-          <p>We may collect anonymous usage data (page views, referral sources) via standard analytics tools to improve our service. We do not sell personal data to third parties.</p>
-          <h3>Cookies</h3>
-          <p>We use cookies for analytics and to improve user experience. By continuing to use our site, you consent to our use of cookies.</p>
-          <h3>Third-Party Services</h3>
-          <p>We use third-party services including TradingView (charts) and advertising partners. These services have their own privacy policies.</p>
-          <h3>Contact</h3>
-          <p>For privacy-related questions, contact <a href="mailto:info@wildwestcryptoshow.com" className="text-[#F4A917] hover:underline">info@wildwestcryptoshow.com</a>.</p>
+        <div className="max-w-3xl">
+          <h1 className="text-hero-mobile md:text-hero font-extrabold font-display text-ink mb-4">Privacy policy</h1>
+          <p className="text-subtle text-sm mb-8">Last updated: {new Date().getFullYear()}</p>
+          <div className="space-y-6 text-excerpt text-muted leading-relaxed">
+            <p>This Privacy Policy describes how SPORT25 (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) collects, uses, and protects information when you use our website.</p>
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-2">Information we collect</h2>
+            <p>We may collect anonymous usage data (page views, referral sources) via standard analytics tools to improve our news delivery. We do not sell personal data to third parties.</p>
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-2">Cookies &amp; analytics</h2>
+            <p>We use standard performance cookies for web analytics and to improve reader experience.</p>
+            <h2 className="text-title-mobile md:text-title font-bold font-display text-ink pt-2">Contact</h2>
+            <p>For privacy inquiries, contact <a href="mailto:privacy@sport25.news" className="text-brand hover:underline">privacy@sport25.news</a>.</p>
+          </div>
         </div>
       </main>
       <Footer />

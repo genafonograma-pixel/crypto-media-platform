@@ -1,15 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
-import { Clock, TrendingUp, Sparkles, ChevronRight, HelpCircle } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import ArticleCard from '../components/ArticleCard';
 import AdPlacement from '../components/AdPlacement';
-import BitcoinMarketSnapshot from '../components/BitcoinMarketSnapshot';
-import BitcoinPriceChart from '../components/BitcoinPriceChart';
-import SeoEditorialBlog from '../components/SeoEditorialBlog';
 import type { Article } from '../types';
-import { generateSlug } from '../utils';
+import { getArticleClassification } from '../utils';
 
 interface CategoryPageProps {
   articles: Article[];
@@ -18,35 +15,15 @@ interface CategoryPageProps {
   defaultCategory?: string;
 }
 
-function formatTimeAgo(dateStr?: string) {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '';
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diff < 60) return `${Math.max(1, diff)}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
-}
-
-function getArticleHref(article: Article) {
-  const displayTitle = article.headline || article.title;
-  return `/article/${generateSlug(displayTitle)}`;
-}
-
-function getClassification(article: Article) {
-  return (article as any).classification || article.category?.[0] || 'News';
-}
-
 const CATEGORY_TABS = [
-  { id: 'all', label: 'All News', path: '/news' },
-  { id: 'bitcoin', label: 'Bitcoin', path: '/news/bitcoin' },
-  { id: 'altcoins', label: 'Altcoins', path: '/news/altcoins' },
-  { id: 'defi', label: 'DeFi', path: '/news/defi' },
-  { id: 'web3', label: 'Web3 & NFT', path: '/news/web3' },
-  { id: 'markets', label: 'Markets', path: '/news/markets' },
-  { id: 'tech', label: 'Tech', path: '/news/tech' },
+  { id: 'all', label: 'All sports', path: '/news' },
+  { id: 'football', label: 'Football', path: '/football-news' },
+  { id: 'nfl', label: 'NFL', path: '/news/american-football' },
+  { id: 'rugby', label: 'Rugby', path: '/news/rugby' },
+  { id: 'basketball', label: 'Basketball', path: '/news/basketball' },
+  { id: 'tennis', label: 'Tennis', path: '/news/tennis' },
+  { id: 'formula1', label: 'Formula 1', path: '/news/formula1' },
+  { id: 'horse-racing', label: 'Horse racing', path: '/news/horse-racing' },
 ];
 
 const CATEGORY_CONFIGS: Record<string, {
@@ -54,149 +31,56 @@ const CATEGORY_CONFIGS: Record<string, {
   subtitle: string;
   seoTitle: string;
   seoDescription: string;
-  faqs: { q: string; a: string }[];
 }> = {
-  Bitcoin: {
-    h1: "Bitcoin News: Live BTC Price, ETF Updates & Market Analysis",
-    subtitle: "Real-time Bitcoin reporting, institutional ETF inflows, on-chain network metrics, mining hashrate analysis, and macroeconomic digital gold intelligence.",
-    seoTitle: "Bitcoin News & Live BTC Price | Wild West Crypto Show",
-    seoDescription: "Stay ahead with real-time Bitcoin news, live BTC price charts, 24h market analysis, ETF flows, halving cycles, and expert cryptocurrency commentary on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What is Bitcoin (BTC) and why is it important?",
-        a: "Bitcoin is the world's first decentralized digital currency, created in 2009 by the pseudonymous Satoshi Nakamoto. It operates on a proof-of-work blockchain without central bank intermediaries, featuring a capped supply of 21 million coins, making it a premier digital store of value."
-      },
-      {
-        q: "What factors affect Bitcoin's price?",
-        a: "Bitcoin price movements are driven by spot ETF inflows, institutional adoption, macroeconomic interest rates, global liquidity conditions, mining difficulty adjustments, halving supply shocks, and regulatory developments."
-      },
-      {
-        q: "What is the Bitcoin Halving cycle?",
-        a: "The Bitcoin Halving occurs approximately every 210,000 blocks (roughly every 4 years) and cuts the mining block reward by 50%. This programmatic reduction in new coin issuance has historically preceded major multi-year market expansions."
-      },
-      {
-        q: "How do spot Bitcoin ETFs impact the cryptocurrency market?",
-        a: "Spot Bitcoin ETFs allow institutional and retail investors to gain direct exposure to physical Bitcoin through traditional brokerage accounts, driving billions in regulated liquidity and institutional custody demand."
-      },
-      {
-        q: "How often is Bitcoin news updated on Wild West Crypto Show?",
-        a: "Our AI-driven news pipeline updates around the clock every 15 minutes, tracking breaking announcements, price swings, network developments, and macro market reports."
-      }
-    ]
+  Football: {
+    h1: "Football news: Premier League, Champions League & transfers",
+    subtitle: "Breaking football headlines, live match reports, transfer market exclusives, and tactical analysis from Europe's top leagues.",
+    seoTitle: "Football News & Transfer Updates | SPORT25",
+    seoDescription: "Stay ahead with breaking football news, Champions League coverage, Premier League transfer rumors, match highlights, and tactical breakdowns."
   },
-  Altcoins: {
-    h1: "Altcoin News: Ethereum, Solana, XRP & Layer 1 Ecosystems",
-    subtitle: "Comprehensive reporting on alternative cryptocurrencies, smart contract platforms, layer-2 rollups, and emerging digital asset ecosystems.",
-    seoTitle: "Altcoin News: ETH, SOL & Markets | Wild West Crypto Show",
-    seoDescription: "Get the latest altcoin news covering Ethereum (ETH), Solana (SOL), XRP, emerging layer 1 & 2 networks, tokenomics, and market trends on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What are altcoins in cryptocurrency?",
-        a: "Altcoins refers to any cryptocurrency alternative to Bitcoin, including major utility assets like Ethereum (ETH), Solana (SOL), and XRP, as well as layer-2 tokens and specialized protocol assets."
-      },
-      {
-        q: "What is 'Altcoin Season' and when does it happen?",
-        a: "Altcoin Season is a market phase when the majority of top alternative cryptocurrencies outperform Bitcoin over a sustained period, typically triggered when Bitcoin dominance declines after a major market rally."
-      },
-      {
-        q: "Which altcoins does Wild West Crypto Show cover?",
-        a: "We cover all major layer-1 networks (Ethereum, Solana, BNB, Avalanche, Cardano), layer-2 rollups (Arbitrum, Optimism, Base), decentralized storage, privacy coins, and high-volume utility tokens."
-      }
-    ]
+  Basketball: {
+    h1: "Basketball news: NBA scores, highlights & trade rumors",
+    subtitle: "Comprehensive NBA reporting, game highlights, player performance metrics, playoff standings, and front-office trade rumors.",
+    seoTitle: "Basketball News & NBA Coverage | SPORT25",
+    seoDescription: "Follow latest NBA news, game recaps, trade deadlines, player updates, and postseason basketball tournament coverage."
   },
-  DeFi: {
-    h1: "Decentralized Finance (DeFi) News & Yield Protocols",
-    subtitle: "Tracking decentralized exchanges (DEXs), liquidity mining, on-chain lending protocols, real-world assets (RWAs), and automated market makers.",
-    seoTitle: "DeFi News: Protocols & Yields | Wild West Crypto Show",
-    seoDescription: "Follow breaking DeFi news, decentralized exchange volumes, yield protocols, smart contract innovations, and on-chain liquidity shifts on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What is Decentralized Finance (DeFi)?",
-        a: "Decentralized Finance (DeFi) is an umbrella term for financial applications and protocols built on public smart-contract blockchains that enable trading, lending, borrowing, and yield generation without traditional banking intermediaries."
-      },
-      {
-        q: "What are the major components of DeFi?",
-        a: "Core DeFi components include decentralized exchanges (like Uniswap), lending protocols (such as Aave), algorithmic stablecoins, liquid staking derivatives, and tokenized real-world assets (RWAs)."
-      },
-      {
-        q: "How does Wild West Crypto Show track DeFi protocol health?",
-        a: "We monitor Total Value Locked (TVL), decentralized exchange trading volumes, smart contract protocol upgrades, exploit alerts, and regulatory policies affecting liquidity."
-      }
-    ]
+  Tennis: {
+    h1: "Tennis news: Grand Slam coverage, ATP & WTA tours",
+    subtitle: "Live tournament updates, Grand Slam match reports, ATP and WTA rankings, injury updates, and player interviews.",
+    seoTitle: "Tennis News: Grand Slams & ATP/WTA Tours | SPORT25",
+    seoDescription: "Comprehensive coverage of Grand Slam tournaments (Wimbledon, US Open, Roland Garros, Australian Open) and ATP/WTA tour results."
   },
-  Web3: {
-    h1: "Web3 & NFT News: Metaverse, Gaming & Digital Ownership",
-    subtitle: "Latest intelligence on blockchain gaming, decentralized social networks, digital collectibles, metaverse platforms, and sovereign identity.",
-    seoTitle: "Web3 News: NFTs & Gaming | Wild West Crypto Show",
-    seoDescription: "Explore Web3 news, digital collectibles, metaverse platforms, blockchain gaming, and decentralized identity developments on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What is Web3?",
-        a: "Web3 represents the next generation of the internet built on decentralized blockchains, enabling user ownership of data, identity, digital assets, and sovereign computation."
-      },
-      {
-        q: "How are NFTs utilized in the Web3 ecosystem?",
-        a: "Non-fungible tokens (NFTs) verify unique digital ownership for art, in-game assets, token-gated community access, intellectual property, and real-world asset tokenization."
-      }
-    ]
+  "Formula 1": {
+    h1: "Formula 1 news: Grand Prix results, driver standings & race reports",
+    subtitle: "Breaking F1 updates, Grand Prix weekend recaps, qualifying results, constructor championship battles, and driver market news.",
+    seoTitle: "Formula 1 News & Grand Prix Coverage | SPORT25",
+    seoDescription: "Track the latest F1 news, race results, lap times, technical regulations, and driver championship standings."
   },
-  Markets: {
-    h1: "Crypto Market Intelligence: Technical Analysis & Liquidity Signals",
-    subtitle: "Macroeconomic indicators, crypto derivatives, liquidation heatmaps, funding rates, and institutional market structure analysis.",
-    seoTitle: "Crypto Market Analysis & Signals | Wild West Crypto Show",
-    seoDescription: "In-depth crypto market analysis, Bitcoin liquidity signals, derivatives data, macroeconomic influences, and trader insights on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What indicators are tracked in crypto market analysis?",
-        a: "Key indicators include perpetual futures funding rates, open interest, liquidation cascades, exchange reserve balances, stablecoin inflows, and the Fear & Greed Index."
-      },
-      {
-        q: "How does macro policy impact digital assets?",
-        a: "Federal Reserve interest rate decisions, global M2 money supply growth, inflation metrics (CPI), and regulatory policies directly influence crypto asset risk appetites."
-      }
-    ]
+  "NFL": {
+    h1: "NFL & American football news: scores, rosters & playoff race",
+    subtitle: "Comprehensive NFL reporting, game day recaps, quarterback performances, injury updates, and Super Bowl contention.",
+    seoTitle: "NFL News & American Football Coverage | SPORT25",
+    seoDescription: "Follow breaking NFL headlines, Super Bowl news, game highlights, draft prospect analysis, and team injury reports."
   },
-  Tech: {
-    h1: "Blockchain Technology: Protocol Upgrades & Scalability",
-    subtitle: "Deep-dive technical reporting on zero-knowledge cryptography, modular blockchain architecture, consensus mechanisms, and developer tooling.",
-    seoTitle: "Blockchain Tech & Protocol News | Wild West Crypto Show",
-    seoDescription: "Explore cutting-edge blockchain technology updates, zero-knowledge proofs, layer-2 rollup advancements, and decentralized infrastructure on Wild West Crypto Show.",
-    faqs: [
-      {
-        q: "What is modular blockchain architecture?",
-        a: "Modular blockchains decouple execution, settlement, consensus, and data availability into specialized layers, offering superior throughput and reduced transaction fees compared to monolithic networks."
-      },
-      {
-        q: "Why are Zero-Knowledge (ZK) proofs important?",
-        a: "Zero-Knowledge proofs enable cryptographic transaction verification without revealing underlying sensitive data, providing breakthrough privacy and massive layer-2 computational scaling."
-      }
-    ]
+  "Rugby": {
+    h1: "Rugby news: Six Nations, Rugby Championship & international tests",
+    subtitle: "Comprehensive coverage of Rugby Union and Rugby League, tournament standings, team selections, and match analysis.",
+    seoTitle: "Rugby News & Six Nations Coverage | SPORT25",
+    seoDescription: "Follow breaking Rugby union and league news, Six Nations match reports, international fixtures, and tournament updates."
+  },
+  "Horse racing": {
+    h1: "Horse racing news: fixtures, festival updates & racecards",
+    subtitle: "Coverage of major race meets, festival contenders, jockey updates, and daily racing headlines.",
+    seoTitle: "Horse Racing News & Festival Updates | SPORT25",
+    seoDescription: "Stay informed with breaking horse racing news, major festival coverage, and race analysis."
   }
 };
 
 const DEFAULT_CONFIG = {
-  h1: "All Cryptocurrency News & Market Intelligence",
-  subtitle: "Real-time 24/7 digital asset reporting, breaking Bitcoin updates, altcoin analysis, DeFi protocols, and Web3 market intelligence.",
-  seoTitle: "All Crypto News & Live Headlines | Wild West Crypto Show",
-  seoDescription: "Browse all cryptocurrency news, breaking digital asset reports, Bitcoin updates, altcoin analysis, DeFi protocols, and Web3 trends updated 24/7 on Wild West Crypto Show.",
-  faqs: [
-    {
-      q: "What cryptocurrency news does Wild West Crypto Show cover?",
-      a: "We provide comprehensive 24/7 coverage of Bitcoin, major altcoins (Ethereum, Solana, XRP), DeFi liquidity, Web3 developments, market trading signals, and blockchain technology innovations."
-    },
-    {
-      q: "How frequently are crypto stories published?",
-      a: "Our AI editorial pipeline continuously ingests, filters, and analyzes stories from global market sources, publishing new verified reports every 15 minutes."
-    },
-    {
-      q: "How can I filter news by specific cryptocurrency topics?",
-      a: "You can use the category tabs above to filter news directly by Bitcoin, Altcoins, DeFi, Web3, Markets, or Tech."
-    },
-    {
-      q: "Is all crypto news free to access on Wild West Crypto Show?",
-      a: "Yes, all real-time news articles, technical charts, market briefs, and FAQs are 100% free and open to everyone."
-    }
-  ]
+  h1: "All sports news & live match coverage",
+  subtitle: "Real-time 24/7 sports reporting, breaking football updates, NBA highlights, tennis results, and global sports news.",
+  seoTitle: "All Sports News & Live Headlines | SPORT25",
+  seoDescription: "Browse all sports news, breaking football reports, basketball updates, tennis Grand Slams, and F1 results updated 24/7."
 };
 
 export default function CategoryPage({ articles, loading, error, defaultCategory }: CategoryPageProps) {
@@ -204,18 +88,42 @@ export default function CategoryPage({ articles, loading, error, defaultCategory
   const location = useLocation();
   const [visibleCount, setVisibleCount] = useState(12);
 
-  const isExplicitBitcoinRoute = location.pathname === '/bitcoin-news' || defaultCategory === 'Bitcoin';
+  const isExplicitFootballRoute = location.pathname === '/football-news' || defaultCategory === 'Football';
 
-  const ALLOWED_CATEGORIES = ["Bitcoin", "Altcoins", "DeFi", "Web3", "Markets", "Tech"];
-  
-  const activeCategory = isExplicitBitcoinRoute
-    ? 'Bitcoin'
+  const ALLOWED_CATEGORIES = [
+    "Football",
+    "Basketball",
+    "Tennis",
+    "Formula 1",
+    "NFL",
+    "Rugby",
+    "Horse racing"
+  ];
+
+  const activeCategory = isExplicitFootballRoute
+    ? 'Football'
     : (categoryId
-        ? ALLOWED_CATEGORIES.find((c) => c.toLowerCase() === categoryId.toLowerCase()) ?? null
+        ? ALLOWED_CATEGORIES.find((c) => {
+            const normalized = c.toLowerCase().replace(/\s+/g, '-');
+            const param = categoryId.toLowerCase();
+            if (param === 'american-football' && c === 'NFL') return true;
+            if (param === 'formula1' && c === 'Formula 1') return true;
+            return c.toLowerCase() === param || normalized === param;
+          }) ?? null
         : null);
 
   const filteredArticles = activeCategory
-    ? articles.filter((a) => getClassification(a).toLowerCase() === activeCategory.toLowerCase())
+    ? articles.filter((a) => {
+        const cls = getArticleClassification(a).toLowerCase();
+        const act = activeCategory.toLowerCase();
+        if (act === 'football') {
+          return cls === 'football' && !cls.includes('american') && !cls.includes('nfl');
+        }
+        if (act === 'nfl') {
+          return cls === 'nfl' || cls.includes('american');
+        }
+        return cls === act || cls.includes(act);
+      })
     : articles;
 
   const sortedArticles = useMemo(() => {
@@ -225,344 +133,169 @@ export default function CategoryPage({ articles, loading, error, defaultCategory
   }, [filteredArticles]);
 
   const config = activeCategory ? (CATEGORY_CONFIGS[activeCategory] || DEFAULT_CONFIG) : DEFAULT_CONFIG;
-  const canonicalUrl = `${window.location.origin}${activeCategory === 'Bitcoin' ? '/news/bitcoin' : (activeCategory ? `/news/${activeCategory.toLowerCase()}` : '/news')}`;
+  const canonicalUrl = `https://sport25.news${activeCategory === 'Football' ? '/football-news' : (activeCategory ? `/news/${activeCategory.toLowerCase().replace(/\s+/g, '-')}` : '/news')}`;
 
   const categorySchema = useMemo(() => {
-    const pageUrl = typeof window !== 'undefined' ? (window.location.origin + window.location.pathname) : canonicalUrl;
-    
-    const graph: any[] = [
-      {
-        "@type": "CollectionPage",
-        "@id": `${pageUrl}#webpage`,
-        "url": pageUrl,
-        "name": config.seoTitle,
-        "description": config.seoDescription,
-        "isPartOf": {
-          "@type": "WebSite",
-          "@id": "https://wildwestcryptoshow.com/#website",
-          "name": "Wild West Crypto Show",
-          "url": "https://wildwestcryptoshow.com"
-        },
-        "publisher": {
-          "@type": "NewsMediaOrganization",
-          "name": "Wild West Crypto Show",
-          "url": "https://wildwestcryptoshow.com",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://wildwestcryptoshow.com/wildwest_logo.svg",
-            "width": 240,
-            "height": 60
-          }
-        }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "@id": `${pageUrl}#breadcrumbs`,
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://wildwestcryptoshow.com/"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "News",
-            "item": "https://wildwestcryptoshow.com/news"
-          },
-          ...(activeCategory ? [{
-            "@type": "ListItem",
-            "position": 3,
-            "name": activeCategory,
-            "item": canonicalUrl
-          }] : [])
-        ]
-      },
-      {
-        "@type": "ItemList",
-        "@id": `${pageUrl}#articlelist`,
-        "name": `${config.h1} Articles`,
-        "itemListElement": sortedArticles.slice(0, 10).map((article, idx) => ({
-          "@type": "ListItem",
-          "position": idx + 1,
-          "name": article.headline || article.title,
-          "url": `https://wildwestcryptoshow.com${getArticleHref(article)}`
-        }))
-      },
-      {
-        "@type": "FAQPage",
-        "@id": `${pageUrl}#faq`,
-        "mainEntity": config.faqs.map(faq => ({
-          "@type": "Question",
-          "name": faq.q,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": faq.a
-          }
-        }))
-      }
-    ];
-
-    if (activeCategory === 'Bitcoin') {
-      graph.push({
-        "@type": "FinancialProduct",
-        "@id": "https://wildwestcryptoshow.com/news/bitcoin#asset",
-        "name": "Bitcoin",
-        "alternateName": "BTC",
-        "category": "Cryptocurrency",
-        "description": "Bitcoin (BTC) is a decentralized digital currency and the world's leading cryptographic asset by market capitalization."
-      });
-    }
-
     return {
       "@context": "https://schema.org",
-      "@graph": graph
+      "@type": "CollectionPage",
+      "url": canonicalUrl,
+      "name": config.seoTitle,
+      "description": config.seoDescription,
+      "publisher": {
+        "@type": "NewsMediaOrganization",
+        "name": "SPORT25",
+        "url": "https://sport25.news"
+      }
     };
-  }, [activeCategory, config, sortedArticles, canonicalUrl]);
+  }, [config, canonicalUrl]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F5]">
-        <div className="w-10 h-10 border-4 border-[#222] border-t-[#F4A917] rounded-full animate-spin" />
-        <p className="mt-4 font-bold uppercase tracking-widest text-[10px] text-[#555]">
-          Loading {activeCategory || 'Cryptocurrency'} News...
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-ink">
+        <div className="w-8 h-8 border-2 border-line border-t-brand rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-muted font-medium">Loading sports news...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050505] text-[#F5F5F5] px-4">
-        <div className="bg-[#0A0A0A] p-8 border border-[#222] max-w-lg w-full text-center rounded-xl">
-          <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Error Loading Category</h2>
-          <p className="text-[#888] mb-6 text-sm">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-[11px] font-bold uppercase tracking-widest bg-[#F4A917] text-white px-6 py-3 hover:bg-[#C4830B] rounded transition-colors">
-            Try Again
+      <div className="min-h-screen flex items-center justify-center bg-bg text-ink px-4">
+        <div className="bg-bg-soft p-8 border border-line max-w-lg w-full text-center rounded-card">
+          <h2 className="text-card-lg font-bold font-display text-ink mb-3">Unable to load category</h2>
+          <p className="text-muted text-sm mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="h-10 px-6 rounded-card bg-brand text-white font-semibold text-sm hover:bg-brand-600 transition-colors duration-150"
+          >
+            Try again
           </button>
         </div>
       </div>
     );
   }
 
+  const displayedArticles = sortedArticles.slice(0, visibleCount);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#050505] text-[#F5F5F5] font-sans">
-      <SEO 
+    <div className="min-h-screen flex flex-col bg-bg text-ink font-sans">
+      <SEO
         title={config.seoTitle}
         description={config.seoDescription}
-        canonical={canonicalUrl}
         schema={categorySchema}
+        canonical={canonicalUrl}
       />
       <Header />
-      <div className="max-w-[1280px] w-full mx-auto px-4 md:px-6 py-4">
-        <AdPlacement format="billboard" />
-      </div>
-      
-      <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 md:px-6 py-6 md:py-10">
-        {/* Semantic Breadcrumbs */}
+
+      <main id="main" tabIndex={-1} className="flex-1 max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8">
+        {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#666]">
+          <ol className="flex items-center gap-2 text-sm text-subtle">
             <li>
-              <Link to="/" className="hover:text-[#F5F5F5] transition-colors">Home</Link>
+              <Link to="/" className="text-brand hover:underline">Home</Link>
             </li>
-            <li className="select-none">/</li>
+            <li>/</li>
             <li>
-              <Link to="/news" className={activeCategory ? "hover:text-[#F5F5F5] transition-colors text-[#888]" : "text-[#F4A917]"}>
-                All News
+              <Link to="/news" className={activeCategory ? "text-brand hover:underline" : "text-ink font-semibold"}>
+                News
               </Link>
             </li>
             {activeCategory && (
               <>
-                <li className="select-none">/</li>
-                <li className="text-[#F4A917]" aria-current="page">{activeCategory}</li>
+                <li>/</li>
+                <li className="text-ink font-semibold" aria-current="page">{activeCategory}</li>
               </>
             )}
           </ol>
         </nav>
 
-        {/* Category Header with Primary H1 */}
-        <header className="mb-8 pb-6 border-b border-zinc-800/80">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-            <Sparkles size={13} className="text-amber-500/80" />
-            <span>Digital Asset Coverage</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold uppercase tracking-tight text-white leading-tight mb-3">
+        {/* Category Header */}
+        <header className="mb-8 pb-6 border-b border-line">
+          <h1 className="text-hero-mobile md:text-hero font-extrabold font-display text-ink mb-3 leading-tight">
             {config.h1}
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-zinc-400 max-w-3xl leading-relaxed font-normal">
+          <p className="text-excerpt text-muted max-w-3xl leading-relaxed">
             {config.subtitle}
           </p>
 
-          {/* Internal Navigation Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-5 scrollbar-none no-scrollbar">
-            {CATEGORY_TABS.map((tab) => {
-              const isActive = (!activeCategory && tab.id === 'all') || 
-                (activeCategory && activeCategory.toLowerCase() === tab.id);
-              return (
-                <Link
-                  key={tab.id}
-                  to={tab.path}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-zinc-100 text-zinc-950 font-bold shadow-md'
-                      : 'bg-zinc-900/70 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-                  }`}
-                >
-                  {tab.label}
-                </Link>
-              );
-            })}
-          </div>
-        </header>
+          {/* Category Tabs — horizontal scroll with fade-right hint */}
+          <div className="relative mt-6">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {CATEGORY_TABS.map((tab) => {
+                const isActive = (tab.id === 'all' && !activeCategory) ||
+                  (tab.label.toLowerCase() === activeCategory?.toLowerCase());
 
-        {/* Specialized Live Bitcoin Snapshot & Chart for Bitcoin Page */}
-        {activeCategory === 'Bitcoin' && (
-          <section aria-label="Bitcoin Live Market Intelligence" className="mb-10">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={16} className="text-zinc-400" />
-              <h2 className="text-sm md:text-base font-bold uppercase tracking-wider text-zinc-200">
-                Live Bitcoin Market Intelligence &amp; Technical Chart
-              </h2>
-            </div>
-            <BitcoinMarketSnapshot />
-            <div className="mt-4">
-              <BitcoinPriceChart />
-            </div>
-          </section>
-        )}
-
-        {/* Main Articles Section Heading (H2) */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#888]">
-              {activeCategory ? `Latest ${activeCategory} Reports & Analysis` : "All Breaking Cryptocurrency Reports"}
-            </h2>
-            <div className="hidden sm:block w-12 h-px bg-[#222]" />
-          </div>
-          <span className="text-[11px] font-mono text-[#555]">
-            {sortedArticles.length} {sortedArticles.length === 1 ? 'Article' : 'Articles'}
-          </span>
-        </div>
-
-        {/* Grid Layout of Articles (H3 titles) */}
-        {sortedArticles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl mb-12">
-            <p className="text-[#888] text-sm mb-2 font-semibold">No articles currently published in this category.</p>
-            <p className="text-[#555] text-xs">Our AI news crawler is processing new stories. Please check back shortly.</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {sortedArticles.slice(0, visibleCount).map((article, i) => {
-                const displayTitle = article.headline || article.title;
                 return (
-                  <React.Fragment key={article.article_id || i}>
-                    {i > 0 && i % 8 === 0 && (
-                      <div className="md:col-span-2 lg:col-span-4 py-4 flex justify-center w-full">
-                        <AdPlacement format="billboard" />
-                      </div>
-                    )}
-                    <article className="h-full">
-                      <Link
-                        to={getArticleHref(article)}
-                        state={{ article }}
-                        className="group flex flex-col h-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#1a1a1a] hover:border-[#333] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/60"
-                      >
-                        <div className="w-full aspect-[16/10] bg-[#111] overflow-hidden relative">
-                          {article.image_url ? (
-                            <img
-                              src={article.image_url}
-                              alt={displayTitle}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-[#222]">
-                              <span className="font-black text-2xl tracking-tighter opacity-50">WWCS</span>
-                            </div>
-                          )}
-                          <span className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-sm text-[#F4A917] text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-white/10">
-                            {getClassification(article)}
-                          </span>
-                        </div>
-                        
-                        <div className="p-5 flex flex-col flex-1">
-                          <h3 className="text-[15px] font-bold text-[#E5E5E5] group-hover:text-[#F4A917] transition-colors line-clamp-3 leading-snug mb-4">
-                            {displayTitle}
-                          </h3>
-                          {article.description && (
-                            <p className="text-xs text-[#777] line-clamp-2 leading-relaxed mb-4">
-                              {article.description}
-                            </p>
-                          )}
-                          <div className="mt-auto pt-3 border-t border-[#161616] flex items-center justify-between text-[10px] text-[#555]">
-                            <span className="flex items-center gap-1 font-medium">
-                              <Clock size={10} />
-                              {formatTimeAgo(article.pubDate)}
-                            </span>
-                            <span className="text-[#F4A917] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                              Read More →
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </article>
-                  </React.Fragment>
+                  <Link
+                    key={tab.id}
+                    to={tab.path}
+                    className={`px-4 py-2 rounded-card text-sm font-semibold whitespace-nowrap transition-colors duration-150 ${
+                      isActive
+                        ? 'bg-brand text-white'
+                        : 'bg-bg-soft text-ink hover:bg-line border border-line'
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
                 );
               })}
             </div>
+            {/* Right fade hint — signals more content off-screen */}
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-bg to-transparent" />
+          </div>
+        </header>
 
-            {/* Load More Stories Button */}
-            {sortedArticles.length > visibleCount && (
-              <div className="flex justify-center mb-12">
-                <button
-                  onClick={() => setVisibleCount(prev => prev + 12)}
-                  className="px-8 py-3.5 rounded-xl bg-[#0F0F0F] hover:bg-[#161616] border border-[#222] text-[#CCC] hover:text-[#F4A917] font-bold text-xs uppercase tracking-widest transition-all shadow-lg active:translate-y-0.5"
-                >
-                  Load More Stories ({sortedArticles.length - visibleCount} remaining)
-                </button>
+        {/* Category Top Billboard Ad Placement */}
+        <div className="mb-6">
+          <AdPlacement format="billboard" />
+        </div>
+
+        {/* Articles Count */}
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-line">
+          <h2 className="text-card font-bold font-display text-ink">
+            {activeCategory ? `${activeCategory} stories` : "All sports stories"}
+          </h2>
+          <span className="text-meta text-subtle font-medium">
+            {sortedArticles.length} articles
+          </span>
+        </div>
+
+        {/* Articles Grid */}
+        {sortedArticles.length === 0 ? (
+          <div className="py-20 text-center bg-bg-soft border border-line rounded-card mb-12">
+            <p className="text-ink text-sm font-semibold mb-1">No articles in this category yet.</p>
+            <p className="text-muted text-xs">Stories update continuously throughout the day.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayedArticles.slice(0, 4).map((article) => (
+              <ArticleCard key={article.article_id} article={article} />
+            ))}
+            {displayedArticles.length > 4 && (
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 my-2">
+                <AdPlacement format="native" />
               </div>
             )}
-          </>
-        )}
-
-        {/* ── Comprehensive In-Depth SEO Blog Article ── */}
-        <SeoEditorialBlog category={activeCategory || 'all'} />
-
-        {/* Dedicated Category FAQ Section (H2 & H3) */}
-        <section aria-label="Category Frequently Asked Questions" className="mt-14 mb-12 border-t border-zinc-800/80 pt-10">
-          <div className="flex items-center gap-2 mb-2 text-zinc-400">
-            <HelpCircle size={15} />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Frequently Asked Questions</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-6">
-            Frequently Asked Questions: {activeCategory || "Cryptocurrency News"}
-          </h2>
-          <div className="space-y-3">
-            {config.faqs.map((faq, idx) => (
-              <details
-                key={idx}
-                className="group border border-zinc-800/80 bg-[#0B0B0C] rounded-xl overflow-hidden transition-all duration-300"
-              >
-                <summary className="flex items-center justify-between p-5 cursor-pointer list-none hover:bg-zinc-900/60 transition-colors duration-200 select-none">
-                  <h3 className="pr-6 leading-snug font-semibold text-zinc-200 text-sm uppercase tracking-wide">
-                    {faq.q}
-                  </h3>
-                  <div className="relative w-5 h-5 flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-zinc-200">
-                    <span className="font-bold text-xl leading-none absolute group-open:opacity-0 transition-opacity">+</span>
-                    <span className="font-bold text-xl leading-none absolute opacity-0 group-open:opacity-100 transition-opacity">−</span>
-                  </div>
-                </summary>
-                <div className="px-5 pb-5 pt-2 text-zinc-400 text-sm leading-relaxed border-t border-zinc-800/60">
-                  <p>{faq.a}</p>
-                </div>
-              </details>
+            {displayedArticles.slice(4).map((article) => (
+              <ArticleCard key={article.article_id} article={article} />
             ))}
           </div>
-        </section>
+        )}
+
+        {/* Load More Button */}
+        {sortedArticles.length > visibleCount && (
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => setVisibleCount((prev) => prev + 12)}
+              className="h-10 px-8 rounded-card bg-white border border-line text-ink hover:border-ink transition-colors duration-150 text-sm font-semibold"
+            >
+              Load more
+            </button>
+          </div>
+        )}
       </main>
-      
+
       <Footer />
     </div>
   );
