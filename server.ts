@@ -2268,6 +2268,10 @@ app.get("/api/logs", (req, res) => {
   // --- AD MANAGEMENT API ---
   app.get('/api/ads', async (req, res) => {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       if (supabase) {
         const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
         if (error) throw error;
@@ -2342,6 +2346,9 @@ app.get("/api/logs", (req, res) => {
       if (supabase) {
         const { data, error } = await supabase.from('ads').update(updateData).eq('id', id).select().single();
         if (error) throw error;
+        // Keep in-memory store in sync
+        const idx = localAdsStore.findIndex(a => a.id === id);
+        if (idx !== -1) localAdsStore[idx] = { ...localAdsStore[idx], ...updateData };
         return res.json({ status: 'success', ad: data });
       }
 
@@ -2359,6 +2366,7 @@ app.get("/api/logs", (req, res) => {
 
   app.put('/api/ads/:id', handleUpdateAd);
   app.patch('/api/ads/:id', handleUpdateAd);
+  app.post('/api/ads/:id', handleUpdateAd);
 
   app.delete('/api/ads/:id', async (req, res) => {
     try {

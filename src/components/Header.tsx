@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { SPORTS_NAV } from '../data/nav';
 import { useAdInteraction } from '../utils/adInteraction';
+import { trackBannerClick } from '../utils/xPixel';
 
 interface HeaderAd {
   id: string;
@@ -51,15 +52,29 @@ export default function Header() {
 
   // Fetch optional header button ad if configured in admin
   useEffect(() => {
-    fetch('/api/ads')
-      .then(res => res.json())
-      .then(data => {
-        if (data?.status === 'success' && Array.isArray(data.ads)) {
-          const match = data.ads.find((a: any) => a.format === 'header-button' && a.active);
-          if (match) setHeaderAd(match);
-        }
-      })
-      .catch(() => {});
+    const fetchHeaderAd = () => {
+      fetch('/api/ads', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data?.status === 'success' && Array.isArray(data.ads)) {
+            const match = data.ads.find((a: any) => a.format === 'header-button' && a.active === true);
+            setHeaderAd(match || null);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchHeaderAd();
+    const interval = setInterval(fetchHeaderAd, 10000);
+
+    window.addEventListener('sport25_ads_updated', fetchHeaderAd);
+    window.addEventListener('storage', fetchHeaderAd);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sport25_ads_updated', fetchHeaderAd);
+      window.removeEventListener('storage', fetchHeaderAd);
+    };
   }, []);
 
   const getButtonColorClass = (color?: string) => {
@@ -154,6 +169,7 @@ export default function Header() {
                 href={headerAd.target_url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={trackBannerClick}
                 className={`h-9 px-4 rounded-card text-xs md:text-sm font-semibold flex items-center justify-center transition-all duration-150 shadow-sm shrink-0 ${getButtonColorClass(headerAd.button_color)}`}
               >
                 {headerAd.cta_text || 'Sponsored'}
@@ -214,7 +230,10 @@ export default function Header() {
                   href={headerAd.target_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    trackBannerClick();
+                    setMenuOpen(false);
+                  }}
                   className={`w-full h-12 rounded-card text-sm font-semibold flex items-center justify-center transition-colors duration-150 ${getButtonColorClass(headerAd.button_color)}`}
                 >
                   {headerAd.cta_text || 'Sponsored'}

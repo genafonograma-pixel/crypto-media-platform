@@ -18,7 +18,7 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
 
     const fetchAdsList = async () => {
       try {
-        const res = await fetch('/api/ads');
+        const res = await fetch('/api/ads', { cache: 'no-store' });
         const data = await res.json();
         const allAds: any[] = Array.isArray(data?.ads) ? data.ads : [];
 
@@ -33,12 +33,21 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
     };
 
     fetchAdsList();
-    // Poll every 15 seconds so admin pause/unpause propagates quickly
-    const interval = setInterval(fetchAdsList, 15000);
+    // Poll every 10 seconds so admin pause/unpause propagates quickly
+    const interval = setInterval(fetchAdsList, 10000);
+
+    const onUpdate = () => {
+      if (isMounted) fetchAdsList();
+    };
+
+    window.addEventListener('sport25_ads_updated', onUpdate);
+    window.addEventListener('storage', onUpdate);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
+      window.removeEventListener('sport25_ads_updated', onUpdate);
+      window.removeEventListener('storage', onUpdate);
     };
   }, [format]);
 

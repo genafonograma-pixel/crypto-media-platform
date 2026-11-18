@@ -39,9 +39,9 @@ export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' 
 
     if (isBot()) return;
 
-    // 2. Check active status — called on mount and every 15s
+    // 2. Check active status — called on mount, on event, and every 10s
     const checkActive = () => {
-      fetch('/api/ads')
+      fetch('/api/ads', { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
           if (data?.status === 'success' && Array.isArray(data.ads)) {
@@ -62,16 +62,39 @@ export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' 
     };
 
     checkActive();
-    const interval = setInterval(checkActive, 15000);
-    return () => clearInterval(interval);
+    const interval = setInterval(checkActive, 10000);
+
+    // Instant cross-tab & in-window reactive updates when admin toggles ads
+    window.addEventListener('sport25_ads_updated', checkActive);
+    window.addEventListener('storage', checkActive);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sport25_ads_updated', checkActive);
+      window.removeEventListener('storage', checkActive);
+    };
   }, []);
 
+  const isTop = direction === 'top';
+  const shouldShow = hasInteracted && !isBotUser() && isEnabled && !isDismissed;
+
+  // Manage body offset when sticky top banner is active
+  useEffect(() => {
+    if (isTop && shouldShow) {
+      document.body.classList.add('has-top-ad-banner');
+    } else {
+      document.body.classList.remove('has-top-ad-banner');
+    }
+    return () => {
+      document.body.classList.remove('has-top-ad-banner');
+    };
+  }, [isTop, shouldShow]);
+
   // Bot review, not interacted, disabled in admin, or dismissed -> render nothing
-  if (!hasInteracted || isBotUser() || !isEnabled || isDismissed) {
+  if (!shouldShow) {
     return null;
   }
 
-  const isTop = direction === 'top';
   const bannerStyle: React.CSSProperties = {
     position: 'fixed',
     [isTop ? 'top' : 'bottom']: 0,
@@ -90,6 +113,12 @@ export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' 
   return (
     <>
       <style>{`
+        body.has-top-ad-banner {
+          padding-top: 48px;
+        }
+        body.has-top-ad-banner header {
+          top: 48px !important;
+        }
         @keyframes bannerSlideUp {
           from { transform: translateY(100%); opacity: 0; }
           to   { transform: translateY(0);    opacity: 1; }

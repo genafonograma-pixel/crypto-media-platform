@@ -126,7 +126,7 @@ export default function AdminAds() {
   const fetchAds = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/ads');
+      const res = await fetch('/api/ads', { cache: 'no-store' });
       const data = await res.json();
       if (data.status === 'success' && Array.isArray(data.ads)) {
         setAds(data.ads);
@@ -244,37 +244,83 @@ export default function AdminAds() {
     }
   };
 
-  const toggleActive = async (ad: AdItem) => {
+  const notifyAdChange = () => {
     try {
-      const res = await fetch(`/api/ads/${ad.id}`, {
-        method: 'PATCH',
+      localStorage.setItem('sport25_ads_updated', Date.now().toString());
+      window.dispatchEvent(new CustomEvent('sport25_ads_updated'));
+    } catch {}
+  };
+
+  const toggleActive = async (ad: AdItem) => {
+    const nextActive = !ad.active;
+    // 1. Optimistic UI update immediately
+    setAds(prev => prev.map(a => a.id === ad.id ? { ...a, active: nextActive } : a));
+    notifyAdChange();
+
+    try {
+      let res = await fetch(`/api/ads/${ad.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: !ad.active })
+        body: JSON.stringify({ active: nextActive })
       });
+      if (!res.ok) {
+        res = await fetch(`/api/ads/${ad.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: nextActive })
+        });
+      }
       const data = await res.json();
       if (data.status === 'success') {
+        fetchAds();
+        notifyAdChange();
+      } else {
         fetchAds();
       }
     } catch (err) {
       console.error('Error toggling ad:', err);
+      fetchAds();
     }
   };
 
-  const saveHtmlBanner = async (ad: AdItem) => {
+  const saveHtmlBanner = async (ad: AdItem, overrides?: { target_url?: string; cta_text?: string }) => {
     setHtmlBannerSaving(true);
+    const target = overrides?.target_url !== undefined ? overrides.target_url : htmlBannerUrl.trim();
+    const cta = overrides?.cta_text !== undefined ? overrides.cta_text : htmlBannerDirection;
+
+    // Optimistically update
+    setAds(prev => prev.map(a => a.id === ad.id ? { ...a, target_url: target, cta_text: cta } : a));
+    notifyAdChange();
+
     try {
-      const res = await fetch(`/api/ads/${ad.id}`, {
-        method: 'PATCH',
+      let res = await fetch(`/api/ads/${ad.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          target_url: htmlBannerUrl.trim(),
-          cta_text: htmlBannerDirection  // reuse cta_text to store direction
+          target_url: target,
+          cta_text: cta
         })
       });
+      if (!res.ok) {
+        res = await fetch(`/api/ads/${ad.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target_url: target,
+            cta_text: cta
+          })
+        });
+      }
       const data = await res.json();
-      if (data.status === 'success') fetchAds();
+      if (data.status === 'success') {
+        setFormSuccessMessage('HTML Banner updated successfully!');
+        setTimeout(() => setFormSuccessMessage(null), 3000);
+        fetchAds();
+        notifyAdChange();
+      }
     } catch (err) {
       console.error('Error saving html banner:', err);
+      fetchAds();
     } finally {
       setHtmlBannerSaving(false);
     }
@@ -282,14 +328,18 @@ export default function AdminAds() {
 
   const handleDelete = async (id: string, adFormat: string) => {
     if (!confirm(`Are you sure you want to permanently delete this ${adFormat} ad?`)) return;
+    setAds(prev => prev.filter(a => a.id !== id));
+    notifyAdChange();
     try {
       const res = await fetch(`/api/ads/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.status === 'success') {
         fetchAds();
+        notifyAdChange();
       }
     } catch (err) {
       console.error('Error deleting ad:', err);
+      fetchAds();
     }
   };
 
@@ -369,7 +419,37 @@ export default function AdminAds() {
         {/* ── HTML Banner Controller ─────────────────────────────── */}
         {(() => {
           const htmlBannerAd = ads.find(a => a.format === 'html-banner');
-          if (!htmlBannerAd) return null;
+          if (!htmlBannerAd) {
+            return (
+              <div className="mb-8 bg-bg-soft border border-dashed border-purple-500/40 rounded-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Sticky HTML Banner Campaign Not Found</h3>
+                  <p className="text-xs text-muted">Create the interactive sticky ribbon ad campaign for Bet25.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await fetch('/api/ads', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        format: 'html-banner',
+                        target_url: 'https://bet25.com',
+                        cta_text: 'bottom',
+                        active: true
+                      })
+                    });
+                    fetchAds();
+                    notifyAdChange();
+                  }}
+                  className="px-4 py-2 rounded-card bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Enable HTML Banner
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div className="mb-8 bg-bg-soft border border-purple-500/40 rounded-card p-6">
               <div className="flex flex-col sm:flex-row sm:items-start gap-6">
@@ -382,41 +462,48 @@ export default function AdminAds() {
                       {htmlBannerAd.active ? '● Live' : '○ Paused'}
                     </span>
                   </div>
-                  <h2 className="text-card font-bold font-display text-ink mb-1">Sticky Bottom HTML Banner</h2>
+                  <h2 className="text-card font-bold font-display text-ink mb-1">Sticky HTML Ribbon Banner</h2>
                   <p className="text-xs text-muted mb-4">
-                    Full-width sticky banner at the bottom of every page — displays the Bet25 animated HTML creative
-                    via iframe. Toggle below to show or hide it site-wide without deleting the campaign.
+                    Full-width sticky banner displayed on every page — animated Bet25 creative via iframe.
+                    Toggle below to turn it ON or OFF site-wide, or change its position between top and bottom.
                   </p>
 
                   {/* Target URL edit */}
-                  <label className="block text-xs font-bold text-ink mb-1">Click-through URL</label>
+                  <label className="block text-xs font-bold text-ink mb-1">Click-through Destination URL</label>
                   <div className="flex items-center gap-2 mb-4">
                     <input
                       type="url"
                       value={htmlBannerUrl}
                       onChange={e => setHtmlBannerUrl(e.target.value)}
-                      placeholder="https://example.com"
+                      placeholder="https://bet25.com"
                       className="flex-1 h-9 px-3 rounded-card border border-line bg-bg text-xs text-ink font-mono focus:outline-none focus:border-purple-400 transition-colors"
                     />
                   </div>
 
                   {/* Direction selector */}
-                  <label className="block text-xs font-bold text-ink mb-1">Banner Position</label>
-                  <div className="flex items-center gap-2 mb-5">
-                    {(['bottom', 'top'] as const).map(dir => (
-                      <button
-                        key={dir}
-                        type="button"
-                        onClick={() => setHtmlBannerDirection(dir)}
-                        className={`px-4 py-1.5 rounded-card border text-xs font-semibold capitalize transition-colors cursor-pointer ${
-                          htmlBannerDirection === dir
-                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
-                            : 'bg-bg border-line text-muted hover:border-purple-400'
-                        }`}
-                      >
-                        {dir === 'bottom' ? '⬇ Sticky Bottom' : '⬆ Sticky Top'}
-                      </button>
-                    ))}
+                  <div className="mb-5">
+                    <label className="block text-xs font-bold text-ink mb-1">Banner Position &amp; Direction</label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(['bottom', 'top'] as const).map(dir => (
+                        <button
+                          key={dir}
+                          type="button"
+                          onClick={() => {
+                            setHtmlBannerDirection(dir);
+                            saveHtmlBanner(htmlBannerAd, { cta_text: dir });
+                          }}
+                          className={`px-4 py-1.5 rounded-card border text-xs font-semibold capitalize transition-all cursor-pointer flex items-center gap-1.5 ${
+                            htmlBannerDirection === dir
+                              ? 'bg-purple-600 border-purple-500 text-white shadow-sm'
+                              : 'bg-bg border-line text-muted hover:border-purple-400'
+                          }`}
+                        >
+                          {dir === 'bottom' ? '⬇ Sticky Bottom' : '⬆ Sticky Top'}
+                          {htmlBannerDirection === dir && <Check size={12} className="text-white" />}
+                        </button>
+                      ))}
+                      <span className="text-[11px] text-muted italic ml-2">Clicking position saves immediately</span>
+                    </div>
                   </div>
 
                   {/* ON / OFF toggle + Save row */}
@@ -438,7 +525,7 @@ export default function AdminAds() {
                       />
                     </button>
                     <span className="text-sm font-semibold text-ink flex-1">
-                      {htmlBannerAd.active ? 'Banner is LIVE — click to pause' : 'Banner is PAUSED — click to activate'}
+                      {htmlBannerAd.active ? 'Banner is LIVE — click switch to PAUSE' : 'Banner is PAUSED — click switch to ACTIVATE'}
                     </span>
                     <button
                       type="button"
@@ -447,7 +534,7 @@ export default function AdminAds() {
                       className="px-4 py-1.5 rounded-card bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       {htmlBannerSaving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
-                      {htmlBannerSaving ? 'Saving…' : 'Save Changes'}
+                      {htmlBannerSaving ? 'Saving…' : 'Save URL'}
                     </button>
                   </div>
                 </div>

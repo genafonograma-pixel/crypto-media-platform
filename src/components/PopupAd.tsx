@@ -9,15 +9,29 @@ export default function PopupAd() {
   const [adData, setAdData] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/ads')
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success' && Array.isArray(data.ads)) {
-          const popup = data.ads.find((a: any) => a.format === 'popup' && a.active);
-          if (popup) setAdData(popup);
-        }
-      })
-      .catch(console.error);
+    const fetchPopup = () => {
+      fetch('/api/ads', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success' && Array.isArray(data.ads)) {
+            const popup = data.ads.find((a: any) => a.format === 'popup' && a.active === true);
+            setAdData(popup || null);
+          }
+        })
+        .catch(console.error);
+    };
+
+    fetchPopup();
+    const interval = setInterval(fetchPopup, 10000);
+
+    window.addEventListener('sport25_ads_updated', fetchPopup);
+    window.addEventListener('storage', fetchPopup);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('sport25_ads_updated', fetchPopup);
+      window.removeEventListener('storage', fetchPopup);
+    };
   }, []);
 
   // Listen for ESC key to dismiss
