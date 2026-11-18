@@ -338,6 +338,81 @@ export default function AdminAds() {
           </div>
         </div>
 
+        {/* ── HTML Banner Controller ─────────────────────────────── */}
+        {(() => {
+          const htmlBannerAd = ads.find(a => a.format === 'html-banner');
+          if (!htmlBannerAd) return null;
+          return (
+            <div className="mb-8 bg-bg-soft border border-purple-500/40 rounded-card p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+                {/* Left: info + toggle */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                    <span className="text-xs font-bold text-purple-400 uppercase tracking-wide">HTML Banner Ad</span>
+                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full border ${htmlBannerAd.active ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-500' : 'bg-muted/15 border-line text-muted'}`}>
+                      {htmlBannerAd.active ? '● Live' : '○ Paused'}
+                    </span>
+                  </div>
+                  <h2 className="text-card font-bold font-display text-ink mb-1">Sticky Bottom HTML Banner</h2>
+                  <p className="text-xs text-muted mb-4">
+                    Full-width sticky banner at the bottom of every page — displays the Bet25 animated HTML creative
+                    via iframe. Toggle below to show or hide it site-wide without deleting the campaign.
+                  </p>
+
+                  {/* Target URL display */}
+                  <div className="flex items-center gap-2 mb-5 p-2.5 bg-bg border border-line rounded-card text-xs text-muted font-mono truncate">
+                    <ExternalLink size={12} className="shrink-0 text-muted" />
+                    <span className="truncate">{htmlBannerAd.target_url || '—'}</span>
+                  </div>
+
+                  {/* ON / OFF toggle */}
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(htmlBannerAd)}
+                      className={`relative inline-flex h-7 w-14 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none ${
+                        htmlBannerAd.active
+                          ? 'bg-emerald-500 border-emerald-500'
+                          : 'bg-bg-soft border-line'
+                      }`}
+                      aria-label="Toggle HTML banner"
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out mt-0.5 ${
+                          htmlBannerAd.active ? 'translate-x-7' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                    <span className="text-sm font-semibold text-ink">
+                      {htmlBannerAd.active ? 'Banner is LIVE — click to pause' : 'Banner is PAUSED — click to activate'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: miniature preview */}
+                <div className="shrink-0 w-full sm:w-72">
+                  <span className="text-xs font-bold text-muted block mb-2">Live Preview</span>
+                  <div className="relative rounded-card overflow-hidden border border-purple-500/30 bg-[#0A021F] h-14 w-full shadow-lg">
+                    <iframe
+                      title="HTML Banner Preview"
+                      src="/ads/bet25/index.html"
+                      scrolling="no"
+                      style={{ width: '100%', height: '48px', border: 0, display: 'block', pointerEvents: 'none' }}
+                    />
+                    {!htmlBannerAd.active && (
+                      <div className="absolute inset-0 bg-bg/70 flex items-center justify-center backdrop-blur-sm">
+                        <span className="text-xs font-bold text-muted">Paused</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted mt-1.5 text-center">Actual banner shown at bottom of page</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Create Ad Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
           {/* Form Side (7 cols) */}

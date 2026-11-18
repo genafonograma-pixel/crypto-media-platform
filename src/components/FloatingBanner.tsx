@@ -12,6 +12,8 @@ interface FloatingBannerProps {
 export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' }: FloatingBannerProps) {
   const hasInteracted = useAdInteraction();
   const [targetUrl, setTargetUrl] = useState(defaultTargetUrl);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     // 1. Bot & Crawler Detection
@@ -64,26 +66,31 @@ export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' 
       return;
     }
 
-    // 2. Optional: check if an active sticky-bottom or floating ad is configured in database
+    // 2. Check if active html-banner or sticky-bottom ad is configured in database
     fetch('/api/ads')
       .then(res => res.json())
       .then(data => {
         if (data?.status === 'success' && Array.isArray(data.ads)) {
           const match = data.ads.find(
-            (a: any) => (a.format === 'sticky-bottom' || a.format === 'floating') && a.active
+            (a: any) => (a.format === 'html-banner' || a.format === 'sticky-bottom' || a.format === 'floating')
           );
-          if (match?.target_url) {
-            setTargetUrl(match.target_url);
+          if (match) {
+            setIsEnabled(match.active === true);
+            if (match.target_url) {
+              setTargetUrl(match.target_url);
+            }
+          } else {
+            setIsEnabled(false);
           }
         }
       })
       .catch(() => {
-        // Fall back to defaultTargetUrl
+        setIsEnabled(false);
       });
   }, []);
 
-  // Bot review or not interacted yet -> render nothing
-  if (!hasInteracted || isBotUser()) {
+  // Bot review, not interacted, disabled in admin, or dismissed -> render nothing
+  if (!hasInteracted || isBotUser() || !isEnabled || isDismissed) {
     return null;
   }
 
@@ -149,7 +156,19 @@ export default function FloatingBanner({ defaultTargetUrl = 'https://bet25.com' 
         }
       `}</style>
 
-      <div className="preview-zone-STICKY">
+      <div className="preview-zone-STICKY relative">
+        {/* Dismiss Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDismissed(true);
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-5 h-5 flex items-center justify-center rounded-full bg-black/70 hover:bg-black text-white/80 hover:text-white transition-colors cursor-pointer text-xs"
+          aria-label="Close sticky ad"
+        >
+          ✕
+        </button>
+
         {/* Clickable Overlay Wrapping the Creative */}
         <a
           className="ad-overlay"
