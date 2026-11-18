@@ -115,6 +115,9 @@ export default function AdminAds() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [formSuccessMessage, setFormSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [htmlBannerUrl, setHtmlBannerUrl] = useState('');
+  const [htmlBannerDirection, setHtmlBannerDirection] = useState<'bottom' | 'top'>('bottom');
+  const [htmlBannerSaving, setHtmlBannerSaving] = useState(false);
 
   useEffect(() => {
     fetchAds();
@@ -127,6 +130,11 @@ export default function AdminAds() {
       const data = await res.json();
       if (data.status === 'success' && Array.isArray(data.ads)) {
         setAds(data.ads);
+        const hb = data.ads.find((a: AdItem) => a.format === 'html-banner');
+        if (hb) {
+          setHtmlBannerUrl(hb.target_url || '');
+          setHtmlBannerDirection((hb.cta_text as 'bottom' | 'top') === 'top' ? 'top' : 'bottom');
+        }
       }
     } catch (err) {
       console.error('Error fetching ads:', err);
@@ -252,6 +260,26 @@ export default function AdminAds() {
     }
   };
 
+  const saveHtmlBanner = async (ad: AdItem) => {
+    setHtmlBannerSaving(true);
+    try {
+      const res = await fetch(`/api/ads/${ad.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_url: htmlBannerUrl.trim(),
+          cta_text: htmlBannerDirection  // reuse cta_text to store direction
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') fetchAds();
+    } catch (err) {
+      console.error('Error saving html banner:', err);
+    } finally {
+      setHtmlBannerSaving(false);
+    }
+  };
+
   const handleDelete = async (id: string, adFormat: string) => {
     if (!confirm(`Are you sure you want to permanently delete this ${adFormat} ad?`)) return;
     try {
@@ -360,14 +388,39 @@ export default function AdminAds() {
                     via iframe. Toggle below to show or hide it site-wide without deleting the campaign.
                   </p>
 
-                  {/* Target URL display */}
-                  <div className="flex items-center gap-2 mb-5 p-2.5 bg-bg border border-line rounded-card text-xs text-muted font-mono truncate">
-                    <ExternalLink size={12} className="shrink-0 text-muted" />
-                    <span className="truncate">{htmlBannerAd.target_url || '—'}</span>
+                  {/* Target URL edit */}
+                  <label className="block text-xs font-bold text-ink mb-1">Click-through URL</label>
+                  <div className="flex items-center gap-2 mb-4">
+                    <input
+                      type="url"
+                      value={htmlBannerUrl}
+                      onChange={e => setHtmlBannerUrl(e.target.value)}
+                      placeholder="https://example.com"
+                      className="flex-1 h-9 px-3 rounded-card border border-line bg-bg text-xs text-ink font-mono focus:outline-none focus:border-purple-400 transition-colors"
+                    />
                   </div>
 
-                  {/* ON / OFF toggle */}
-                  <div className="flex items-center gap-4">
+                  {/* Direction selector */}
+                  <label className="block text-xs font-bold text-ink mb-1">Banner Position</label>
+                  <div className="flex items-center gap-2 mb-5">
+                    {(['bottom', 'top'] as const).map(dir => (
+                      <button
+                        key={dir}
+                        type="button"
+                        onClick={() => setHtmlBannerDirection(dir)}
+                        className={`px-4 py-1.5 rounded-card border text-xs font-semibold capitalize transition-colors cursor-pointer ${
+                          htmlBannerDirection === dir
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                            : 'bg-bg border-line text-muted hover:border-purple-400'
+                        }`}
+                      >
+                        {dir === 'bottom' ? '⬇ Sticky Bottom' : '⬆ Sticky Top'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* ON / OFF toggle + Save row */}
+                  <div className="flex items-center gap-4 flex-wrap">
                     <button
                       type="button"
                       onClick={() => toggleActive(htmlBannerAd)}
@@ -384,9 +437,18 @@ export default function AdminAds() {
                         }`}
                       />
                     </button>
-                    <span className="text-sm font-semibold text-ink">
+                    <span className="text-sm font-semibold text-ink flex-1">
                       {htmlBannerAd.active ? 'Banner is LIVE — click to pause' : 'Banner is PAUSED — click to activate'}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => saveHtmlBanner(htmlBannerAd)}
+                      disabled={htmlBannerSaving}
+                      className="px-4 py-1.5 rounded-card bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      {htmlBannerSaving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                      {htmlBannerSaving ? 'Saving…' : 'Save Changes'}
+                    </button>
                   </div>
                 </div>
 

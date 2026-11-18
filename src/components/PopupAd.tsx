@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { useAdInteraction, isBotUser } from '../utils/adInteraction';
+import { trackBannerClick } from '../utils/xPixel';
 
 export default function PopupAd() {
   const hasInteracted = useAdInteraction();
@@ -85,6 +86,7 @@ export default function PopupAd() {
           href={adData.target_url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={trackBannerClick}
           className="block w-full cursor-pointer relative bg-bg-soft aspect-[4/5] max-h-[380px] overflow-hidden group"
         >
           <img
@@ -100,6 +102,7 @@ export default function PopupAd() {
             href={adData.target_url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={trackBannerClick}
             className={`flex items-center justify-center gap-2 text-center font-semibold h-11 px-6 rounded-card text-sm w-full transition-colors duration-150 shadow-md ${getButtonColorClass(adData.button_color)}`}
           >
             <span>{adData.cta_text || 'Learn more'}</span>

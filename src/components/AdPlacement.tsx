@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Sparkles } from 'lucide-react';
 import { useAdInteraction } from '../utils/adInteraction';
+import { trackBannerClick } from '../utils/xPixel';
 
 interface AdPlacementProps {
   format: 'billboard' | 'native' | 'sticky-bottom' | 'in-article' | 'skyscraper';
   className?: string;
 }
-
-let lastFetchTime = 0;
-let cachedAds: any[] | null = null;
 
 export default function AdPlacement({ format, className = '' }: AdPlacementProps) {
   const hasInteracted = useAdInteraction();
@@ -20,19 +18,14 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
 
     const fetchAdsList = async () => {
       try {
-        const now = Date.now();
-        // Re-fetch if cache is older than 5 seconds to ensure newly published ads appear promptly
-        if (!cachedAds || now - lastFetchTime > 5000) {
-          const res = await fetch('/api/ads');
-          const data = await res.json();
-          cachedAds = Array.isArray(data?.ads) ? data.ads : [];
-          lastFetchTime = now;
-        }
+        const res = await fetch('/api/ads');
+        const data = await res.json();
+        const allAds: any[] = Array.isArray(data?.ads) ? data.ads : [];
 
-        if (!isMounted || !cachedAds) return;
+        if (!isMounted) return;
 
-        // Strict format matching: only display an ad if its format exactly matches this placement
-        const match = cachedAds.find((a: any) => a.format === format && a.active);
+        // Strict format matching + active check on every fetch
+        const match = allAds.find((a: any) => a.format === format && a.active === true);
         setAdData(match || null);
       } catch (err) {
         console.error('Error fetching ads for placement:', err);
@@ -40,9 +33,12 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
     };
 
     fetchAdsList();
+    // Poll every 15 seconds so admin pause/unpause propagates quickly
+    const interval = setInterval(fetchAdsList, 15000);
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, [format]);
 
@@ -81,6 +77,7 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
           href={adData.target_url || '#'}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={trackBannerClick}
           className="block relative overflow-hidden rounded-card border border-line/30 bg-bg-soft hover:opacity-95 transition-opacity"
         >
           <img
@@ -113,6 +110,7 @@ export default function AdPlacement({ format, className = '' }: AdPlacementProps
           href={adData.target_url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={trackBannerClick}
           className="block p-4 sm:p-5 rounded-card bg-gradient-to-r from-ink-900 to-ink-800 border border-brand/40 text-white shadow-md hover:border-brand transition-all"
         >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
