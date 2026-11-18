@@ -19,8 +19,30 @@ import AdminGuard from './components/AdminGuard';
 import type { Article, NewsResponse } from './types';
 
 export default function App() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('sport25_cached_news');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('sport25_cached_news');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch {}
+    }
+    return true;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +65,11 @@ export default function App() {
           );
           setArticles(uniqueArticles);
           setError(null);
+          try {
+            if (uniqueArticles.length > 0) {
+              localStorage.setItem('sport25_cached_news', JSON.stringify(uniqueArticles));
+            }
+          } catch {}
 
           // If pipeline is still processing initial articles, poll again until articles arrive
           if (uniqueArticles.length === 0 && retries < maxRetries) {

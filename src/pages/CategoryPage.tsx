@@ -152,9 +152,46 @@ export default function CategoryPage({ articles, loading, error, defaultCategory
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-ink">
-        <div className="w-8 h-8 border-2 border-line border-t-brand rounded-full animate-spin" />
-        <p className="mt-4 text-sm text-muted font-medium">Loading sports news...</p>
+      <div className="min-h-screen flex flex-col bg-bg text-ink font-sans" aria-busy="true" aria-label="Loading category">
+        <SEO
+          title={config.seoTitle}
+          description={config.seoDescription}
+          schema={categorySchema}
+          canonical={canonicalUrl}
+        />
+        {/* Real Header loaded immediately */}
+        <Header />
+
+        <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8">
+          {/* Category Header */}
+          <header className="mb-8 pb-6 border-b border-line">
+            <h1 className="text-hero-mobile md:text-hero font-extrabold font-display text-ink mb-3 leading-tight">
+              {config.h1}
+            </h1>
+            <p className="text-excerpt text-muted max-w-3xl leading-relaxed">
+              {config.subtitle}
+            </p>
+
+            <div className="flex items-center gap-2 text-xs text-muted font-medium mt-4">
+              <span className="w-2 h-2 rounded-full bg-brand animate-ping" />
+              <span>Fetching {activeCategory || 'latest'} coverage...</span>
+            </div>
+          </header>
+
+          {/* Skeleton Article Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="flex flex-col gap-3 p-4 bg-bg-soft rounded-card border border-line">
+                <div className="aspect-video bg-bg rounded-card animate-pulse" />
+                <div className="h-5 bg-bg rounded animate-pulse w-4/5" />
+                <div className="h-4 bg-bg rounded animate-pulse w-3/5" />
+                <div className="h-3 bg-bg rounded animate-pulse w-1/3 mt-2" />
+              </div>
+            ))}
+          </div>
+        </main>
+
+        <Footer />
       </div>
     );
   }

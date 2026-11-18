@@ -48,7 +48,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body class="bg-bg text-ink antialiased selection:bg-brand selection:text-white h-full">
-    <div id="root" class="h-full"></div>
+    <div id="root" class="h-full">
+      <!-- Instant pre-hydration Header shell so user never sees empty screen -->
+      <header style="height:64px;background:#0d0d12;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:50;">
+        <div style="max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+          <a href="/" style="display:flex;align-items:center;text-decoration:none;" aria-label="SPORT25 Home">
+            <img src="/sport25_logo.svg" alt="SPORT25" style="height:32px;width:auto;" />
+          </a>
+          <div style="display:flex;gap:1.5rem;align-items:center;font-family:system-ui,-apple-system,sans-serif;font-size:13px;font-weight:600;color:#94a3b8;">
+            <span style="color:#ffffff;">Football</span>
+            <span class="hidden md:inline">Champions League</span>
+            <span class="hidden sm:inline">Premier League</span>
+            <span>NBA</span>
+            <span class="hidden sm:inline">Tennis</span>
+            <span class="hidden md:inline">Formula 1</span>
+          </div>
+        </div>
+      </header>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

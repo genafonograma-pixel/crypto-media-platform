@@ -278,33 +278,82 @@ export default function Home({ articles, loading, error }: HomeProps) {
   );
 
   if (loading) {
-    // Skeleton holds full viewport height so the browser can restore scroll
-    // position correctly when the user hits Back while data is still loading.
     return (
       <div className="min-h-screen flex flex-col bg-bg text-ink font-sans" aria-busy="true" aria-label="Loading sports news">
-        {/* Skeleton header bar */}
-        <div className="h-16 bg-ink-900 shrink-0" />
-        {/* Skeleton hero area */}
-        <div className="max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8 flex-1">
+        <SEO
+          title="SPORT25 - Live Sports News, Scores & Breaking Headlines"
+          description="Breaking sports news, football transfers, Champions League, Premier League, NBA, Tennis Grand Slams, Formula 1, and NFL updates."
+          canonical="https://sport25.news/"
+          schema={homeSchema}
+        />
+
+        {/* Real Header loaded instantly with full navigation & logo */}
+        <Header />
+
+        {/* Live status ticker */}
+        <div className="bg-bg-soft/70 border-b border-line/40 py-2">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-muted font-medium">
+              <span className="w-2 h-2 rounded-full bg-brand animate-ping" />
+              <span className="text-ink font-semibold">SPORT25 Wire</span>
+              <span className="text-muted">&bull; Updating latest sports coverage...</span>
+            </div>
+            <span className="text-[11px] text-muted hidden sm:inline font-mono">Live Sync</span>
+          </div>
+        </div>
+
+        {/* Skeleton content area matching actual home layout */}
+        <main className="max-w-[1200px] w-full mx-auto px-4 md:px-6 py-6 flex-1">
+          {/* Top billboard placeholder */}
+          <div className="w-full h-24 bg-bg-soft/40 border border-line/30 rounded-card mb-8 animate-pulse hidden md:block" />
+
+          {/* Hero section skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
-            <div className="lg:col-span-8 aspect-video bg-bg-soft rounded-card animate-pulse" />
+            {/* Main Hero Story */}
+            <div className="lg:col-span-8 flex flex-col gap-3">
+              <div className="aspect-video bg-bg-soft rounded-card animate-pulse relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                <div className="absolute top-4 left-4 w-20 h-5 bg-brand/30 rounded-full animate-pulse" />
+              </div>
+              <div className="h-6 bg-bg-soft rounded animate-pulse w-4/5" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-3/5" />
+            </div>
+
+            {/* Side List Stories */}
             <div className="lg:col-span-4 flex flex-col gap-4">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="h-14 bg-bg-soft rounded-card animate-pulse" />
+              <div className="text-xs font-bold uppercase tracking-wider text-muted pb-2 border-b border-line">
+                Top Stories
+              </div>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex gap-3 pb-3 border-b border-line/40">
+                  <span className="text-sm font-bold text-muted/50 font-display">0{i}</span>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="h-4 bg-bg-soft rounded animate-pulse w-full" />
+                    <div className="h-3 bg-bg-soft rounded animate-pulse w-2/3" />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-          {/* Skeleton card row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="flex flex-col gap-3">
-                <div className="aspect-video bg-bg-soft rounded-card animate-pulse" />
-                <div className="h-4 bg-bg-soft rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-bg-soft rounded animate-pulse w-1/2" />
-              </div>
-            ))}
+
+          {/* Secondary grid skeleton */}
+          <div className="mb-8">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted pb-2 border-b border-line mb-4">
+              Trending Across Sports
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex flex-col gap-3">
+                  <div className="aspect-video bg-bg-soft rounded-card animate-pulse" />
+                  <div className="h-4 bg-bg-soft rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-bg-soft rounded animate-pulse w-1/2" />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </main>
+
+        <Footer />
       </div>
     );
   }

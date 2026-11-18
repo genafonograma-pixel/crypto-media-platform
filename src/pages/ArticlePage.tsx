@@ -430,9 +430,55 @@ export default function ArticlePage({ articles, loading }: ArticlePageProps) {
 
   if (!article && (loading || fetchLoading || !fetchAttempted)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-ink">
-        <div className="w-10 h-10 border-4 border-line border-t-brand rounded-full animate-spin"></div>
-        <p className="mt-4 text-xs font-semibold text-subtle">Loading article...</p>
+      <div className="min-h-screen flex flex-col bg-bg text-ink font-sans" aria-busy="true" aria-label="Loading article">
+        {/* Real Header loaded immediately */}
+        <Header />
+
+        <main className="max-w-[1200px] w-full mx-auto px-4 md:px-6 py-8 flex-1">
+          {/* Breadcrumb skeleton */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-12 h-3 bg-bg-soft rounded animate-pulse" />
+            <span className="text-muted text-xs">/</span>
+            <div className="w-16 h-3 bg-bg-soft rounded animate-pulse" />
+          </div>
+
+          <article className="max-w-[780px] mx-auto">
+            {/* Category badge skeleton */}
+            <div className="w-24 h-6 bg-brand/20 rounded-full animate-pulse mb-4" />
+
+            {/* Title skeleton */}
+            <div className="h-8 bg-bg-soft rounded animate-pulse w-full mb-3" />
+            <div className="h-8 bg-bg-soft rounded animate-pulse w-4/5 mb-6" />
+
+            {/* Author / Date metadata skeleton */}
+            <div className="flex items-center gap-3 pb-6 border-b border-line mb-8">
+              <div className="w-9 h-9 rounded-full bg-bg-soft animate-pulse shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1">
+                <div className="h-3.5 bg-bg-soft rounded animate-pulse w-32" />
+                <div className="h-2.5 bg-bg-soft rounded animate-pulse w-24" />
+              </div>
+            </div>
+
+            {/* Hero image skeleton */}
+            <div className="w-full aspect-video bg-bg-soft rounded-card animate-pulse mb-8" />
+
+            {/* Paragraph skeletons */}
+            <div className="flex flex-col gap-3 mb-6">
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-full" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-full" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-11/12" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-4/5" />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-full" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-full" />
+              <div className="h-4 bg-bg-soft rounded animate-pulse w-3/4" />
+            </div>
+          </article>
+        </main>
+
+        <Footer />
       </div>
     );
   }
