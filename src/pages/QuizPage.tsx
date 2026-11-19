@@ -16,65 +16,120 @@ interface Club {
   name: string;
   logo: string;
   difficulty: 'easy' | 'hard';
-  colors: string[]; // e.g. ['red', 'white']
-  country: string;  // e.g. 'Spain', 'England'
+  colors: string[];
+  country: string;
 }
 
 const LOGO = (slug: string) => `/quiz-logos/${slug}.png`;
 
 const CLUBS: Club[] = [
-  // ── EASY ──────────────────────────────────────────────────────────────────
-  { name: 'FC Barcelona',       difficulty: 'easy', logo: LOGO('barcelona'),    colors: ['blue', 'red', 'yellow'], country: 'Spain' },
-  { name: 'Real Madrid',        difficulty: 'easy', logo: LOGO('real-madrid'),  colors: ['white', 'blue', 'gold'], country: 'Spain' },
-  { name: 'Atletico Madrid',    difficulty: 'easy', logo: LOGO('atletico'),     colors: ['red', 'white', 'blue'], country: 'Spain' },
-  { name: 'Valencia CF',        difficulty: 'easy', logo: LOGO('valencia'),     colors: ['white', 'black', 'orange'], country: 'Spain' },
-  { name: 'Sevilla FC',         difficulty: 'easy', logo: LOGO('sevilla'),      colors: ['red', 'white'], country: 'Spain' },
-  { name: 'Manchester United',  difficulty: 'easy', logo: LOGO('man-united'),   colors: ['red', 'yellow', 'black'], country: 'England' },
-  { name: 'Liverpool FC',       difficulty: 'easy', logo: LOGO('liverpool'),    colors: ['red', 'green', 'white'], country: 'England' },
-  { name: 'Arsenal FC',         difficulty: 'easy', logo: LOGO('arsenal'),      colors: ['red', 'white'], country: 'England' },
-  { name: 'Chelsea FC',         difficulty: 'easy', logo: LOGO('chelsea'),      colors: ['blue', 'white'], country: 'England' },
-  { name: 'Manchester City',    difficulty: 'easy', logo: LOGO('man-city'),     colors: ['sky-blue', 'white'], country: 'England' },
-  { name: 'Tottenham Hotspur',  difficulty: 'easy', logo: LOGO('tottenham'),    colors: ['navy', 'white'], country: 'England' },
-  { name: 'Bayern Munich',      difficulty: 'easy', logo: LOGO('bayern'),       colors: ['red', 'white', 'blue'], country: 'Germany' },
-  { name: 'Borussia Dortmund',  difficulty: 'easy', logo: LOGO('dortmund'),     colors: ['yellow', 'black'], country: 'Germany' },
-  { name: 'Bayer Leverkusen',   difficulty: 'easy', logo: LOGO('leverkusen'),   colors: ['black', 'red'], country: 'Germany' },
-  { name: 'RB Leipzig',         difficulty: 'easy', logo: LOGO('rb-leipzig'),   colors: ['red', 'white', 'yellow'], country: 'Germany' },
-  { name: 'Juventus',           difficulty: 'easy', logo: LOGO('juventus'),     colors: ['black', 'white'], country: 'Italy' },
-  { name: 'AC Milan',           difficulty: 'easy', logo: LOGO('ac-milan'),     colors: ['red', 'black'], country: 'Italy' },
-  { name: 'Inter Milan',        difficulty: 'easy', logo: LOGO('inter-milan'),  colors: ['blue', 'black'], country: 'Italy' },
-  { name: 'AS Roma',            difficulty: 'easy', logo: LOGO('roma'),         colors: ['maroon', 'yellow'], country: 'Italy' },
-  { name: 'Napoli',             difficulty: 'easy', logo: LOGO('napoli'),       colors: ['sky-blue', 'white'], country: 'Italy' },
-  { name: 'PSG',                difficulty: 'easy', logo: LOGO('psg'),          colors: ['blue', 'red', 'white'], country: 'France' },
-  { name: 'Marseille',          difficulty: 'easy', logo: LOGO('marseille'),    colors: ['sky-blue', 'white'], country: 'France' },
-  { name: 'Lyon',               difficulty: 'easy', logo: LOGO('lyon'),         colors: ['blue', 'red', 'white'], country: 'France' },
-  { name: 'Ajax',               difficulty: 'easy', logo: LOGO('ajax'),         colors: ['red', 'white'], country: 'Netherlands' },
-  { name: 'PSV Eindhoven',      difficulty: 'easy', logo: LOGO('psv'),          colors: ['red', 'white'], country: 'Netherlands' },
-  { name: 'FC Porto',           difficulty: 'easy', logo: LOGO('porto'),        colors: ['blue', 'white'], country: 'Portugal' },
-  { name: 'Benfica',            difficulty: 'easy', logo: LOGO('benfica'),      colors: ['red', 'white'], country: 'Portugal' },
-  { name: 'Sporting CP',        difficulty: 'easy', logo: LOGO('sporting-cp'),  colors: ['green', 'white'], country: 'Portugal' },
+  // ── EASY (Top Tier Global Giants) ─────────────────────────────────────────
+  { name: 'FC Barcelona',       difficulty: 'easy', logo: LOGO('barcelona'),        colors: ['blue', 'red', 'yellow'], country: 'Spain' },
+  { name: 'Real Madrid',        difficulty: 'easy', logo: LOGO('real-madrid'),      colors: ['white', 'blue', 'gold'], country: 'Spain' },
+  { name: 'Atletico Madrid',    difficulty: 'easy', logo: LOGO('atletico'),         colors: ['red', 'white', 'blue'], country: 'Spain' },
+  { name: 'Valencia CF',        difficulty: 'easy', logo: LOGO('valencia'),         colors: ['white', 'black', 'orange'], country: 'Spain' },
+  { name: 'Sevilla FC',         difficulty: 'easy', logo: LOGO('sevilla'),          colors: ['red', 'white'], country: 'Spain' },
+  { name: 'Manchester United',  difficulty: 'easy', logo: LOGO('man-united'),       colors: ['red', 'yellow', 'black'], country: 'England' },
+  { name: 'Liverpool FC',       difficulty: 'easy', logo: LOGO('liverpool'),        colors: ['red', 'green', 'white'], country: 'England' },
+  { name: 'Arsenal FC',         difficulty: 'easy', logo: LOGO('arsenal'),          colors: ['red', 'white'], country: 'England' },
+  { name: 'Chelsea FC',         difficulty: 'easy', logo: LOGO('chelsea'),          colors: ['blue', 'white'], country: 'England' },
+  { name: 'Manchester City',    difficulty: 'easy', logo: LOGO('man-city'),         colors: ['sky-blue', 'white'], country: 'England' },
+  { name: 'Tottenham Hotspur',  difficulty: 'easy', logo: LOGO('tottenham'),        colors: ['navy', 'white'], country: 'England' },
+  { name: 'Bayern Munich',      difficulty: 'easy', logo: LOGO('bayern'),           colors: ['red', 'white', 'blue'], country: 'Germany' },
+  { name: 'Borussia Dortmund',  difficulty: 'easy', logo: LOGO('dortmund'),         colors: ['yellow', 'black'], country: 'Germany' },
+  { name: 'Bayer Leverkusen',   difficulty: 'easy', logo: LOGO('leverkusen'),       colors: ['black', 'red'], country: 'Germany' },
+  { name: 'RB Leipzig',         difficulty: 'easy', logo: LOGO('rb-leipzig'),       colors: ['red', 'white', 'yellow'], country: 'Germany' },
+  { name: 'Juventus',           difficulty: 'easy', logo: LOGO('juventus'),         colors: ['black', 'white'], country: 'Italy' },
+  { name: 'AC Milan',           difficulty: 'easy', logo: LOGO('ac-milan'),         colors: ['red', 'black'], country: 'Italy' },
+  { name: 'Inter Milan',        difficulty: 'easy', logo: LOGO('inter-milan'),      colors: ['blue', 'black'], country: 'Italy' },
+  { name: 'AS Roma',            difficulty: 'easy', logo: LOGO('roma'),             colors: ['maroon', 'yellow'], country: 'Italy' },
+  { name: 'Napoli',             difficulty: 'easy', logo: LOGO('napoli'),           colors: ['sky-blue', 'white'], country: 'Italy' },
+  { name: 'PSG',                difficulty: 'easy', logo: LOGO('psg'),              colors: ['blue', 'red', 'white'], country: 'France' },
+  { name: 'Marseille',          difficulty: 'easy', logo: LOGO('marseille'),        colors: ['sky-blue', 'white'], country: 'France' },
+  { name: 'Lyon',               difficulty: 'easy', logo: LOGO('lyon'),             colors: ['blue', 'red', 'white'], country: 'France' },
+  { name: 'Ajax',               difficulty: 'easy', logo: LOGO('ajax'),             colors: ['red', 'white'], country: 'Netherlands' },
+  { name: 'PSV Eindhoven',      difficulty: 'easy', logo: LOGO('psv'),              colors: ['red', 'white'], country: 'Netherlands' },
+  { name: 'FC Porto',           difficulty: 'easy', logo: LOGO('porto'),            colors: ['blue', 'white'], country: 'Portugal' },
+  { name: 'Benfica',            difficulty: 'easy', logo: LOGO('benfica'),          colors: ['red', 'white'], country: 'Portugal' },
+  { name: 'Sporting CP',        difficulty: 'easy', logo: LOGO('sporting-cp'),      colors: ['green', 'white'], country: 'Portugal' },
 
-  // ── HARD ──────────────────────────────────────────────────────────────────
-  { name: 'Feyenoord',          difficulty: 'hard', logo: LOGO('feyenoord'),    colors: ['red', 'white', 'black'], country: 'Netherlands' },
-  { name: 'Galatasaray',        difficulty: 'hard', logo: LOGO('galatasaray'),  colors: ['yellow', 'red'], country: 'Turkey' },
-  { name: 'Fenerbahce',         difficulty: 'hard', logo: LOGO('fenerbahce'),   colors: ['yellow', 'navy'], country: 'Turkey' },
-  { name: 'Lazio',              difficulty: 'hard', logo: LOGO('lazio'),        colors: ['sky-blue', 'white'], country: 'Italy' },
-  { name: 'Villarreal CF',      difficulty: 'hard', logo: LOGO('villarreal'),   colors: ['yellow', 'blue'], country: 'Spain' },
-  { name: 'Wolves',             difficulty: 'hard', logo: LOGO('wolves'),       colors: ['gold', 'black'], country: 'England' },
-  { name: 'West Ham United',    difficulty: 'hard', logo: LOGO('west-ham'),     colors: ['claret', 'sky-blue'], country: 'England' },
-  { name: 'Aston Villa',        difficulty: 'hard', logo: LOGO('aston-villa'),  colors: ['claret', 'sky-blue'], country: 'England' },
-  { name: 'Eintracht Frankfurt',difficulty: 'hard', logo: LOGO('frankfurt'),   colors: ['red', 'black', 'white'], country: 'Germany' },
-  { name: 'Shakhtar Donetsk',   difficulty: 'hard', logo: LOGO('shakhtar'),     colors: ['orange', 'black'], country: 'Ukraine' },
-  { name: 'Red Star Belgrade',  difficulty: 'hard', logo: LOGO('red-star'),     colors: ['red', 'white'], country: 'Serbia' },
-  { name: 'Club Brugge',        difficulty: 'hard', logo: LOGO('club-brugge'),  colors: ['blue', 'black'], country: 'Belgium' },
-  { name: 'Anderlecht',         difficulty: 'hard', logo: LOGO('anderlecht'),   colors: ['purple', 'white'], country: 'Belgium' },
-  { name: 'Flamengo',           difficulty: 'hard', logo: LOGO('flamengo'),     colors: ['red', 'black'], country: 'Brazil' },
-  { name: 'Boca Juniors',       difficulty: 'hard', logo: LOGO('boca-juniors'), colors: ['blue', 'yellow'], country: 'Argentina' },
-  { name: 'Celtic FC',          difficulty: 'hard', logo: LOGO('celtic'),       colors: ['green', 'white'], country: 'Scotland' },
-  { name: 'Rangers FC',         difficulty: 'hard', logo: LOGO('rangers'),      colors: ['blue', 'white', 'red'], country: 'Scotland' },
+  // ── HARD (Obscure, Tricky Crests & Tough European/South American Clubs) ───
+  { name: 'Atalanta',           difficulty: 'hard', logo: LOGO('atalanta'),         colors: ['blue', 'black'], country: 'Italy' },
+  { name: 'Bologna',            difficulty: 'hard', logo: LOGO('bologna'),          colors: ['red', 'blue'], country: 'Italy' },
+  { name: 'Torino',             difficulty: 'hard', logo: LOGO('torino'),           colors: ['maroon', 'white'], country: 'Italy' },
+  { name: 'Fiorentina',         difficulty: 'hard', logo: LOGO('fiorentina'),       colors: ['purple', 'white'], country: 'Italy' },
+  { name: 'Udinese',            difficulty: 'hard', logo: LOGO('udinese'),          colors: ['black', 'white'], country: 'Italy' },
+  { name: 'Lazio',              difficulty: 'hard', logo: LOGO('lazio'),            colors: ['sky-blue', 'white'], country: 'Italy' },
+  { name: 'Real Sociedad',      difficulty: 'hard', logo: LOGO('real-sociedad'),    colors: ['blue', 'white'], country: 'Spain' },
+  { name: 'Athletic Club',      difficulty: 'hard', logo: LOGO('athletic-bilbao'),  colors: ['red', 'white'], country: 'Spain' },
+  { name: 'Real Betis',         difficulty: 'hard', logo: LOGO('real-betis'),       colors: ['green', 'white'], country: 'Spain' },
+  { name: 'Celta Vigo',         difficulty: 'hard', logo: LOGO('celta-vigo'),       colors: ['sky-blue', 'white'], country: 'Spain' },
+  { name: 'Osasuna',            difficulty: 'hard', logo: LOGO('osasuna'),          colors: ['red', 'navy'], country: 'Spain' },
+  { name: 'Getafe',             difficulty: 'hard', logo: LOGO('getafe'),           colors: ['blue', 'white'], country: 'Spain' },
+  { name: 'Rayo Vallecano',     difficulty: 'hard', logo: LOGO('rayo-vallecano'),   colors: ['white', 'red'], country: 'Spain' },
+  { name: 'Villarreal CF',      difficulty: 'hard', logo: LOGO('villarreal'),       colors: ['yellow', 'blue'], country: 'Spain' },
+  { name: 'VfB Stuttgart',      difficulty: 'hard', logo: LOGO('stuttgart'),        colors: ['white', 'red'], country: 'Germany' },
+  { name: 'Werder Bremen',      difficulty: 'hard', logo: LOGO('werder-bremen'),    colors: ['green', 'white'], country: 'Germany' },
+  { name: 'Mainz 05',           difficulty: 'hard', logo: LOGO('mainz'),            colors: ['red', 'white'], country: 'Germany' },
+  { name: 'Borussia M’gladbach',difficulty: 'hard', logo: LOGO('gladbach'),         colors: ['white', 'green', 'black'], country: 'Germany' },
+  { name: 'Union Berlin',       difficulty: 'hard', logo: LOGO('union-berlin'),     colors: ['red', 'white'], country: 'Germany' },
+  { name: 'Eintracht Frankfurt',difficulty: 'hard', logo: LOGO('frankfurt'),        colors: ['red', 'black', 'white'], country: 'Germany' },
+  { name: 'Brighton',           difficulty: 'hard', logo: LOGO('brighton'),         colors: ['blue', 'white'], country: 'England' },
+  { name: 'Crystal Palace',     difficulty: 'hard', logo: LOGO('crystal-palace'),   colors: ['blue', 'red'], country: 'England' },
+  { name: 'Brentford',          difficulty: 'hard', logo: LOGO('brentford'),        colors: ['red', 'white'], country: 'England' },
+  { name: 'Fulham',             difficulty: 'hard', logo: LOGO('fulham'),           colors: ['white', 'black'], country: 'England' },
+  { name: 'Everton',            difficulty: 'hard', logo: LOGO('everton'),          colors: ['blue', 'white'], country: 'England' },
+  { name: 'Nottingham Forest',  difficulty: 'hard', logo: LOGO('nottingham-forest'),colors: ['red', 'white'], country: 'England' },
+  { name: 'Wolves',             difficulty: 'hard', logo: LOGO('wolves'),           colors: ['gold', 'black'], country: 'England' },
+  { name: 'West Ham United',    difficulty: 'hard', logo: LOGO('west-ham'),         colors: ['claret', 'sky-blue'], country: 'England' },
+  { name: 'Aston Villa',        difficulty: 'hard', logo: LOGO('aston-villa'),      colors: ['claret', 'sky-blue'], country: 'England' },
+  { name: 'Monaco',             difficulty: 'hard', logo: LOGO('monaco'),           colors: ['red', 'white'], country: 'France' },
+  { name: 'Lille',              difficulty: 'hard', logo: LOGO('lille'),            colors: ['red', 'navy', 'white'], country: 'France' },
+  { name: 'Nice',               difficulty: 'hard', logo: LOGO('nice'),             colors: ['red', 'black'], country: 'France' },
+  { name: 'Strasbourg',         difficulty: 'hard', logo: LOGO('strasbourg'),       colors: ['blue', 'white'], country: 'France' },
+  { name: 'Nantes',             difficulty: 'hard', logo: LOGO('nantes'),           colors: ['yellow', 'green'], country: 'France' },
+  { name: 'Feyenoord',          difficulty: 'hard', logo: LOGO('feyenoord'),        colors: ['red', 'white', 'black'], country: 'Netherlands' },
+  { name: 'AZ Alkmaar',         difficulty: 'hard', logo: LOGO('az-alkmaar'),       colors: ['red', 'white'], country: 'Netherlands' },
+  { name: 'Galatasaray',        difficulty: 'hard', logo: LOGO('galatasaray'),      colors: ['yellow', 'red'], country: 'Turkey' },
+  { name: 'Fenerbahce',         difficulty: 'hard', logo: LOGO('fenerbahce'),       colors: ['yellow', 'navy'], country: 'Turkey' },
+  { name: 'Besiktas',           difficulty: 'hard', logo: LOGO('besiktas'),         colors: ['black', 'white'], country: 'Turkey' },
+  { name: 'Trabzonspor',        difficulty: 'hard', logo: LOGO('trabzonspor'),      colors: ['maroon', 'sky-blue'], country: 'Turkey' },
+  { name: 'Olympiacos',         difficulty: 'hard', logo: LOGO('olympiacos'),       colors: ['red', 'white'], country: 'Greece' },
+  { name: 'Panathinaikos',      difficulty: 'hard', logo: LOGO('panathinaikos'),    colors: ['green', 'white'], country: 'Greece' },
+  { name: 'PAOK',               difficulty: 'hard', logo: LOGO('paok'),             colors: ['black', 'white'], country: 'Greece' },
+  { name: 'AEK Athens',         difficulty: 'hard', logo: LOGO('aek-athens'),       colors: ['yellow', 'black'], country: 'Greece' },
+  { name: 'Dinamo Zagreb',      difficulty: 'hard', logo: LOGO('dinamo-zagreb'),    colors: ['blue', 'white'], country: 'Croatia' },
+  { name: 'Hajduk Split',       difficulty: 'hard', logo: LOGO('hajduk-split'),     colors: ['white', 'blue'], country: 'Croatia' },
+  { name: 'Slavia Prague',      difficulty: 'hard', logo: LOGO('slavia-prague'),    colors: ['red', 'white'], country: 'Czechia' },
+  { name: 'Sparta Prague',      difficulty: 'hard', logo: LOGO('sparta-prague'),    colors: ['maroon', 'white'], country: 'Czechia' },
+  { name: 'Dynamo Kyiv',        difficulty: 'hard', logo: LOGO('dynamo-kyiv'),      colors: ['white', 'blue'], country: 'Ukraine' },
+  { name: 'Shakhtar Donetsk',   difficulty: 'hard', logo: LOGO('shakhtar'),         colors: ['orange', 'black'], country: 'Ukraine' },
+  { name: 'Red Star Belgrade',  difficulty: 'hard', logo: LOGO('red-star'),         colors: ['red', 'white'], country: 'Serbia' },
+  { name: 'Club Brugge',        difficulty: 'hard', logo: LOGO('club-brugge'),      colors: ['blue', 'black'], country: 'Belgium' },
+  { name: 'Anderlecht',         difficulty: 'hard', logo: LOGO('anderlecht'),       colors: ['purple', 'white'], country: 'Belgium' },
+  { name: 'Red Bull Salzburg',  difficulty: 'hard', logo: LOGO('salzburg'),         colors: ['red', 'white'], country: 'Austria' },
+  { name: 'Rapid Vienna',       difficulty: 'hard', logo: LOGO('rapid-vienna'),     colors: ['green', 'white'], country: 'Austria' },
+  { name: 'Malmo FF',           difficulty: 'hard', logo: LOGO('malmo'),            colors: ['sky-blue', 'white'], country: 'Sweden' },
+  { name: 'FC Copenhagen',      difficulty: 'hard', logo: LOGO('copenhagen'),       colors: ['white', 'blue'], country: 'Denmark' },
+  { name: 'Brondby IF',         difficulty: 'hard', logo: LOGO('brondby'),          colors: ['yellow', 'blue'], country: 'Denmark' },
+  { name: 'Bodo/Glimt',         difficulty: 'hard', logo: LOGO('bodoe-glimt'),      colors: ['yellow', 'black'], country: 'Norway' },
+  { name: 'Rosenborg',          difficulty: 'hard', logo: LOGO('rosenborg'),        colors: ['white', 'black'], country: 'Norway' },
+  { name: 'Flamengo',           difficulty: 'hard', logo: LOGO('flamengo'),         colors: ['red', 'black'], country: 'Brazil' },
+  { name: 'Palmeiras',          difficulty: 'hard', logo: LOGO('palmeiras'),        colors: ['green', 'white'], country: 'Brazil' },
+  { name: 'Sao Paulo',          difficulty: 'hard', logo: LOGO('sao-paulo'),        colors: ['red', 'white', 'black'], country: 'Brazil' },
+  { name: 'Corinthians',        difficulty: 'hard', logo: LOGO('corinthians'),      colors: ['black', 'white'], country: 'Brazil' },
+  { name: 'Gremio',             difficulty: 'hard', logo: LOGO('gremio'),           colors: ['blue', 'black', 'white'], country: 'Brazil' },
+  { name: 'Internacional',      difficulty: 'hard', logo: LOGO('internacional'),    colors: ['red', 'white'], country: 'Brazil' },
+  { name: 'Boca Juniors',       difficulty: 'hard', logo: LOGO('boca-juniors'),     colors: ['blue', 'yellow'], country: 'Argentina' },
+  { name: 'River Plate',        difficulty: 'hard', logo: LOGO('river-plate'),      colors: ['white', 'red'], country: 'Argentina' },
+  { name: 'Racing Club',        difficulty: 'hard', logo: LOGO('racing-club'),      colors: ['sky-blue', 'white'], country: 'Argentina' },
+  { name: 'San Lorenzo',        difficulty: 'hard', logo: LOGO('san-lorenzo'),      colors: ['blue', 'red'], country: 'Argentina' },
+  { name: 'Celtic FC',          difficulty: 'hard', logo: LOGO('celtic'),           colors: ['green', 'white'], country: 'Scotland' },
+  { name: 'Rangers FC',         difficulty: 'hard', logo: LOGO('rangers'),          colors: ['blue', 'white', 'red'], country: 'Scotland' },
 ];
 
 const TOTAL_QUESTIONS = 10;
-const TIME_LIMIT = 12; // Snappier time limit for higher challenge
+const TIME_LIMIT = 10; // 10 seconds per round for real competitive pressure
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function shuffle<T>(arr: T[]): T[] {
@@ -87,9 +142,9 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 /**
- * Smart distractor selection:
- * Guarantees that wrong answers share the same country, color scheme, or league tier
- * so players CANNOT simply eliminate options by color or obvious mismatches.
+ * High-IQ distractor matching:
+ * For every club, select alternatives that share the same color scheme, country, or league.
+ * Even knowledgeable football fans cannot guess by process of elimination.
  */
 function buildQuestions(diff: Difficulty): Question[] {
   const pool =
@@ -100,26 +155,23 @@ function buildQuestions(diff: Difficulty): Question[] {
   const selected = shuffle(pool).slice(0, TOTAL_QUESTIONS);
 
   return selected.map(correct => {
-    // 1. Find candidates that share colors or country
     const colorOverlap = (c: Club) => c.colors.some(col => correct.colors.includes(col));
     const sameCountry = (c: Club) => c.country === correct.country;
 
-    // Strict candidates pool (excludes the correct club itself)
+    // Available distractors excluding correct team
     const available = CLUBS.filter(c => c.name !== correct.name);
 
-    // Score candidates by similarity
+    // Score distractors by resemblance
     const scored = available.map(c => {
       let score = 0;
-      if (sameCountry(c)) score += 3;
-      if (colorOverlap(c)) score += 2;
-      if (c.difficulty === correct.difficulty) score += 1;
+      if (sameCountry(c)) score += 4;
+      if (colorOverlap(c)) score += 3;
+      if (c.difficulty === correct.difficulty) score += 2;
       return { club: c, score };
     }).sort((a, b) => b.score - a.score);
 
-    // Pick the top matching similar clubs, with some random shuffle among ties
-    const topCandidates = shuffle(scored.slice(0, 8)).slice(0, 3).map(s => s.club);
-    
-    // Fallback if needed
+    // Pick 3 highest scoring distractors
+    const topCandidates = shuffle(scored.slice(0, 6)).slice(0, 3).map(s => s.club);
     while (topCandidates.length < 3) {
       const remaining = available.filter(c => !topCandidates.some(t => t.name === c.name));
       topCandidates.push(remaining[Math.floor(Math.random() * remaining.length)]);
@@ -162,7 +214,7 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
   );
 }
 
-// ─── Challenging Obscured Logo — Strong blur + grayscale + contrast ──────────
+// ─── Challenging Obscured Logo — Frosted glass + high-level blur + grayscale ─
 function LogoDisplay({ src, revealed }: { src: string; revealed: boolean }) {
   const [status, setStatus] = useState<'loading' | 'ok' | 'err'>('loading');
 
@@ -170,16 +222,18 @@ function LogoDisplay({ src, revealed }: { src: string; revealed: boolean }) {
     <div style={{
       width: 180, height: 180, display: 'flex', alignItems: 'center',
       justifyContent: 'center', position: 'relative',
-      background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)',
+      background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)',
       borderRadius: '50%',
+      overflow: 'hidden',
     }}>
       <div style={{
-        position: 'absolute', inset: -14, borderRadius: '50%',
+        position: 'absolute', inset: 0, borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(91,46,232,0.25) 0%, transparent 70%)',
         opacity: revealed ? 0.8 : 0.2, transition: 'opacity 0.4s',
+        zIndex: 0,
       }} />
 
-      {/* Badge container */}
+      {/* Badge container with frosted overlay shield when unrevealed */}
       <img
         key={src}
         src={src}
@@ -188,15 +242,28 @@ function LogoDisplay({ src, revealed }: { src: string; revealed: boolean }) {
         onError={() => setStatus('err')}
         style={{
           width: 150, height: 150, objectFit: 'contain',
+          position: 'relative',
+          zIndex: 1,
           opacity: status === 'err' ? 0.3 : 1,
-          // When hidden: Heavy 18px blur + 50% grayscale + adjusted contrast so pure color guessing is much harder
-          // When revealed: Crisp 0px blur, full vibrant color reveal with drop-shadow glow
+          // When hidden: 22px blur + 60% grayscale + slightly dimmed so crest outline is recognizable to genuine experts only
+          // When revealed: sharp 0px blur with full colors
           filter: revealed
             ? 'blur(0px) grayscale(0%) contrast(100%) brightness(100%) drop-shadow(0 10px 25px rgba(91,46,232,0.5))'
-            : 'blur(18px) grayscale(55%) contrast(120%) brightness(85%)',
-          transition: 'filter 0.45s ease-out',
+            : 'blur(22px) grayscale(60%) contrast(125%) brightness(80%)',
+          transition: 'filter 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
+
+      {/* Frosted glass barrier when unrevealed */}
+      {!revealed && (
+        <div style={{
+          position: 'absolute', inset: 10, borderRadius: '50%',
+          backdropFilter: 'blur(4px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          pointerEvents: 'none',
+          zIndex: 2,
+        }} />
+      )}
     </div>
   );
 }
