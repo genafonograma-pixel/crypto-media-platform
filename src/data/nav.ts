@@ -13,4 +13,5 @@ export const SPORTS_NAV: NavSport[] = [
   { href: '/news/rugby', label: 'Rugby', inMore: true },
   { href: '/news/horse-racing', label: 'Horse racing', inMore: true },
   { href: '/news', label: 'All sports', inMore: true },
+  { href: '/quiz', label: '⚽ Logo Quiz', inMore: true },
 ];

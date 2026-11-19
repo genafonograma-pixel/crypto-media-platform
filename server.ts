@@ -2736,6 +2736,118 @@ app.get("/api/logs", (req, res) => {
     }
   });
 
+  // ── Quiz Logo Proxy ───────────────────────────────────────────────────────
+  // Fetches club badges server-side (bypasses CORS/hotlink blocks), converts
+  // SVG → PNG via sharp, and caches in memory for 24 h.
+  const LOGO_CACHE = new Map<string, { buf: Buffer; ct: string; ts: number }>();
+  const LOGO_TTL = 24 * 60 * 60 * 1000; // 24 h
+
+  // Wikimedia Commons direct-download URLs for each club slug
+  const LOGO_URLS: Record<string, string> = {
+    // ── Easy ──────────────────────────────────────────────────────────────
+    'barcelona':          'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg',
+    'real-madrid':        'https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg',
+    'man-united':         'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
+    'liverpool':          'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg',
+    'chelsea':            'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg',
+    'arsenal':            'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg',
+    'juventus':           'https://upload.wikimedia.org/wikipedia/commons/1/15/Juventus_FC_2017_logo.svg',
+    'bayern':             'https://upload.wikimedia.org/wikipedia/commons/1/1f/FC_Bayern_M%C3%BCnchen_logo_%282002%E2%80%932017%29.svg',
+    'psg':                'https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg',
+    'ac-milan':           'https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg',
+    'inter-milan':        'https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
+    'man-city':           'https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg',
+    'tottenham':          'https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg',
+    'dortmund':           'https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg',
+    'atletico':           'https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_de_Madrid_2017_logo.svg',
+    'ajax':               'https://upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg',
+    'porto':              'https://upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto.svg',
+    'benfica':            'https://upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg',
+    'roma':               'https://upload.wikimedia.org/wikipedia/en/f/f7/AS_Roma_logo_%282013%29.svg',
+    'napoli':             'https://upload.wikimedia.org/wikipedia/commons/2/21/SSC_Napoli_logo_2010.svg',
+    // ── Hard ──────────────────────────────────────────────────────────────
+    'rb-leipzig':         'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg',
+    'leverkusen':         'https://upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
+    'feyenoord':          'https://upload.wikimedia.org/wikipedia/en/6/6c/Feyenoord_Rotterdam.svg',
+    'galatasaray':        'https://upload.wikimedia.org/wikipedia/en/5/51/Galatasaray.svg',
+    'fenerbahce':         'https://upload.wikimedia.org/wikipedia/en/7/73/Fenerbah%C3%A7e_SK.svg',
+    'sporting-cp':        'https://upload.wikimedia.org/wikipedia/en/6/6a/Sporting_CP_%28Portugal%29.svg',
+    'lazio':              'https://upload.wikimedia.org/wikipedia/en/f/f1/Logo_S.S._Lazio.svg',
+    'marseille':          'https://upload.wikimedia.org/wikipedia/en/d/d8/Olympique_Marseille_logo.svg',
+    'lyon':               'https://upload.wikimedia.org/wikipedia/en/b/b7/Olympique_Lyonnais_logo.svg',
+    'sevilla':            'https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg',
+    'valencia':           'https://upload.wikimedia.org/wikipedia/en/c/ce/Valenciacf.svg',
+    'villarreal':         'https://upload.wikimedia.org/wikipedia/en/b/b9/Villarreal_CF_logo-en.svg',
+    'wolves':             'https://upload.wikimedia.org/wikipedia/en/f/fc/Wolverhampton_Wanderers.svg',
+    'west-ham':           'https://upload.wikimedia.org/wikipedia/en/c/c2/West_Ham_United_FC_logo.svg',
+    'aston-villa':        'https://upload.wikimedia.org/wikipedia/en/9/9f/Aston_Villa_FC_crest_%282016%29.svg',
+    'frankfurt':          'https://upload.wikimedia.org/wikipedia/commons/0/04/Eintracht_Frankfurt_Logo.svg',
+    'shakhtar':           'https://upload.wikimedia.org/wikipedia/en/a/a2/FC_Shakhtar_Donetsk.svg',
+    'red-star':           'https://upload.wikimedia.org/wikipedia/en/8/8f/Crvena_zvezda.svg',
+    'club-brugge':        'https://upload.wikimedia.org/wikipedia/en/b/b7/Club_Brugge_logo.svg',
+    'psv':                'https://upload.wikimedia.org/wikipedia/en/0/05/PSV_Eindhoven.svg',
+    'flamengo':           'https://upload.wikimedia.org/wikipedia/commons/2/2e/Flamengo_braz_logo.svg',
+    'boca-juniors':       'https://upload.wikimedia.org/wikipedia/commons/7/70/Boca_Juniors_crest.svg',
+    'celtic':             'https://upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC_crest.svg',
+    'rangers':            'https://upload.wikimedia.org/wikipedia/en/a/a9/Rangers_FC_crest.svg',
+    'anderlecht':         'https://upload.wikimedia.org/wikipedia/commons/9/90/RSC_Anderlecht_logo.svg',
+  };
+
+  app.get('/api/quiz-logo/:id', async (req, res) => {
+    const id = (req.params.id || '').toLowerCase().trim();
+    const src = LOGO_URLS[id];
+    if (!src) return res.status(404).json({ error: 'Unknown club id' });
+
+    // Serve from cache if fresh
+    const cached = LOGO_CACHE.get(id);
+    if (cached && Date.now() - cached.ts < LOGO_TTL) {
+      res.setHeader('Content-Type', cached.ct);
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      return res.send(cached.buf);
+    }
+
+    try {
+      const r = await fetch(src, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Sport25Bot/1.0; +https://sport25.news)',
+          'Accept': 'image/svg+xml,image/*,*/*',
+          'Referer': 'https://sport25.news/',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!r.ok) throw new Error(`upstream ${r.status}`);
+
+      const rawBuf = Buffer.from(await r.arrayBuffer());
+      const isSvg = (r.headers.get('content-type') || '').includes('svg') || src.endsWith('.svg');
+
+      let finalBuf: Buffer;
+      let ct: string;
+
+      if (isSvg) {
+        // Convert SVG → PNG via sharp for fast, consistent browser rendering
+        finalBuf = await sharp(rawBuf, { density: 144 })
+          .resize(240, 240, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .png({ compressionLevel: 8 })
+          .toBuffer();
+        ct = 'image/png';
+      } else {
+        finalBuf = await sharp(rawBuf)
+          .resize(240, 240, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .png({ compressionLevel: 8 })
+          .toBuffer();
+        ct = 'image/png';
+      }
+
+      LOGO_CACHE.set(id, { buf: finalBuf, ct, ts: Date.now() });
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      return res.send(finalBuf);
+    } catch (err: any) {
+      console.error(`[quiz-logo] Failed to fetch "${id}":`, err.message);
+      return res.status(502).json({ error: 'Failed to fetch logo', detail: err.message });
+    }
+  });
+
   // ── Known Valid Frontend Routes ──────────────────────────────────────────
   const VALID_STATIC_PATHS = new Set([
     "",
@@ -2750,6 +2862,7 @@ app.get("/api/logs", (req, res) => {
     "/bitcoin-news",
     "/author/jordan-cole",
     "/admin",
+    "/quiz",
   ]);
 
   const VALID_CATEGORIES = new Set([

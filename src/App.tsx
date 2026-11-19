@@ -15,6 +15,7 @@ import PopupAd from './components/PopupAd';
 import FloatingBanner from './components/FloatingBanner';
 import AdminAds from './pages/AdminAds';
 import AdminGuard from './components/AdminGuard';
+import QuizPage from './pages/QuizPage';
 
 import type { Article, NewsResponse } from './types';
 
@@ -111,6 +112,7 @@ export default function App() {
         <Route path="/bitcoin-news" element={<Navigate to="/football-news" replace />} />
         <Route path="/article/:slug" element={<ArticlePage articles={articles} loading={loading} />} />
         <Route path="/author/jordan-cole" element={<AuthorPage articles={articles} loading={loading} />} />
+        <Route path="/quiz" element={<QuizPage />} />
         <Route path="/admin" element={<AdminGuard><AdminAds /></AdminGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
