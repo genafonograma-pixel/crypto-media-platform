@@ -5,19 +5,23 @@ import Footer from '../components/Footer';
 import AdPlacement from '../components/AdPlacement';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-interface Club { name: string; logo: string; difficulty: 'easy' | 'hard' }
-type Difficulty = 'easy' | 'hard' | 'mixed';
-type Screen = 'home' | 'quiz' | 'result';
-type AnswerState = 'idle' | 'correct' | 'wrong' | 'timeout';
-interface Question { correct: Club; options: Club[] }
+export type Difficulty = 'easy' | 'hard' | 'mixed' | 'quarter';
+export type Screen = 'home' | 'quiz' | 'result';
+export type AnswerState = 'idle' | 'correct' | 'wrong' | 'timeout';
+export type Quadrant = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-// ─── Club Data — High-res PNGs hosted locally in /quiz-logos/ (100% reliable) ──
-interface Club {
+export interface Club {
   name: string;
   logo: string;
   difficulty: 'easy' | 'hard';
   colors: string[];
   country: string;
+}
+
+export interface Question {
+  correct: Club;
+  options: Club[];
+  quadrant?: Quadrant;
 }
 
 const LOGO = (slug: string) => `/quiz-logos/${slug}.png`;
@@ -149,7 +153,7 @@ function shuffle<T>(arr: T[]): T[] {
 /**
  * High-IQ distractor matching:
  * - Easy mode: 4 options (1 correct + 3 similar distractors)
- * - Mixed mode: 6 options (1 correct + 5 similar distractors)
+ * - Mixed / Quarter mode: 6 options (1 correct + 5 similar distractors)
  * - Hard mode: 8 options (1 correct + 7 similar distractors)
  */
 function buildQuestions(diff: Difficulty): Question[] {
@@ -159,10 +163,13 @@ function buildQuestions(diff: Difficulty): Question[] {
     CLUBS;
 
   const selected = shuffle(pool).slice(0, TOTAL_QUESTIONS);
-  const totalOptionsCount = diff === 'hard' ? 8 : diff === 'mixed' ? 6 : 4;
+  const totalOptionsCount = diff === 'hard' ? 8 : diff === 'easy' ? 4 : 6;
   const numDistractors = totalOptionsCount - 1;
 
+  const QUADRANTS: Quadrant[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+
   return selected.map(correct => {
+    const quadrant = QUADRANTS[Math.floor(Math.random() * QUADRANTS.length)];
     const colorOverlap = (c: Club) => c.colors.some(col => correct.colors.includes(col));
     const sameCountry = (c: Club) => c.country === correct.country;
 
@@ -185,7 +192,7 @@ function buildQuestions(diff: Difficulty): Question[] {
       topCandidates.push(remaining[Math.floor(Math.random() * remaining.length)]);
     }
 
-    return { correct, options: shuffle([correct, ...topCandidates]) };
+    return { correct, options: shuffle([correct, ...topCandidates]), quadrant };
   });
 }
 
@@ -222,20 +229,55 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
   );
 }
 
-// ─── Challenging Obscured Logo — Frosted glass + high-level blur + grayscale ─
-function LogoDisplay({ src, revealed, onLoaded }: { src: string; revealed: boolean; onLoaded?: () => void }) {
+// ─── Challenging Logo Display (Obscured blur OR 1/4 Zoom View) ───────────────
+function LogoDisplay({
+  src,
+  revealed,
+  onLoaded,
+  isQuarter = false,
+  quadrant = 'top-left',
+}: {
+  src: string;
+  revealed: boolean;
+  onLoaded?: () => void;
+  isQuarter?: boolean;
+  quadrant?: Quadrant;
+}) {
   const [status, setStatus] = useState<'loading' | 'ok' | 'err'>('loading');
+
+  const quadrantTransforms: Record<Quadrant, string> = {
+    'top-left': 'translate(24%, 24%) scale(2.2)',
+    'top-right': 'translate(-24%, 24%) scale(2.2)',
+    'bottom-left': 'translate(24%, -24%) scale(2.2)',
+    'bottom-right': 'translate(-24%, -24%) scale(2.2)',
+  };
+
+  const transform = isQuarter
+    ? (revealed ? 'translate(0%, 0%) scale(0.88)' : quadrantTransforms[quadrant])
+    : (revealed ? 'translate(0%, 0%) scale(0.88)' : 'translate(0%, 0%) scale(0.85)');
+
+  const filter = isQuarter
+    ? (revealed
+        ? 'blur(0px) grayscale(0%) contrast(100%) brightness(100%) drop-shadow(0 10px 25px rgba(91,46,232,0.5))'
+        : 'blur(0px) contrast(105%) brightness(100%) drop-shadow(0 4px 12px rgba(0,0,0,0.4))')
+    : (revealed
+        ? 'blur(0px) grayscale(0%) contrast(100%) brightness(100%) drop-shadow(0 10px 25px rgba(91,46,232,0.5))'
+        : 'blur(22px) grayscale(60%) contrast(125%) brightness(80%)');
 
   return (
     <div style={{
       width: 180, height: 180, display: 'flex', alignItems: 'center',
       justifyContent: 'center', position: 'relative',
-      background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)',
-      borderRadius: '50%',
+      background: isQuarter
+        ? 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.5) 100%)'
+        : 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)',
+      borderRadius: isQuarter ? 20 : '50%',
+      border: isQuarter ? '1.5px solid rgba(91,46,232,0.35)' : '1px solid rgba(255,255,255,0.08)',
       overflow: 'hidden',
+      boxShadow: isQuarter ? '0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(91,46,232,0.1)' : 'none',
     }}>
       <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
+        position: 'absolute', inset: 0, borderRadius: isQuarter ? 20 : '50%',
         background: 'radial-gradient(circle, rgba(91,46,232,0.25) 0%, transparent 70%)',
         opacity: revealed ? 0.8 : 0.2, transition: 'opacity 0.4s',
         zIndex: 0,
@@ -252,7 +294,17 @@ function LogoDisplay({ src, revealed, onLoaded }: { src: string; revealed: boole
         }} />
       )}
 
-      {/* Badge container with frosted overlay shield when unrevealed */}
+      {/* Viewfinder corner brackets for quarter mode */}
+      {isQuarter && !revealed && (
+        <>
+          <div style={{ position: 'absolute', top: 8, left: 8, width: 10, height: 10, borderTop: '2px solid rgba(167,139,250,0.7)', borderLeft: '2px solid rgba(167,139,250,0.7)', pointerEvents: 'none', zIndex: 3 }} />
+          <div style={{ position: 'absolute', top: 8, right: 8, width: 10, height: 10, borderTop: '2px solid rgba(167,139,250,0.7)', borderRight: '2px solid rgba(167,139,250,0.7)', pointerEvents: 'none', zIndex: 3 }} />
+          <div style={{ position: 'absolute', bottom: 8, left: 8, width: 10, height: 10, borderBottom: '2px solid rgba(167,139,250,0.7)', borderLeft: '2px solid rgba(167,139,250,0.7)', pointerEvents: 'none', zIndex: 3 }} />
+          <div style={{ position: 'absolute', bottom: 8, right: 8, width: 10, height: 10, borderBottom: '2px solid rgba(167,139,250,0.7)', borderRight: '2px solid rgba(167,139,250,0.7)', pointerEvents: 'none', zIndex: 3 }} />
+        </>
+      )}
+
+      {/* Badge container */}
       <img
         key={src}
         src={src}
@@ -266,21 +318,19 @@ function LogoDisplay({ src, revealed, onLoaded }: { src: string; revealed: boole
           if (onLoaded) onLoaded();
         }}
         style={{
-          width: 150, height: 150, objectFit: 'contain',
+          width: 180, height: 180, objectFit: 'contain',
           position: 'relative',
           zIndex: 1,
           opacity: status === 'err' ? 0.3 : status === 'loading' ? 0 : 1,
-          // When hidden: 22px blur + 60% grayscale + slightly dimmed so crest outline is recognizable to genuine experts only
-          // When revealed: sharp 0px blur with full colors
-          filter: revealed
-            ? 'blur(0px) grayscale(0%) contrast(100%) brightness(100%) drop-shadow(0 10px 25px rgba(91,46,232,0.5))'
-            : 'blur(22px) grayscale(60%) contrast(125%) brightness(80%)',
-          transition: 'filter 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
+          filter,
+          transform,
+          transformOrigin: 'center center',
+          transition: 'transform 0.5s cubic-bezier(0.34, 1.25, 0.64, 1), filter 0.35s ease, opacity 0.2s ease',
         }}
       />
 
-      {/* Frosted glass barrier when unrevealed */}
-      {!revealed && status === 'ok' && (
+      {/* Frosted glass barrier when unrevealed in blurred modes */}
+      {!isQuarter && !revealed && status === 'ok' && (
         <div style={{
           position: 'absolute', inset: 10, borderRadius: '50%',
           backdropFilter: 'blur(4px)',
@@ -448,9 +498,10 @@ export default function QuizPage() {
   const resultTitle  = pct === 1 ? 'Perfect Score!' : pct >= 0.8 ? 'Excellent!' : pct >= 0.6 ? 'Well Done!' : pct >= 0.4 ? 'Not Bad!' : 'Keep Practicing!';
 
   const diffMap: { key: Difficulty; icon: string; label: string; desc: string }[] = [
-    { key: 'easy',  icon: '🌟', label: 'Easy',  desc: '4 answers · Giants' },
-    { key: 'mixed', icon: '⚡', label: 'Mixed', desc: '6 answers · All clubs' },
-    { key: 'hard',  icon: '🔥', label: 'Hard',  desc: '8 answers · Obscure' },
+    { key: 'easy',    icon: '🌟', label: 'Easy',     desc: '4 answers · Giants · Blurred' },
+    { key: 'mixed',   icon: '⚡', label: 'Mixed',    desc: '6 answers · All clubs · Blurred' },
+    { key: 'hard',    icon: '🔥', label: 'Hard',     desc: '8 answers · Obscure · Blurred' },
+    { key: 'quarter', icon: '🧩', label: '1/4 Logo', desc: '6 answers · Sharp · 1/4 Crop' },
   ];
 
   // ── Layout wrapper — 3-col on desktop: [skyscraper | quiz | skyscraper]
@@ -503,7 +554,7 @@ export default function QuizPage() {
                 Club Logo Quiz
               </h1>
               <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
-                Guess the blurred badge · 4 choices · 15 seconds
+                Guess the badge · Blurred & 1/4 Crop modes · 10s timer
               </p>
             </div>
           </div>
@@ -537,7 +588,7 @@ export default function QuizPage() {
                     How well do you know<br />your club badges?
                   </h2>
                   <p style={{ margin: 0, color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 1.65 }}>
-                    Logos are blurred — figure out the club from the shape alone.<br />
+                    Test your eye with blurred silhouettes or zoomed 1/4 crest views.<br />
                     Build streaks for bonus points!
                   </p>
                 </div>
@@ -545,19 +596,19 @@ export default function QuizPage() {
                 {/* Difficulty */}
                 <div style={{ ...card, padding: '18px 20px' }}>
                   <p style={{ margin: '0 0 12px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Select difficulty
+                    Select game mode
                   </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
                     {diffMap.map(d => (
                       <button key={d.key} onClick={() => setDifficulty(d.key)} style={{
                         background: difficulty === d.key ? 'rgba(91,46,232,0.18)' : 'rgba(255,255,255,0.03)',
                         border: difficulty === d.key ? `1.5px solid ${BRAND}` : '1.5px solid rgba(255,255,255,0.08)',
                         borderRadius: 12, color: difficulty === d.key ? '#fff' : 'rgba(255,255,255,0.5)',
-                        cursor: 'pointer', padding: '13px 8px', textAlign: 'center', transition: 'all 0.18s', outline: 'none',
+                        cursor: 'pointer', padding: '14px 10px', textAlign: 'center', transition: 'all 0.18s', outline: 'none',
                       }}>
-                        <div style={{ fontSize: 20, marginBottom: 5 }}>{d.icon}</div>
+                        <div style={{ fontSize: 22, marginBottom: 5 }}>{d.icon}</div>
                         <div style={{ fontWeight: 700, fontSize: 13 }}>{d.label}</div>
-                        <div style={{ fontSize: 10, opacity: 0.55, marginTop: 2 }}>{d.desc}</div>
+                        <div style={{ fontSize: 10, opacity: 0.6, marginTop: 3 }}>{d.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -567,8 +618,8 @@ export default function QuizPage() {
                 <div style={{ ...card, padding: '16px 20px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
                     {[
-                      ['📋','10 questions per round'],['⏱️','15 seconds per logo'],
-                      ['🔍','Logos blurred — spot the shape'],['🔥','Streaks give bonus pts'],
+                      ['📋','10 questions per round'],['⏱️','10s timer per logo'],
+                      ['🔍','Blurred & 1/4 crop views'],['🔥','Streaks give bonus pts'],
                     ].map(([icon, text]) => (
                       <div key={text as string} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
                         <span style={{ fontSize: 14 }}>{icon}</span>
@@ -667,21 +718,43 @@ export default function QuizPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                     <span style={{
                       fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                      color: q.correct.difficulty === 'easy' ? BRAND : ALERT,
-                      background: q.correct.difficulty === 'easy' ? 'rgba(91,46,232,0.12)' : 'rgba(229,23,63,0.1)',
-                      border: `1px solid ${q.correct.difficulty === 'easy' ? 'rgba(91,46,232,0.3)' : 'rgba(229,23,63,0.25)'}`,
+                      color: difficulty === 'quarter' ? '#c4b5fd' : q.correct.difficulty === 'easy' ? BRAND : ALERT,
+                      background: difficulty === 'quarter' ? 'rgba(91,46,232,0.18)' : q.correct.difficulty === 'easy' ? 'rgba(91,46,232,0.12)' : 'rgba(229,23,63,0.1)',
+                      border: `1px solid ${difficulty === 'quarter' ? 'rgba(91,46,232,0.4)' : q.correct.difficulty === 'easy' ? 'rgba(91,46,232,0.3)' : 'rgba(229,23,63,0.25)'}`,
                       borderRadius: 999, padding: '4px 12px',
                     }}>
-                      {q.correct.difficulty === 'easy' ? '🌟 Easy' : '🔥 Hard'}
+                      {difficulty === 'quarter' ? '🧩 1/4 Mode' : q.correct.difficulty === 'easy' ? '🌟 Easy' : '🔥 Hard'}
                     </span>
                     <TimerRing timeLeft={timeLeft} />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
                     <LogoDisplay
                       src={q.correct.logo}
                       revealed={answerState !== 'idle'}
                       onLoaded={() => setImageReady(true)}
+                      isQuarter={difficulty === 'quarter'}
+                      quadrant={q.quadrant}
                     />
+                    {difficulty === 'quarter' && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        background: 'rgba(91,46,232,0.12)', border: '1px solid rgba(91,46,232,0.25)',
+                        borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#c4b5fd',
+                        marginTop: 12,
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, width: 12, height: 12 }}>
+                          <div style={{ background: q.quadrant === 'top-left' ? '#8b5cf6' : 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
+                          <div style={{ background: q.quadrant === 'top-right' ? '#8b5cf6' : 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
+                          <div style={{ background: q.quadrant === 'bottom-left' ? '#8b5cf6' : 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
+                          <div style={{ background: q.quadrant === 'bottom-right' ? '#8b5cf6' : 'rgba(255,255,255,0.2)', borderRadius: 1 }} />
+                        </div>
+                        <span>
+                          {answerState !== 'idle'
+                            ? 'Full Crest Revealed'
+                            : `Quadrant: ${q.quadrant === 'top-left' ? 'Top-Left' : q.quadrant === 'top-right' ? 'Top-Right' : q.quadrant === 'bottom-left' ? 'Bottom-Left' : 'Bottom-Right'}`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div style={{
                     minHeight: 22, textAlign: 'center', fontSize: 13, fontWeight: 700,
@@ -726,7 +799,7 @@ export default function QuizPage() {
                     ))}
                   </div>
                   <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-                    {difficulty === 'easy' ? '🌟 Easy' : difficulty === 'hard' ? '🔥 Hard' : '⚡ Mixed'} · {TOTAL_QUESTIONS} questions
+                    {difficulty === 'easy' ? '🌟 Easy' : difficulty === 'hard' ? '🔥 Hard' : difficulty === 'quarter' ? '🧩 1/4 Logo' : '⚡ Mixed'} · {TOTAL_QUESTIONS} questions
                   </p>
                 </div>
 
@@ -769,7 +842,7 @@ export default function QuizPage() {
                     📢 Share your score with friends!
                   </div>
                   <p style={{ margin: '0 0 14px', fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>
-                    Can they beat your {score} points on {difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Hard' : 'Mixed'} mode?
+                    Can they beat your {score} points on {difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Hard' : difficulty === 'quarter' ? '1/4 Logo' : 'Mixed'} mode?
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                     {/* Share to X / Twitter */}
