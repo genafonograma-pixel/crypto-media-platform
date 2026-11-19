@@ -6,6 +6,7 @@ export interface NavSport {
 
 export const SPORTS_NAV: NavSport[] = [
   { href: '/football-news', label: 'Football' },
+  { href: '/quiz', label: '⚽ Logo Quiz' },
   { href: '/news/american-football', label: 'NFL' },
   { href: '/news/basketball', label: 'Basketball' },
   { href: '/news/tennis', label: 'Tennis' },
@@ -13,5 +14,4 @@ export const SPORTS_NAV: NavSport[] = [
   { href: '/news/rugby', label: 'Rugby', inMore: true },
   { href: '/news/horse-racing', label: 'Horse racing', inMore: true },
   { href: '/news', label: 'All sports', inMore: true },
-  { href: '/quiz', label: '⚽ Logo Quiz', inMore: true },
 ];
