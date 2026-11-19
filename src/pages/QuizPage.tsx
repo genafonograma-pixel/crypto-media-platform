@@ -354,6 +354,7 @@ export default function QuizPage() {
   const [answerState, setAnswerState] = useState<AnswerState>('idle');
   const [chosenName, setChosenName]   = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [copied, setCopied]           = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopTimer = useCallback(() => {
@@ -597,9 +598,45 @@ export default function QuizPage() {
 
                 {/* Top bar */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-                    Question <span style={{ color: '#fff' }}>{current + 1}</span>
-                    <span style={{ opacity: 0.4 }}> / {TOTAL_QUESTIONS}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                      onClick={() => {
+                        stopTimer();
+                        setScreen('home');
+                      }}
+                      title="Restart quiz & choose mode"
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 8,
+                        color: 'rgba(255,255,255,0.7)',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)';
+                        (e.currentTarget as HTMLElement).style.color = '#fca5a5';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                        (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)';
+                      }}
+                    >
+                      <span>↺</span>
+                      <span>Restart</span>
+                    </button>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                      Q <span style={{ color: '#fff' }}>{current + 1}</span>
+                      <span style={{ opacity: 0.4 }}> / {TOTAL_QUESTIONS}</span>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {streak >= 2 && (
@@ -724,6 +761,157 @@ export default function QuizPage() {
                 {/* Result mobile ad */}
                 <div className="quiz-mobile-ad">
                   <AdPlacement format="in-article" />
+                </div>
+
+                {/* Social Share Card */}
+                <div style={{ ...card, padding: '18px 20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+                    📢 Share your score with friends!
+                  </div>
+                  <p style={{ margin: '0 0 14px', fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>
+                    Can they beat your {score} points on {difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Hard' : 'Mixed'} mode?
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    {/* Share to X / Twitter */}
+                    <button
+                      onClick={() => {
+                        const text = `⚽ I scored ${score} pts (${correctCount}/${TOTAL_QUESTIONS}) on the SPORT25 Football Club Logo Quiz! Can you beat my score? Play here:`;
+                        const url = 'https://sport25.news/quiz';
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+                      }}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: 10,
+                        color: '#fff',
+                        cursor: 'pointer',
+                        padding: '10px 4px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)';
+                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
+                        (e.currentTarget as HTMLElement).style.transform = '';
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>𝕏</span>
+                      <span style={{ fontSize: 11 }}>Post</span>
+                    </button>
+
+                    {/* Share to WhatsApp */}
+                    <button
+                      onClick={() => {
+                        const text = `⚽ I scored ${score} points (${correctCount}/${TOTAL_QUESTIONS}) on the SPORT25 Football Club Logo Quiz! Try it: https://sport25.news/quiz`;
+                        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      style={{
+                        background: 'rgba(37,211,102,0.12)',
+                        border: '1px solid rgba(37,211,102,0.3)',
+                        borderRadius: 10,
+                        color: '#4ade80',
+                        cursor: 'pointer',
+                        padding: '10px 4px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(37,211,102,0.22)';
+                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(37,211,102,0.12)';
+                        (e.currentTarget as HTMLElement).style.transform = '';
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>💬</span>
+                      <span style={{ fontSize: 11 }}>WhatsApp</span>
+                    </button>
+
+                    {/* Share to Telegram */}
+                    <button
+                      onClick={() => {
+                        const text = `⚽ I scored ${score} points (${correctCount}/${TOTAL_QUESTIONS}) on the SPORT25 Football Club Logo Quiz!`;
+                        const url = 'https://sport25.news/quiz';
+                        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      style={{
+                        background: 'rgba(0,136,204,0.12)',
+                        border: '1px solid rgba(0,136,204,0.3)',
+                        borderRadius: 10,
+                        color: '#38bdf8',
+                        cursor: 'pointer',
+                        padding: '10px 4px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(0,136,204,0.22)';
+                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(0,136,204,0.12)';
+                        (e.currentTarget as HTMLElement).style.transform = '';
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>✈️</span>
+                      <span style={{ fontSize: 11 }}>Telegram</span>
+                    </button>
+
+                    {/* Copy Result Link / Text */}
+                    <button
+                      onClick={() => {
+                        const text = `⚽ I scored ${score} points (${correctCount}/${TOTAL_QUESTIONS}) on the SPORT25 Football Club Logo Quiz! Can you beat me? https://sport25.news/quiz`;
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(text);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2500);
+                        }
+                      }}
+                      style={{
+                        background: copied ? 'rgba(34,197,94,0.2)' : 'rgba(91,46,232,0.15)',
+                        border: copied ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(91,46,232,0.4)',
+                        borderRadius: 10,
+                        color: copied ? '#86efac' : '#c4b5fd',
+                        cursor: 'pointer',
+                        padding: '10px 4px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.transform = '';
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>{copied ? '✓' : '🔗'}</span>
+                      <span style={{ fontSize: 11 }}>{copied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
