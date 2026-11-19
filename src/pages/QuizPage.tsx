@@ -146,6 +146,12 @@ function shuffle<T>(arr: T[]): T[] {
  * For every club, select alternatives that share the same color scheme, country, or league.
  * Even knowledgeable football fans cannot guess by process of elimination.
  */
+/**
+ * High-IQ distractor matching:
+ * - Easy mode: 4 options (1 correct + 3 similar distractors)
+ * - Mixed mode: 6 options (1 correct + 5 similar distractors)
+ * - Hard mode: 8 options (1 correct + 7 similar distractors)
+ */
 function buildQuestions(diff: Difficulty): Question[] {
   const pool =
     diff === 'easy' ? CLUBS.filter(c => c.difficulty === 'easy') :
@@ -153,6 +159,8 @@ function buildQuestions(diff: Difficulty): Question[] {
     CLUBS;
 
   const selected = shuffle(pool).slice(0, TOTAL_QUESTIONS);
+  const totalOptionsCount = diff === 'hard' ? 8 : diff === 'mixed' ? 6 : 4;
+  const numDistractors = totalOptionsCount - 1;
 
   return selected.map(correct => {
     const colorOverlap = (c: Club) => c.colors.some(col => correct.colors.includes(col));
@@ -170,9 +178,9 @@ function buildQuestions(diff: Difficulty): Question[] {
       return { club: c, score };
     }).sort((a, b) => b.score - a.score);
 
-    // Pick 3 highest scoring distractors
-    const topCandidates = shuffle(scored.slice(0, 6)).slice(0, 3).map(s => s.club);
-    while (topCandidates.length < 3) {
+    // Pick top candidates matching similar clubs
+    const topCandidates = shuffle(scored.slice(0, numDistractors * 2)).slice(0, numDistractors).map(s => s.club);
+    while (topCandidates.length < numDistractors) {
       const remaining = available.filter(c => !topCandidates.some(t => t.name === c.name));
       topCandidates.push(remaining[Math.floor(Math.random() * remaining.length)]);
     }
@@ -215,7 +223,7 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
 }
 
 // ─── Challenging Obscured Logo — Frosted glass + high-level blur + grayscale ─
-function LogoDisplay({ src, revealed }: { src: string; revealed: boolean }) {
+function LogoDisplay({ src, revealed, onLoaded }: { src: string; revealed: boolean; onLoaded?: () => void }) {
   const [status, setStatus] = useState<'loading' | 'ok' | 'err'>('loading');
 
   return (
@@ -233,29 +241,46 @@ function LogoDisplay({ src, revealed }: { src: string; revealed: boolean }) {
         zIndex: 0,
       }} />
 
+      {/* Loading placeholder spinner if image takes a second */}
+      {status === 'loading' && (
+        <div style={{
+          position: 'absolute', width: 36, height: 36, borderRadius: '50%',
+          border: '3px solid rgba(255,255,255,0.1)',
+          borderTopColor: '#5B2EE8',
+          animation: 'spin 0.8s linear infinite',
+          zIndex: 3,
+        }} />
+      )}
+
       {/* Badge container with frosted overlay shield when unrevealed */}
       <img
         key={src}
         src={src}
         alt="Club badge"
-        onLoad={() => setStatus('ok')}
-        onError={() => setStatus('err')}
+        onLoad={() => {
+          setStatus('ok');
+          if (onLoaded) onLoaded();
+        }}
+        onError={() => {
+          setStatus('err');
+          if (onLoaded) onLoaded();
+        }}
         style={{
           width: 150, height: 150, objectFit: 'contain',
           position: 'relative',
           zIndex: 1,
-          opacity: status === 'err' ? 0.3 : 1,
+          opacity: status === 'err' ? 0.3 : status === 'loading' ? 0 : 1,
           // When hidden: 22px blur + 60% grayscale + slightly dimmed so crest outline is recognizable to genuine experts only
           // When revealed: sharp 0px blur with full colors
           filter: revealed
             ? 'blur(0px) grayscale(0%) contrast(100%) brightness(100%) drop-shadow(0 10px 25px rgba(91,46,232,0.5))'
             : 'blur(22px) grayscale(60%) contrast(125%) brightness(80%)',
-          transition: 'filter 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'filter 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
         }}
       />
 
       {/* Frosted glass barrier when unrevealed */}
-      {!revealed && (
+      {!revealed && status === 'ok' && (
         <div style={{
           position: 'absolute', inset: 10, borderRadius: '50%',
           backdropFilter: 'blur(4px)',
@@ -294,7 +319,7 @@ function AnswerButton({ club, answerState, isCorrect, isChosen, onClick, disable
       background: bg, border: bdr, borderRadius: 10,
       color, cursor: disabled ? 'default' : 'pointer',
       fontSize: 13, fontWeight: 600, fontFamily: 'Inter, system-ui',
-      padding: '13px 14px', textAlign: 'left', transition: 'all 0.18s',
+      padding: '11px 12px', textAlign: 'left', transition: 'all 0.18s',
       width: '100%', display: 'flex', alignItems: 'center',
       justifyContent: 'space-between', gap: 6, outline: 'none',
     }}
@@ -308,8 +333,8 @@ function AnswerButton({ club, answerState, isCorrect, isChosen, onClick, disable
       const el = e.currentTarget as HTMLElement;
       el.style.background = bg; el.style.borderColor = 'rgba(255,255,255,0.09)'; el.style.transform = '';
     }}}>
-      <span>{club.name}</span>
-      {icon && <span style={{ fontWeight: 800, fontSize: 15, color: isCorrect ? '#22c55e' : ALERT }}>{icon}</span>}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{club.name}</span>
+      {icon && <span style={{ fontWeight: 800, fontSize: 15, color: isCorrect ? '#22c55e' : ALERT, flexShrink: 0 }}>{icon}</span>}
     </button>
   );
 }
@@ -325,6 +350,7 @@ export default function QuizPage() {
   const [streak, setStreak]           = useState(0);
   const [bestStreak, setBestStreak]   = useState(0);
   const [timeLeft, setTimeLeft]       = useState(TIME_LIMIT);
+  const [imageReady, setImageReady]   = useState(false);
   const [answerState, setAnswerState] = useState<AnswerState>('idle');
   const [chosenName, setChosenName]   = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState('');
@@ -337,15 +363,16 @@ export default function QuizPage() {
   const advanceQuestion = useCallback((nextIndex: number) => {
     if (nextIndex >= TOTAL_QUESTIONS) { setScreen('result'); return; }
     setCurrent(nextIndex);
+    setImageReady(false);
     setAnswerState('idle');
     setChosenName(null);
     setFeedbackMsg('');
     setTimeLeft(TIME_LIMIT);
   }, []);
 
-  // Timer
+  // Timer starts ONLY after image is fully loaded and ready
   useEffect(() => {
-    if (screen !== 'quiz' || answerState !== 'idle') return;
+    if (screen !== 'quiz' || answerState !== 'idle' || !imageReady) return;
     timerRef.current = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
@@ -360,21 +387,30 @@ export default function QuizPage() {
       });
     }, 1000);
     return stopTimer;
-  }, [screen, answerState, current, questions, stopTimer, advanceQuestion]);
+  }, [screen, answerState, current, questions, imageReady, stopTimer, advanceQuestion]);
 
-  // Preload next logo
-  useEffect(() => {
-    if (screen === 'quiz' && current + 1 < questions.length) {
+  // Preload all 10 round logos immediately upon starting quiz
+  const preloadRoundImages = useCallback((qs: Question[]) => {
+    qs.forEach(q => {
       const img = new Image();
-      img.src = questions[current + 1].correct.logo;
-    }
-  }, [screen, current, questions]);
+      img.src = q.correct.logo;
+    });
+  }, []);
 
   function startQuiz() {
     const qs = buildQuestions(difficulty);
-    setQuestions(qs); setCurrent(0); setScore(0); setCorrectCount(0);
-    setStreak(0); setBestStreak(0); setTimeLeft(TIME_LIMIT);
-    setAnswerState('idle'); setChosenName(null); setFeedbackMsg('');
+    preloadRoundImages(qs);
+    setQuestions(qs);
+    setCurrent(0);
+    setScore(0);
+    setCorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
+    setTimeLeft(TIME_LIMIT);
+    setImageReady(false);
+    setAnswerState('idle');
+    setChosenName(null);
+    setFeedbackMsg('');
     setScreen('quiz');
   }
 
@@ -411,9 +447,9 @@ export default function QuizPage() {
   const resultTitle  = pct === 1 ? 'Perfect Score!' : pct >= 0.8 ? 'Excellent!' : pct >= 0.6 ? 'Well Done!' : pct >= 0.4 ? 'Not Bad!' : 'Keep Practicing!';
 
   const diffMap: { key: Difficulty; icon: string; label: string; desc: string }[] = [
-    { key: 'easy',  icon: '🌟', label: 'Easy',  desc: 'Top 20 clubs' },
-    { key: 'mixed', icon: '⚡', label: 'Mixed', desc: 'All clubs' },
-    { key: 'hard',  icon: '🔥', label: 'Hard',  desc: '25 tricky clubs' },
+    { key: 'easy',  icon: '🌟', label: 'Easy',  desc: '4 answers · Giants' },
+    { key: 'mixed', icon: '⚡', label: 'Mixed', desc: '6 answers · All clubs' },
+    { key: 'hard',  icon: '🔥', label: 'Hard',  desc: '8 answers · Obscure' },
   ];
 
   // ── Layout wrapper — 3-col on desktop: [skyscraper | quiz | skyscraper]
@@ -604,7 +640,11 @@ export default function QuizPage() {
                     <TimerRing timeLeft={timeLeft} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-                    <LogoDisplay src={q.correct.logo} revealed={answerState !== 'idle'} />
+                    <LogoDisplay
+                      src={q.correct.logo}
+                      revealed={answerState !== 'idle'}
+                      onLoaded={() => setImageReady(true)}
+                    />
                   </div>
                   <div style={{
                     minHeight: 22, textAlign: 'center', fontSize: 13, fontWeight: 700,
